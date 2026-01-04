@@ -62,10 +62,22 @@ export async function parseMpesaStatement(file: File, password?: string): Promis
 
         return parseStatementText(fullText);
     } catch (error: any) {
-        // Check if it's a password error
-        if (error.name === 'PasswordException') {
+        const errorMessage = error?.message?.toLowerCase() || '';
+        const errorName = error?.name || '';
+
+        // Check for various password-related error patterns
+        const isPasswordError =
+            errorName === 'PasswordException' ||
+            errorMessage.includes('password') ||
+            errorMessage.includes('encrypted') ||
+            errorMessage.includes('need a password') ||
+            errorMessage.includes('incorrect password');
+
+        if (isPasswordError) {
             throw new Error('PASSWORD_REQUIRED');
         }
+
+        console.error('PDF parsing error:', error);
         throw error;
     }
 }
