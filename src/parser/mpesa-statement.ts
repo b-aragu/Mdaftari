@@ -258,13 +258,14 @@ function parseStatementText(text: string): ParsedStatement {
 
 /**
  * Finalize a transaction from collected parts
+ * Returns null for withdrawals (we only want Paid In transactions)
  */
 function finalizeTransaction(data: {
     receiptNo: string;
     date: Date;
     detailParts: string[];
     amounts: number[];
-}): StatementTransaction {
+}): StatementTransaction | null {
     const details = data.detailParts.join(' ').trim();
     const { type, counterparty } = extractTransactionInfo(details);
 
@@ -286,6 +287,11 @@ function finalizeTransaction(data: {
         }
     } else if (data.amounts.length === 1) {
         balance = data.amounts[0];
+    }
+
+    // Skip withdrawals - only return transactions with paidIn > 0
+    if (paidIn <= 0) {
+        return null;
     }
 
     return {
@@ -341,72 +347,65 @@ function extractAmountsFromArray(words: string[]): { paidIn: number; paidOut: nu
 
 /**
  * Extract transaction type and counterparty from details
+ * Format: Extract name and phone number, display as "NAME PHONE"
+ * Example: "Customer Payment to Small Business to - 2547******275 ALPHONCE MUSEE" 
+ *       -> counterparty: "ALPHONCE MUSEE 2547******275"
  */
 function extractTransactionInfo(text: string): { type: StatementTransaction['type']; counterparty: string; details: string } {
     const lowerText = text.toLowerCase();
 
-    // Received money patterns
-    if (lowerText.includes('received from') || lowerText.includes('funds received')) {
-        const nameMatch = text.match(/(?:received from|from)\s+([A-Z][A-Z\s]+?)(?:\s+\d|$)/i);
-        return {
-            type: 'received',
-            counterparty: nameMatch?.[1]?.trim() || 'Unknown',
-            details: extractDetails(text, 'received'),
-        };
+    // Determine transaction type
+    let type: StatementTransaction['type'] = 'other';
+    if (lowerText.includes('received') || lowerText.includes('funds received')) {
+        type = 'received';
+    } else if (lowerText.includes('sent') || lowerText.includes('transfer to')) {
+        type = 'sent';
+    } else if (lowerText.includes('paybill') || lowerText.includes('pay bill')) {
+        type = 'paybill';
+    } else if (lowerText.includes('buy goods') || lowerText.includes('merchant')) {
+        type = 'buygoods';
+    } else if (lowerText.includes('withdraw')) {
+        type = 'withdrawal';
+    } else if (lowerText.includes('deposit')) {
+        type = 'deposit';
+    } else if (lowerText.includes('airtime')) {
+        type = 'other';
     }
 
-    // Sent money patterns
-    if (lowerText.includes('sent to') || lowerText.includes('customer transfer to')) {
-        const nameMatch = text.match(/(?:sent to|transfer to)\s+([A-Z][A-Z\s]+?)(?:\s+\d|$)/i);
-        return {
-            type: 'sent',
-            counterparty: nameMatch?.[1]?.trim() || 'Unknown',
-            details: extractDetails(text, 'sent'),
-        };
+    // Extract counterparty: look for phone number and name
+    // Phone patterns: 07******, 2547******, +2547******
+    const phonePattern = /(\+?254[\d*]{6,10}|07[\d*]{6,8})/;
+    const phoneMatch = text.match(phonePattern);
+    const phone = phoneMatch ? phoneMatch[1] : '';
+
+    // Extract name: typically uppercase words after phone or at end of text
+    // Look for sequences of uppercase words (NAME pattern)
+    const words = text.split(/\s+/);
+    const nameWords: string[] = [];
+
+    // Find uppercase name words (typically the person's name)
+    for (let i = words.length - 1; i >= 0; i--) {
+        const word = words[i];
+        // Name words: start with uppercase, contain only letters
+        if (/^[A-Z][A-Za-z]+$/.test(word) && word.length > 1) {
+            nameWords.unshift(word);
+            // Stop after finding 2-3 name parts
+            if (nameWords.length >= 3) break;
+        } else if (nameWords.length > 0) {
+            // Stop if we hit a non-name word after finding some names
+            break;
+        }
     }
 
-    // PayBill patterns
-    if (lowerText.includes('paybill') || lowerText.includes('pay bill')) {
-        const nameMatch = text.match(/(?:paybill|pay bill)\s+(?:to\s+)?([A-Z0-9][A-Z0-9\s]+?)(?:\s+Ksh|$)/i);
-        return {
-            type: 'paybill',
-            counterparty: nameMatch?.[1]?.trim() || 'Business',
-            details: extractDetails(text, 'paybill'),
-        };
-    }
+    const name = nameWords.join(' ') || 'Unknown';
 
-    // Buy Goods patterns
-    if (lowerText.includes('buy goods') || lowerText.includes('merchant')) {
-        const nameMatch = text.match(/(?:buy goods|merchant)\s+(?:from\s+)?([A-Z][A-Z\s]+?)(?:\s+\d|$)/i);
-        return {
-            type: 'buygoods',
-            counterparty: nameMatch?.[1]?.trim() || 'Merchant',
-            details: extractDetails(text, 'buygoods'),
-        };
-    }
-
-    // Withdrawal patterns
-    if (lowerText.includes('withdraw') || lowerText.includes('agent withdrawal')) {
-        return {
-            type: 'withdrawal',
-            counterparty: 'Agent',
-            details: extractDetails(text, 'withdrawal'),
-        };
-    }
-
-    // Deposit patterns
-    if (lowerText.includes('deposit') || lowerText.includes('agent deposit')) {
-        return {
-            type: 'deposit',
-            counterparty: 'Agent',
-            details: extractDetails(text, 'deposit'),
-        };
-    }
+    // Format: "NAME PHONE" or just "NAME" if no phone
+    const counterparty = phone ? `${name} ${phone}` : name;
 
     return {
-        type: 'other',
-        counterparty: 'Unknown',
-        details: text.substring(0, 100),
+        type,
+        counterparty,
+        details: text.replace(/\s+/g, ' ').trim().substring(0, 150),
     };
 }
 
