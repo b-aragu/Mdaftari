@@ -1,0 +1,27 @@
+/* Layout Styles */
+
+.layout {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.layout-main {
+    flex: 1;
+    padding-bottom: 72px;
+    /* Space for bottom nav */
+    overflow-y: auto;
+}
+
+/* Desktop: sidebar */
+@media (min-width: 1024px) {
+    .layout {
+        flex-direction: row;
+    }
+
+    .layout-main {
+        padding-bottom: 0;
+        margin-left: 240px;
+        width: calc(100% - 240px);
+    }
+}

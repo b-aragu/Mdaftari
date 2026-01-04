@@ -1,99 +1,136 @@
 # PRODUCT.md — Mdaftari
 
-## Product Name
-**Mdaftari** (Swahili: Ledger / Account Book)
+## Product Identity
 
-## Tagline
-**Track Every Shilling**
-
----
-
-## Problem Statement
-
-In Kenya and much of Africa, contractors and small businesses receive payments in **irregular partial amounts** via mobile money (M-Pesa, Airtel Money).
-
-These payments are:
-- Split across multiple workers
-- Paid out over days or weeks
-- Tracked manually (notebooks, WhatsApp, memory)
-
-This causes:
-- Payment disputes
-- Lost records
-- Broken trust
-- Financial confusion
-
-Mobile money moves money — **but it does not track debt**.
+| Field | Value |
+|-------|-------|
+| **Name** | Mdaftari |
+| **Type** | Progressive Web App (PWA) |
+| **Tagline** | Track Every Shilling |
+| **Market** | Kenya 🇰🇪 |
 
 ---
 
-## Solution
+## Product Vision
 
-Mdaftari is a **mobile-first debt and payment tracking app** that:
+> Mdaftari exists to become the **source of truth** for informal financial agreements in Kenya by turning mobile money messages into **clear, shared, trusted ledgers**.
 
-- Reads mobile money SMS messages
-- Detects partial payments
-- Splits payments across workers
-- Tracks received vs owed balances
-- Syncs a shared ledger between contractor and worker
-- Works offline
-- Remains readable outdoors in direct sunlight
+**It does not move money. It explains money.**
 
 ---
 
-## Core User Personas
+## Target Users
 
-### Contractor
-- Receives partial payments
-- Pays multiple workers
-- Needs clarity and proof
+### Primary
+- Contractors & site supervisors
+- Freelancers
+- Small business owners
 
-### Worker
-- Receives split payments
-- Needs transparency
-- Needs proof of what is still owed
-
----
-
-## Core User Flow (Primary)
-
-1. Contractor receives mobile money payment
-2. App parses SMS locally
-3. App detects partial payment
-4. App prompts for payment split
-5. Ledger updates per worker
-6. Worker sees updated balance
-7. Reminders trigger when balance is due
+### Secondary
+- Casual workers & artisans
+- Accountants serving informal businesses
 
 ---
 
-## MVP Scope (Must-Have)
+## Core Problem
 
-- Manual transaction entry
-- M-Pesa SMS parsing (received messages)
-- Worker management
-- Payment split calculator
-- Offline-first ledger
-- Outdoor high-contrast mode
-- Basic PDF export
+Mobile money systems (M-Pesa, Airtel Money) do not track:
+- **Debt** — Who owes what
+- **Partial payments** — How much is left
+- **Shared obligations** — Worker splits
+
+This forces users to rely on **memory and trust**, leading to:
+
+| Problem | Impact |
+|---------|--------|
+| Payment disputes | Broken relationships |
+| Lost balances | Financial confusion |
+| Forgotten debts | Lost income |
+
+---
+
+## Core Value Proposition
+
+```
+Paste a payment message → Instantly know what was paid, what's owed, and who is owed.
+```
+
+---
+
+## Core User Jobs
+
+1. **Record** payments accurately
+2. **Track** balances over time
+3. **Split** payments fairly across workers
+4. **Prevent** disputes
+5. **Work** offline
+6. **See** the same truth on both sides
+
+---
+
+## Key Features (MVP)
+
+### 1. Message Paste & Parsing
+- Paste M-Pesa / Airtel Money messages
+- Auto-extract transaction data
+- Manual confirmation & correction
+
+### 2. Expected Amount Declaration
+- Contractor or worker sets expected amount
+- System calculates remaining balance
+
+### 3. Partial Payment Detection
+- Automatically detects underpayment
+- Persists outstanding debt
+
+### 4. Payment Splitting
+- Evenly distributes received funds
+- Handles rounding safely
+
+### 5. Two-Sided Ledger
+- Shared truth between payer & payee
+- Role-based visibility
+
+### 6. Offline-First Operation
+- Full functionality without internet
+- Syncs when connection returns
+
+### 7. Outdoor Mode
+- High-contrast UI for bright environments
+- 21:1 minimum contrast ratio
 
 ---
 
 ## Non-Goals (Explicit)
 
-- Not a wallet
-- Not a loan product
-- Not a replacement for M-Pesa
-- No raw SMS cloud storage
-- No social feed or chat
+Mdaftari will **NOT**:
+
+| ❌ Won't Do | Reason |
+|-------------|--------|
+| Act as a wallet | Not a payment system |
+| Initiate payments | Privacy & security |
+| Replace accounting software | Different use case |
+| Predict income | Complexity, low value |
+| Require bank integrations | MVP simplicity |
 
 ---
 
-## Product Philosophy
+## Success Metrics (MVP)
 
-- **Offline-first**
-- **Outdoor-first**
-- **Trust-first**
-- **Local-first**
+| Metric | Target |
+|--------|--------|
+| Ledger accuracy | > 99% |
+| Data loss (offline) | Zero |
+| Paste to ledger entry | < 10 seconds |
+| Repeat usage | High per user |
 
-> If it’s not readable in the Nairobi sun, it’s not done.
+---
+
+## Product Principles
+
+| Principle | Meaning |
+|-----------|---------|
+| **Trust over automation** | Let users verify, don't assume |
+| **Clarity over complexity** | Simple UI, obvious actions |
+| **Offline over cloud** | Local-first, sync later |
+| **Local reality over global assumptions** | Built for Kenya, not Silicon Valley |

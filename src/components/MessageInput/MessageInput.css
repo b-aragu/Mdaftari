@@ -1,0 +1,113 @@
+/* Message Input - Premium Finance Style */
+
+.message-input {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+
+.message-input__card {
+    background: var(--color-bg-primary);
+    border-radius: var(--radius-xl);
+    padding: var(--space-5);
+    box-shadow: var(--shadow-card);
+}
+
+.message-input__header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    margin-bottom: var(--space-4);
+}
+
+.message-input__icon {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, var(--color-primary-bg) 0%, #E0F2FE 100%);
+    border-radius: var(--radius-lg);
+    font-size: 1.5rem;
+}
+
+.message-input__title {
+    font-size: var(--text-lg);
+    font-weight: var(--font-bold);
+    color: var(--color-text-primary);
+    margin: 0;
+}
+
+.message-input__subtitle {
+    font-size: var(--text-sm);
+    color: var(--color-text-secondary);
+    margin: var(--space-1) 0 0;
+}
+
+.message-input__field {
+    width: 100%;
+    min-height: 140px;
+    padding: var(--space-4);
+    font-family: var(--font-family);
+    font-size: var(--text-base);
+    line-height: 1.6;
+    color: var(--color-text-primary);
+    background: var(--color-bg-secondary);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    resize: vertical;
+    transition: all var(--transition-fast);
+}
+
+.message-input__field:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    background: var(--color-bg-primary);
+    box-shadow: 0 0 0 4px var(--color-primary-bg);
+}
+
+.message-input__field::placeholder {
+    color: var(--color-text-muted);
+}
+
+.message-input__actions {
+    display: flex;
+    gap: var(--space-2);
+}
+
+.message-input__privacy {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    padding: var(--space-3);
+    background: var(--color-bg-tertiary);
+    border-radius: var(--radius-lg);
+    font-size: var(--text-sm);
+    color: var(--color-text-secondary);
+}
+
+.message-input__privacy-icon {
+    font-size: 1rem;
+}
+
+/* Outdoor Mode */
+[data-outdoor-mode="true"] .message-input__card {
+    border: 4px solid #000;
+    box-shadow: var(--shadow-md);
+    border-radius: 0;
+}
+
+[data-outdoor-mode="true"] .message-input__field {
+    border: 3px solid #000;
+    border-radius: 0;
+}
+
+[data-outdoor-mode="true"] .message-input__field:focus {
+    box-shadow: var(--shadow-sm);
+}
+
+[data-outdoor-mode="true"] .message-input__privacy {
+    border: 2px solid #000;
+    border-radius: 0;
+}

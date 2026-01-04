@@ -1,0 +1,100 @@
+/* Input Component Styles */
+
+.input-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+}
+
+.input-wrapper--full-width {
+    width: 100%;
+}
+
+.input__label {
+    font-size: var(--font-size-body);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-primary);
+}
+
+.input__required {
+    color: var(--color-error);
+}
+
+.input__field {
+    width: 100%;
+    padding: var(--space-sm) var(--space-md);
+
+    font-family: var(--font-family);
+    font-size: var(--font-size-body);
+    color: var(--color-text-primary);
+
+    background: var(--color-canvas);
+    border: var(--border-width-thick) solid var(--color-border);
+    border-radius: var(--radius-sm);
+
+    min-height: var(--touch-target-min);
+
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.input__field:hover {
+    border-color: var(--color-teal-light);
+}
+
+.input__field:focus {
+    outline: none;
+    border-color: var(--color-teal-primary);
+    box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.2);
+}
+
+.input__field::placeholder {
+    color: var(--color-text-muted);
+}
+
+.input__field--textarea {
+    min-height: 120px;
+    resize: vertical;
+    line-height: var(--line-height-normal);
+}
+
+/* Error State */
+.input-wrapper--error .input__field {
+    border-color: var(--color-error);
+}
+
+.input-wrapper--error .input__field:focus {
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.2);
+}
+
+.input__error {
+    font-size: var(--font-size-label);
+    color: var(--color-error);
+    margin: 0;
+}
+
+.input__hint {
+    font-size: var(--font-size-label);
+    color: var(--color-text-muted);
+    margin: 0;
+}
+
+/* Disabled State */
+.input__field:disabled {
+    background: var(--color-surface);
+    color: var(--color-text-muted);
+    cursor: not-allowed;
+}
+
+/* Outdoor Mode */
+[data-outdoor-mode="true"] .input__field {
+    border: var(--border-width-outdoor) solid #000000;
+    border-radius: 0;
+}
+
+[data-outdoor-mode="true"] .input__field:focus {
+    box-shadow: var(--shadow-hard);
+}
+
+[data-outdoor-mode="true"] .input__error {
+    font-weight: var(--font-weight-bold);
+}

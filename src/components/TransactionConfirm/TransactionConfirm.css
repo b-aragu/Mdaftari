@@ -1,0 +1,138 @@
+/* Transaction Confirm Component Styles */
+
+.transaction-confirm {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+}
+
+.transaction-confirm__badges {
+    display: flex;
+    gap: var(--space-xs);
+}
+
+.transaction-confirm__warning {
+    background: rgba(245, 158, 11, 0.1);
+    border: 1px solid var(--color-warning);
+    border-radius: var(--radius-sm);
+    padding: var(--space-sm) var(--space-md);
+    font-size: var(--font-size-body);
+    color: #B45309;
+}
+
+.transaction-confirm__field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+}
+
+.transaction-confirm__field--readonly {
+    padding: var(--space-sm) 0;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.transaction-confirm__label {
+    font-size: var(--font-size-label);
+    font-weight: var(--font-weight-bold);
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+}
+
+.transaction-confirm__code {
+    font-family: monospace;
+    font-size: var(--font-size-heading);
+    font-weight: var(--font-weight-bold);
+    color: var(--color-teal-primary);
+    background: var(--color-surface);
+    padding: var(--space-xs) var(--space-sm);
+    border-radius: var(--radius-sm);
+}
+
+.transaction-confirm__balance {
+    font-size: var(--font-size-heading);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-primary);
+}
+
+/* Partial Payment Section */
+.transaction-confirm__partial {
+    background: rgba(245, 158, 11, 0.05);
+    border: 2px solid var(--color-warning);
+    border-radius: var(--radius-md);
+    padding: var(--space-md);
+}
+
+.transaction-confirm__partial-header {
+    font-weight: var(--font-weight-bold);
+    color: #B45309;
+    margin-bottom: var(--space-sm);
+}
+
+.transaction-confirm__partial-details {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-md);
+}
+
+.transaction-confirm__partial-details>div {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+}
+
+.transaction-confirm__partial-details .label {
+    font-size: var(--font-size-label);
+    color: var(--color-text-secondary);
+}
+
+.transaction-confirm__confidence {
+    display: flex;
+    justify-content: center;
+    padding: var(--space-sm) 0;
+}
+
+.transaction-confirm__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--space-md);
+    padding-top: var(--space-md);
+    border-top: 1px solid var(--color-border);
+}
+
+/* Outdoor Mode */
+[data-outdoor-mode="true"] .transaction-confirm__warning {
+    background: #FFEB3B;
+    border-width: 2px;
+    border-color: #000000;
+    color: #000000;
+}
+
+[data-outdoor-mode="true"] .transaction-confirm__code {
+    background: #000000;
+    color: #FFFFFF;
+}
+
+[data-outdoor-mode="true"] .transaction-confirm__partial {
+    background: #FFFFFF;
+    border-width: 4px;
+    border-color: #000000;
+}
+
+[data-outdoor-mode="true"] .transaction-confirm__partial-header {
+    color: #000000;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+    .transaction-confirm__partial-details {
+        grid-template-columns: 1fr;
+    }
+
+    .transaction-confirm__actions {
+        flex-direction: column;
+    }
+
+    .transaction-confirm__actions .btn {
+        width: 100%;
+    }
+}

@@ -1,0 +1,185 @@
+/* Mdaftari Global Styles - Official Theme */
+@import './tokens.css';
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html {
+    font-size: 16px;
+    -webkit-text-size-adjust: 100%;
+}
+
+body {
+    font-family: var(--font-sans);
+    font-size: var(--text-base);
+    font-weight: var(--weight-normal);
+    line-height: 1.5;
+    color: var(--color-text-primary);
+    background: var(--color-background);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+}
+
+#root {
+    min-height: 100vh;
+}
+
+/* Typography */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    font-weight: var(--weight-bold);
+    line-height: 1.2;
+    color: var(--color-text-primary);
+}
+
+/* Money Display - Always Bold */
+.money {
+    font-weight: var(--weight-bold);
+    font-variant-numeric: tabular-nums;
+}
+
+.money-in {
+    color: var(--color-success);
+    font-weight: var(--weight-bold);
+}
+
+.money-out {
+    color: var(--color-debt);
+    font-weight: var(--weight-bold);
+}
+
+.money-lg {
+    font-size: var(--text-2xl);
+    font-weight: var(--weight-bold);
+}
+
+.amount-positive {
+    color: var(--color-success);
+    font-weight: var(--weight-bold);
+}
+
+.amount-negative {
+    color: var(--color-debt);
+    font-weight: var(--weight-bold);
+}
+
+/* Focus State */
+:focus-visible {
+    outline: 3px solid var(--color-text-primary);
+    outline-offset: 2px;
+}
+
+/* Screen Reader Only */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    border: 0;
+}
+
+/* Primary Button - Black Background */
+.btn-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    min-height: var(--touch-min);
+    padding: var(--space-3) var(--space-6);
+    background: var(--color-text-primary);
+    color: var(--color-background);
+    border: var(--border-medium);
+    font-family: var(--font-sans);
+    font-size: var(--text-base);
+    font-weight: var(--weight-bold);
+    cursor: pointer;
+}
+
+.btn-primary:hover {
+    opacity: 0.9;
+}
+
+.btn-primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Secondary Button - White Background */
+.btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    min-height: var(--touch-min);
+    padding: var(--space-3) var(--space-6);
+    background: var(--color-background);
+    color: var(--color-text-primary);
+    border: var(--border-medium);
+    font-family: var(--font-sans);
+    font-size: var(--text-base);
+    font-weight: var(--weight-bold);
+    cursor: pointer;
+}
+
+.btn-secondary:hover {
+    background: var(--color-text-primary);
+    color: var(--color-background);
+}
+
+/* Card - Border Only, No Shadow */
+.card {
+    background: var(--color-background);
+    border: var(--border-medium);
+    padding: var(--space-4);
+}
+
+/* Input - Black Border */
+.input {
+    width: 100%;
+    min-height: var(--touch-min);
+    padding: var(--space-3);
+    background: var(--color-background);
+    border: var(--border-medium);
+    font-family: var(--font-sans);
+    font-size: var(--text-base);
+    color: var(--color-text-primary);
+}
+
+.input:focus {
+    outline: none;
+    border-width: 3px;
+}
+
+.input::placeholder {
+    color: var(--color-text-secondary);
+}
+
+/* Outdoor Mode Enhancements */
+[data-outdoor="true"] body {
+    font-weight: var(--weight-medium);
+}
+
+[data-outdoor="true"] .card {
+    border: var(--border-thick);
+}
+
+[data-outdoor="true"] .input {
+    border: var(--border-thick);
+}
+
+[data-outdoor="true"] .btn-primary,
+[data-outdoor="true"] .btn-secondary {
+    border: var(--border-thick);
+}

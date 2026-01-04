@@ -1,118 +1,186 @@
 # ARCHITECTURE.md — Mdaftari
 
-## Architecture Goals
+## Design Philosophy
 
-- Offline-first operation
-- Deterministic financial logic
-- Minimal cloud dependency
-- Privacy-preserving SMS handling
-- Simple sync model
+> Mdaftari is designed for **sunlight, speed, and certainty**.
 
----
-
-## High-Level Architecture
-
-SMS (Device)
-↓
-Local Parser
-↓
-SQLite Ledger (Source of Truth)
-↓
-Firebase Sync (Metadata only)
-↓
-Contractor / Worker Views
- 
 ---
 
 ## Core Principles
 
-1. **Local is authoritative**
-2. Cloud is for sync, not logic
-3. Ledger operations are deterministic
-4. UI is a projection of ledger state
+| Principle | Implementation |
+|-----------|----------------|
+| High contrast over aesthetics | 21:1 ratio minimum |
+| Legibility over decoration | No gradients that reduce contrast |
+| Fewer colors, stronger hierarchy | Black, white, teal, amber only |
+| Zero ambiguity in financial data | Clear positive/negative indicators |
 
 ---
 
-## Frontend
+## System Architecture
 
-- React Native (TypeScript)
-- Android-first (MVP)
-- Tailwind-style utility system
-- React Navigation
+```
+┌─────────────────────────────────────────────────────────┐
+│                    USER DEVICE                          │
+├─────────────────────────────────────────────────────────┤
+│                                                         │
+│   ┌─────────────┐    ┌─────────────┐    ┌───────────┐  │
+│   │   Pasted    │───▶│   Client    │───▶│   User    │  │
+│   │   Message   │    │   Parser    │    │ Confirm   │  │
+│   └─────────────┘    └─────────────┘    └───────────┘  │
+│                                                │        │
+│                                                ▼        │
+│   ┌─────────────┐    ┌─────────────┐    ┌───────────┐  │
+│   │   Worker/   │◀───│   Ledger    │◀───│  Local    │  │
+│   │ Contractor  │    │    Logic    │    │  Storage  │  │
+│   │   Views     │    └─────────────┘    │ (IndexedDB)│  │
+│   └─────────────┘                       └───────────┘  │
+│                                                │        │
+└────────────────────────────────────────────────┼────────┘
+                                                 │
+                                    (When Online)│
+                                                 ▼
+                                         ┌───────────┐
+                                         │  Cloud    │
+                                         │   Sync    │
+                                         │ (Firebase)│
+                                         └───────────┘
+```
 
----
+### Data Flow
 
-## Local Storage
-
-### SQLite
-- Transactions
-- Workers
-- Ledger states
-- Sync status flags
-
-### AsyncStorage
-- UI preferences
-- Outdoor mode toggle
-- Auth metadata
-
----
-
-## Ledger Engine
-
-Ledger logic:
-- Accepts transactions
-- Applies splits
-- Computes owed balances
-- Resolves conflicts deterministically
-
-Ledger rules:
-- Never deletes transactions
-- Adjustments are additive
-- Every change is auditable
-
----
-
-## Backend (Firebase)
-
-### Services Used
-- Firebase Authentication
-- Realtime Database
-- Cloud Functions
-- Cloud Messaging
-
-### Data Stored in Cloud
-- Transaction metadata
-- Ledger summaries
-- User relationships
-
-### Data NOT Stored
-- Raw SMS messages
-- Phone inbox data
-- Personal message content
+1. **Input** — User pastes M-Pesa/Airtel message
+2. **Parse** — Client-side regex extracts fields
+3. **Confirm** — User verifies/adjusts parsed data
+4. **Store** — Transaction saved to IndexedDB
+5. **Calculate** — Ledger logic computes splits/debt
+6. **Display** — Views update with new balances
+7. **Sync** — Queue syncs to cloud when online
 
 ---
 
-## Sync Strategy
+## Component Architecture
 
-- Local-first writes
-- Cloud sync is eventual
-- Conflict resolution prefers:
-  1. Ledger version number
-  2. Latest timestamp
-  3. Contractor authority
+### Parser Engine (`/src/parser/`)
+
+| File | Purpose |
+|------|---------|
+| `types.ts` | ParsedTransaction, Counterparty types |
+| `mpesa.ts` | M-Pesa message regex patterns |
+| `airtel.ts` | Airtel Money parser |
+| `index.ts` | Auto-detect and route |
+
+**Key Features:**
+- Confidence scoring (0-1) per parse
+- Duplicate transaction detection
+- Manual override support
+
+### Storage Layer (`/src/storage/`)
+
+| File | Purpose |
+|------|---------|
+| `db.ts` | IndexedDB setup with idb |
+| `operations.ts` | CRUD for all entities |
+| `index.ts` | Unified exports |
+
+**Object Stores:**
+- `transactions` — Confirmed transactions
+- `workers` — Worker profiles
+- `ledgerEntries` — Immutable ledger rows
+- `syncQueue` — Pending cloud syncs
+- `users` — User profiles
+
+### Ledger Logic (`/src/ledger/`)
+
+| File | Purpose |
+|------|---------|
+| `types.ts` | Transaction, LedgerEntry, Worker |
+| `calculator.ts` | Payment splits with safe rounding |
+| `detector.ts` | Partial payment detection |
+| `index.ts` | Unified exports |
+
+**Guarantees:**
+- Deterministic calculations
+- No floating-point errors
+- Immutable entries once created
 
 ---
 
-## Notifications
+## Offline-First Strategy
 
-- Triggered via Cloud Functions
-- Delivered via FCM
-- Never contain sensitive financial data
+```
+┌────────────────────────────────────────┐
+│           Online Check                 │
+└───────────────┬────────────────────────┘
+                │
+        ┌───────┴───────┐
+        │               │
+        ▼               ▼
+  ┌──────────┐    ┌──────────┐
+  │  Online  │    │ Offline  │
+  └────┬─────┘    └────┬─────┘
+       │               │
+       ▼               ▼
+  ┌──────────┐    ┌──────────┐
+  │  Sync    │    │  Queue   │
+  │  Now     │    │  Sync    │
+  └──────────┘    └──────────┘
+```
+
+1. **All writes go to IndexedDB first**
+2. **Sync queue tracks pending changes**
+3. **Background sync when online**
+4. **Conflict resolution: last-write-wins with audit trail**
 
 ---
 
-## Scalability Notes
+## UI Architecture
 
-- Firebase structure allows sharding by project
-- Ledger logic is portable (can move server-side later)
-- SMS parsing remains device-only
+### Component Hierarchy
+
+```
+App
+└── Dashboard
+    ├── Header (Logo, Outdoor Toggle)
+    ├── MessageInput
+    ├── TransactionConfirm (modal)
+    ├── LedgerView
+    │   └── LedgerRow (immutable)
+    └── Footer (Privacy notice)
+```
+
+### Design System Integration
+
+| Token | Standard | Outdoor Mode |
+|-------|----------|--------------|
+| Background | `#FFFFFF` | `#FFFFFF` |
+| Text | `#111827` | `#000000` |
+| Border | `1px #E5E7EB` | `4px #000000` |
+| Shadows | Soft | Hard offset |
+| Corners | 12px rounded | 0 (sharp) |
+
+---
+
+## Security Architecture
+
+See [SECURITY.md](./SECURITY.md) for full details.
+
+| Layer | Protection |
+|-------|------------|
+| Parsing | Client-side only, no server upload |
+| Storage | IndexedDB with optional encryption |
+| Transport | TLS 1.3 for all network traffic |
+| Access | Role-based (contractor/worker) |
+
+---
+
+## Technology Decisions
+
+| Decision | Choice | Rationale |
+|----------|--------|-----------|
+| Framework | React 18 | Ecosystem, PWA support |
+| Language | TypeScript | Type safety for financial data |
+| Storage | IndexedDB | Large capacity, structured data |
+| Bundler | Vite | Fast dev, good PWA plugin |
+| PWA | Workbox | Industry standard, reliable |
+| Auth | Firebase | Phone auth for Kenya |

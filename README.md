@@ -1,4 +1,4 @@
----
+
 
 # 📘 Mdaftari
 
@@ -336,3 +336,4 @@ This message can be pasted directly into Mdaftari for parsing and ledger entry.
 Mdaftari exists to make sure **no shilling goes missing**.
 
 ---
+
