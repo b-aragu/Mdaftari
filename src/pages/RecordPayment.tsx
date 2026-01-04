@@ -2,11 +2,12 @@
  * Record Payment Page
  */
 
-import React, { useState, useCallback } from 'react';
-import { ArrowLeft, Clipboard, Edit3, Check } from 'lucide-react';
+import { useState, useCallback } from 'react';
+import { ArrowLeft, Clipboard, Edit3, Check, FileText } from 'lucide-react';
 import { parseMessage, type ParseResult, type ParsedTransaction } from '../parser';
 import { saveTransaction, createLedgerEntry } from '../storage';
 import { detectPartialPayment } from '../ledger';
+import { StatementImport } from '../components/StatementImport';
 import './RecordPayment.css';
 
 const TEMP_USER_ID = 'local-user';
@@ -16,7 +17,7 @@ interface RecordPaymentProps {
     onSuccess: () => void;
 }
 
-type InputMethod = 'paste' | 'manual';
+type InputMethod = 'paste' | 'manual' | 'import';
 type Step = 'input' | 'confirm';
 
 export function RecordPaymentPage({ onBack, onSuccess }: RecordPaymentProps) {
@@ -147,7 +148,7 @@ export function RecordPaymentPage({ onBack, onSuccess }: RecordPaymentProps) {
                 <div className="header-spacer" />
             </header>
 
-            {step === 'input' && (
+            {step === 'input' && inputMethod !== 'import' && (
                 <div className="record-content">
                     {/* Method Toggle */}
                     <div className="method-toggle">
@@ -156,14 +157,21 @@ export function RecordPaymentPage({ onBack, onSuccess }: RecordPaymentProps) {
                             onClick={() => setInputMethod('paste')}
                         >
                             <Clipboard size={18} />
-                            Paste Message
+                            Paste
                         </button>
                         <button
                             className={`method-btn ${inputMethod === 'manual' ? 'method-btn--active' : ''}`}
                             onClick={() => setInputMethod('manual')}
                         >
                             <Edit3 size={18} />
-                            Manual Entry
+                            Manual
+                        </button>
+                        <button
+                            className={`method-btn ${inputMethod === 'import' ? 'method-btn--active' : ''}`}
+                            onClick={() => setInputMethod('import')}
+                        >
+                            <FileText size={18} />
+                            Import
                         </button>
                     </div>
 
@@ -350,6 +358,14 @@ export function RecordPaymentPage({ onBack, onSuccess }: RecordPaymentProps) {
                         </button>
                     </div>
                 </div>
+            )}
+
+            {/* Import Statement Mode */}
+            {inputMethod === 'import' && (
+                <StatementImport
+                    onComplete={onSuccess}
+                    onBack={() => setInputMethod('paste')}
+                />
             )}
         </div>
     );
