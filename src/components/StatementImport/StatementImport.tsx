@@ -5,7 +5,7 @@
  */
 
 import { useState, useCallback } from 'react';
-import { Upload, Filter, Check, X, AlertTriangle, FileText, Users } from 'lucide-react';
+import { Upload, Filter, Check, X, AlertTriangle, FileText, Users, Search, Calendar } from 'lucide-react';
 import {
     parseMpesaStatement,
     getUniqueCounterparties,
@@ -38,6 +38,11 @@ export function StatementImport({ onComplete, onBack }: StatementImportProps) {
     // Filters
     const [selectedPerson, setSelectedPerson] = useState<string>('all');
     const [selectedType, setSelectedType] = useState<string>('all');
+    const [searchText, setSearchText] = useState<string>('');
+    const [minAmount, setMinAmount] = useState<string>('');
+    const [maxAmount, setMaxAmount] = useState<string>('');
+    const [startDate, setStartDate] = useState<string>('');
+    const [endDate, setEndDate] = useState<string>('');
 
     // Import progress
     const [importProgress, setImportProgress] = useState(0);
@@ -98,6 +103,16 @@ export function StatementImport({ onComplete, onBack }: StatementImportProps) {
     const applyFilters = useCallback(() => {
         let filtered = [...transactions];
 
+        // Text search: matches name/counterparty, details, or receipt number
+        if (searchText.trim()) {
+            const query = searchText.toLowerCase().trim();
+            filtered = filtered.filter(t =>
+                t.counterparty.toLowerCase().includes(query) ||
+                t.details.toLowerCase().includes(query) ||
+                t.receiptNo.toLowerCase().includes(query)
+            );
+        }
+
         if (selectedPerson !== 'all') {
             filtered = filterByCounterparty(filtered, selectedPerson);
         }
@@ -106,8 +121,33 @@ export function StatementImport({ onComplete, onBack }: StatementImportProps) {
             filtered = filterByType(filtered, selectedType as StatementTransaction['type']);
         }
 
+        // Amount range filter
+        if (minAmount) {
+            const min = parseFloat(minAmount);
+            if (!isNaN(min)) {
+                filtered = filtered.filter(t => t.paidIn >= min);
+            }
+        }
+        if (maxAmount) {
+            const max = parseFloat(maxAmount);
+            if (!isNaN(max)) {
+                filtered = filtered.filter(t => t.paidIn <= max);
+            }
+        }
+
+        // Date range filter
+        if (startDate) {
+            const start = new Date(startDate);
+            filtered = filtered.filter(t => t.date >= start);
+        }
+        if (endDate) {
+            const end = new Date(endDate);
+            end.setHours(23, 59, 59, 999); // Include entire end day
+            filtered = filtered.filter(t => t.date <= end);
+        }
+
         setFilteredTransactions(filtered);
-    }, [transactions, selectedPerson, selectedType]);
+    }, [transactions, selectedPerson, selectedType, searchText, minAmount, maxAmount, startDate, endDate]);
 
     const handlePersonChange = (person: string) => {
         setSelectedPerson(person);
@@ -310,6 +350,24 @@ export function StatementImport({ onComplete, onBack }: StatementImportProps) {
 
                     {/* Filters */}
                     <div className="filters">
+                        {/* Search Input */}
+                        <div className="filter-group filter-group--full">
+                            <label className="filter-label">
+                                <Search size={16} />
+                                Search
+                            </label>
+                            <input
+                                type="text"
+                                className="filter-input"
+                                placeholder="Search by name, phone, or receipt..."
+                                value={searchText}
+                                onChange={(e) => {
+                                    setSearchText(e.target.value);
+                                    setTimeout(applyFilters, 0);
+                                }}
+                            />
+                        </div>
+
                         <div className="filter-group">
                             <label className="filter-label">
                                 <Users size={16} />
@@ -343,6 +401,65 @@ export function StatementImport({ onComplete, onBack }: StatementImportProps) {
                                 <option value="paybill">PayBill</option>
                                 <option value="buygoods">Buy Goods</option>
                             </select>
+                        </div>
+
+                        {/* Amount Range */}
+                        <div className="filter-group">
+                            <label className="filter-label">
+                                Amount Range
+                            </label>
+                            <div className="filter-range">
+                                <input
+                                    type="number"
+                                    className="filter-input filter-input--small"
+                                    placeholder="Min"
+                                    value={minAmount}
+                                    onChange={(e) => {
+                                        setMinAmount(e.target.value);
+                                        setTimeout(applyFilters, 0);
+                                    }}
+                                />
+                                <span className="filter-range-separator">-</span>
+                                <input
+                                    type="number"
+                                    className="filter-input filter-input--small"
+                                    placeholder="Max"
+                                    value={maxAmount}
+                                    onChange={(e) => {
+                                        setMaxAmount(e.target.value);
+                                        setTimeout(applyFilters, 0);
+                                    }}
+                                />
+                            </div>
+                        </div>
+
+                        {/* Date Range */}
+                        <div className="filter-group">
+                            <label className="filter-label">
+                                <Calendar size={16} />
+                                Date Range
+                            </label>
+                            <div className="filter-range">
+                                <input
+                                    type="date"
+                                    className="filter-input filter-input--small"
+                                    value={startDate}
+                                    onChange={(e) => {
+                                        setStartDate(e.target.value);
+                                        setTimeout(applyFilters, 0);
+                                    }}
+                                />
+                                <span className="filter-range-separator">-</span>
+                                <input
+                                    type="date"
+                                    className="filter-input filter-input--small"
+                                    value={endDate}
+                                    onChange={(e) => {
+                                        setEndDate(e.target.value);
+                                        setTimeout(applyFilters, 0);
+                                    }}
+                                />
+                            </div>
                         </div>
                     </div>
 
