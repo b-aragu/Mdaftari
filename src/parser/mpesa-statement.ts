@@ -373,31 +373,60 @@ function extractTransactionInfo(text: string): { type: StatementTransaction['typ
     }
 
     // Extract counterparty: look for phone number and name
-    // Phone patterns: 07******, 2547******, +2547******
-    const phonePattern = /(\+?254[\d*]{6,10}|07[\d*]{6,8})/;
+    // Phone patterns: 07******, 2547******, +2547****** (with optional * masking)
+    const phonePattern = /(\+?254[\d*]{6,12}|07[\d*]{6,10})/;
     const phoneMatch = text.match(phonePattern);
     const phone = phoneMatch ? phoneMatch[1] : '';
 
-    // Extract name: typically uppercase words after phone or at end of text
-    // Look for sequences of uppercase words (NAME pattern)
+    // Extract name: look for name words (can be mixed case like "John ngechu")
+    // Names typically come after phone number or at the end
+    // Pattern: words that are mostly letters, capitalized or mixed case
     const words = text.split(/\s+/);
     const nameWords: string[] = [];
 
-    // Find uppercase name words (typically the person's name)
-    for (let i = words.length - 1; i >= 0; i--) {
-        const word = words[i];
-        // Name words: start with uppercase, contain only letters
-        if (/^[A-Z][A-Za-z]+$/.test(word) && word.length > 1) {
-            nameWords.unshift(word);
-            // Stop after finding 2-3 name parts
-            if (nameWords.length >= 3) break;
-        } else if (nameWords.length > 0) {
-            // Stop if we hit a non-name word after finding some names
-            break;
+    // Strategy: Find consecutive word groups that look like names
+    // Names are alphabetic words, can be mixed case
+    let foundPhone = false;
+    for (let i = 0; i < words.length; i++) {
+        const word = words[i] || '';
+
+        // Skip if it looks like a phone number
+        if (phonePattern.test(word)) {
+            foundPhone = true;
+            continue;
+        }
+
+        // After we find phone, collect name words
+        // Name words: mostly letters, at least 2 chars, starts with letter
+        if (foundPhone && /^[A-Za-z][A-Za-z]+$/.test(word) && word.length >= 2) {
+            // Skip common words that aren't names
+            const skipWords = ['to', 'from', 'for', 'the', 'and', 'of', 'in', 'at'];
+            if (!skipWords.includes(word.toLowerCase())) {
+                nameWords.push(word);
+                if (nameWords.length >= 3) break;
+            }
         }
     }
 
-    const name = nameWords.join(' ') || 'Unknown';
+    // If no names found after phone, try finding from the end (backwards)
+    if (nameWords.length === 0) {
+        for (let i = words.length - 1; i >= 0; i--) {
+            const word = words[i] || '';
+            // Name words: alphabetic, at least 2 chars
+            if (/^[A-Za-z][A-Za-z]+$/.test(word) && word.length >= 2) {
+                const skipWords = ['to', 'from', 'for', 'the', 'and', 'of', 'in', 'at', 'completed', 'pending', 'failed', 'page'];
+                if (!skipWords.includes(word.toLowerCase())) {
+                    nameWords.unshift(word);
+                    if (nameWords.length >= 3) break;
+                }
+            } else if (nameWords.length > 0) {
+                // Stop if we hit a non-name after collecting some names
+                break;
+            }
+        }
+    }
+
+    const name = nameWords.length > 0 ? nameWords.join(' ') : 'Unknown';
 
     // Format: "NAME PHONE" or just "NAME" if no phone
     const counterparty = phone ? `${name} ${phone}` : name;
