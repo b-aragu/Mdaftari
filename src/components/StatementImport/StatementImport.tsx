@@ -367,9 +367,9 @@ export function StatementImport({ onComplete, onBack }: StatementImportProps) {
                                 <p>No transactions found matching filters</p>
                             </div>
                         ) : (
-                            filteredTransactions.map(tx => (
+                            filteredTransactions.map((tx, index) => (
                                 <div
-                                    key={tx.receiptNo}
+                                    key={`${index}-${tx.receiptNo}`}
                                     className={`tx-row ${tx.selected ? 'tx-row--selected' : ''}`}
                                 >
                                     <button
