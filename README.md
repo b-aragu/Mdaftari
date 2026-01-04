@@ -1,0 +1,2 @@
+# Mdaftari
+Track Every Shilling
