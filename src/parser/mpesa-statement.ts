@@ -36,24 +36,38 @@ export interface ParsedStatement {
 
 /**
  * Parse M-Pesa PDF statement
+ * @param file - PDF file to parse
+ * @param password - Optional password (usually National ID for M-Pesa statements)
  */
-export async function parseMpesaStatement(file: File): Promise<ParsedStatement> {
+export async function parseMpesaStatement(file: File, password?: string): Promise<ParsedStatement> {
     const arrayBuffer = await file.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
 
-    let fullText = '';
+    try {
+        const pdf = await pdfjsLib.getDocument({
+            data: arrayBuffer,
+            password: password || undefined,
+        }).promise;
 
-    // Extract text from all pages
-    for (let i = 1; i <= pdf.numPages; i++) {
-        const page = await pdf.getPage(i);
-        const textContent = await page.getTextContent();
-        const pageText = textContent.items
-            .map((item: any) => item.str)
-            .join(' ');
-        fullText += pageText + '\n';
+        let fullText = '';
+
+        // Extract text from all pages
+        for (let i = 1; i <= pdf.numPages; i++) {
+            const page = await pdf.getPage(i);
+            const textContent = await page.getTextContent();
+            const pageText = textContent.items
+                .map((item: any) => item.str)
+                .join(' ');
+            fullText += pageText + '\n';
+        }
+
+        return parseStatementText(fullText);
+    } catch (error: any) {
+        // Check if it's a password error
+        if (error.name === 'PasswordException') {
+            throw new Error('PASSWORD_REQUIRED');
+        }
+        throw error;
     }
-
-    return parseStatementText(fullText);
 }
 
 /**

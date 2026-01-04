@@ -43,6 +43,41 @@ export function StatementImport({ onComplete, onBack }: StatementImportProps) {
     const [importProgress, setImportProgress] = useState(0);
     const [importedCount, setImportedCount] = useState(0);
 
+    // Password for encrypted PDFs
+    const [needsPassword, setNeedsPassword] = useState(false);
+    const [password, setPassword] = useState('');
+    const [pendingFile, setPendingFile] = useState<File | null>(null);
+
+    const parseFile = useCallback(async (file: File, pwd?: string) => {
+        setIsLoading(true);
+        setError(null);
+
+        try {
+            const parsed = await parseMpesaStatement(file, pwd);
+            setStatement(parsed);
+
+            // Mark all as initially unselected
+            const txs = parsed.transactions.map(t => ({ ...t, selected: false }));
+            setTransactions(txs);
+            setFilteredTransactions(txs);
+            setNeedsPassword(false);
+            setPendingFile(null);
+            setPassword('');
+            setStep('review');
+        } catch (err: any) {
+            console.error('Failed to parse statement:', err);
+            if (err.message === 'PASSWORD_REQUIRED') {
+                setNeedsPassword(true);
+                setPendingFile(file);
+                setError('This PDF is password-protected. Please enter your National ID.');
+            } else {
+                setError('Failed to parse the PDF. Please ensure it is a valid M-Pesa statement.');
+            }
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
+
     const handleFileUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (!file) return;
@@ -52,25 +87,13 @@ export function StatementImport({ onComplete, onBack }: StatementImportProps) {
             return;
         }
 
-        setIsLoading(true);
-        setError(null);
+        await parseFile(file);
+    }, [parseFile]);
 
-        try {
-            const parsed = await parseMpesaStatement(file);
-            setStatement(parsed);
-
-            // Mark all as initially unselected
-            const txs = parsed.transactions.map(t => ({ ...t, selected: false }));
-            setTransactions(txs);
-            setFilteredTransactions(txs);
-            setStep('review');
-        } catch (err) {
-            console.error('Failed to parse statement:', err);
-            setError('Failed to parse the PDF. Please ensure it is a valid M-Pesa statement.');
-        } finally {
-            setIsLoading(false);
-        }
-    }, []);
+    const handlePasswordSubmit = useCallback(async () => {
+        if (!pendingFile || !password) return;
+        await parseFile(pendingFile, password);
+    }, [pendingFile, password, parseFile]);
 
     const applyFilters = useCallback(() => {
         let filtered = [...transactions];
@@ -219,23 +242,59 @@ export function StatementImport({ onComplete, onBack }: StatementImportProps) {
                         Upload your M-Pesa PDF statement to import transactions
                     </p>
 
-                    <label className="upload-btn">
-                        <Upload size={20} />
-                        <span>Choose PDF File</span>
-                        <input
-                            type="file"
-                            accept=".pdf"
-                            onChange={handleFileUpload}
-                            disabled={isLoading}
-                        />
-                    </label>
+                    {!needsPassword ? (
+                        <label className="upload-btn">
+                            <Upload size={20} />
+                            <span>Choose PDF File</span>
+                            <input
+                                type="file"
+                                accept=".pdf"
+                                onChange={handleFileUpload}
+                                disabled={isLoading}
+                            />
+                        </label>
+                    ) : (
+                        <div className="password-section">
+                            <p className="password-hint">
+                                M-Pesa statements are protected with your National ID number
+                            </p>
+                            <input
+                                type="password"
+                                className="password-input"
+                                placeholder="Enter National ID"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && handlePasswordSubmit()}
+                            />
+                            <button
+                                className="primary-btn"
+                                onClick={handlePasswordSubmit}
+                                disabled={!password || isLoading}
+                            >
+                                {isLoading ? 'Unlocking...' : 'Unlock PDF'}
+                            </button>
+                            <button
+                                className="back-link"
+                                onClick={() => {
+                                    setNeedsPassword(false);
+                                    setPendingFile(null);
+                                    setPassword('');
+                                    setError(null);
+                                }}
+                            >
+                                Try different file
+                            </button>
+                        </div>
+                    )}
 
-                    {isLoading && <p className="loading-text">Parsing statement...</p>}
+                    {isLoading && !needsPassword && <p className="loading-text">Parsing statement...</p>}
                     {error && <p className="error-text">{error}</p>}
 
-                    <button className="back-link" onClick={onBack}>
-                        ← Back to Record Payment
-                    </button>
+                    {!needsPassword && (
+                        <button className="back-link" onClick={onBack}>
+                            ← Back to Record Payment
+                        </button>
+                    )}
                 </div>
             )}
 
