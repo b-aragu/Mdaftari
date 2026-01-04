@@ -204,7 +204,7 @@ function parseStatementText(text: string): ParsedStatement {
 
         // If we have a current transaction, collect additional data
         if (currentTransaction) {
-            // Check for amounts
+            // Check for amounts on standalone lines
             if (amountPattern.test(trimmed)) {
                 const amount = parseFloat(trimmed.replace(/,/g, ''));
                 if (!isNaN(amount)) {
@@ -213,8 +213,19 @@ function parseStatementText(text: string): ParsedStatement {
                 continue;
             }
 
-            // Check for status keywords (skip them as standalone)
-            if (trimmed === 'Completed' || trimmed === 'Pending' || trimmed === 'Failed') {
+            // Check for lines starting with status (e.g., "Completed   -20.00   1,566.31")
+            // These lines contain the amounts we need!
+            if (trimmed.startsWith('Completed') || trimmed.startsWith('Pending') || trimmed.startsWith('Failed')) {
+                // Extract all amounts from this line
+                const words = trimmed.split(/\s+/);
+                for (const word of words) {
+                    if (amountPattern.test(word)) {
+                        const amount = parseFloat(word.replace(/,/g, ''));
+                        if (!isNaN(amount)) {
+                            currentTransaction.amounts.push(amount);
+                        }
+                    }
+                }
                 continue;
             }
 
