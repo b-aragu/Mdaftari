@@ -85,84 +85,206 @@ export async function parseMpesaStatement(file: File, password?: string): Promis
 
 /**
  * Parse extracted text into structured data
+ * M-Pesa statement format:
+ * - Receipt No: UA4FL2U92P (letters + numbers)
+ * - Completion Time: 2026-01-04 10:40:37 (YYYY-MM-DD HH:MM:SS)
+ * - Details: Merchant Payment to 5603042 - NYANGARESI RAGIRA WYCLIFFE
+ * - Transaction Status: Completed
+ * - Paid In: amount or empty
+ * - Withdrawn: amount or empty
+ * - Balance: running balance
  */
 function parseStatementText(text: string): ParsedStatement {
     const transactions: StatementTransaction[] = [];
 
     // Extract header info
-    const phoneMatch = text.match(/(?:Mobile|Phone)[:\s]*(\d{10,12})/i);
-    const nameMatch = text.match(/(?:Name|Customer)[:\s]*([A-Z\s]+)/i);
-    const periodMatch = text.match(/(\d{1,2}\s+\w+\s+\d{4})\s*[-–to]+\s*(\d{1,2}\s+\w+\s+\d{4})/i);
+    const phoneMatch = text.match(/Mobile\s*Number[:\s]*(\d{10,12})/i);
+    const nameMatch = text.match(/Customer\s*Name[:\s]*([A-Z\s]+?)(?:\s+\d|Mobile|$)/i);
 
-    // Transaction patterns - M-Pesa format
-    // Receipt No pattern: typically starts with letters followed by numbers
-    const receiptPattern = /([A-Z]{2,4}[A-Z0-9]{6,10})/g;
+    // Period format: "04 Oct 2025 - 04 Jan 2026" or similar
+    const periodMatch = text.match(/Statement\s*Period[:\s]*(\d{1,2}\s+\w+\s+\d{4})\s*[-–]\s*(\d{1,2}\s+\w+\s+\d{4})/i);
 
-    // Date pattern: DD/MM/YYYY HH:MM:SS or similar
-    const datePattern = /(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})\s+(\d{1,2}:\d{2}(?::\d{2})?(?:\s*[AP]M)?)/gi;
+    // Find the DETAILED STATEMENT section
+    const detailedIndex = text.indexOf('DETAILED STATEMENT');
+    if (detailedIndex === -1) {
+        console.warn('Could not find DETAILED STATEMENT section');
+        return {
+            customerName: nameMatch?.[1]?.trim() || 'Unknown',
+            phoneNumber: phoneMatch?.[1] || '',
+            periodStart: periodMatch ? parseDate(periodMatch[1] || '') : new Date(),
+            periodEnd: periodMatch ? parseDate(periodMatch[2] || '') : new Date(),
+            transactions: [],
+            summary: { totalPaidIn: 0, totalPaidOut: 0 },
+        };
+    }
 
-    // Amount pattern: numbers with optional commas and decimals
-    const amountPattern = /(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)/g;
+    // Get text after DETAILED STATEMENT
+    const detailedText = text.substring(detailedIndex);
 
-    // Split text into lines and look for transaction rows
-    const lines = text.split(/\n|\r/);
+    // M-Pesa receipt pattern: starts with 2+ uppercase letters followed by alphanumeric
+    // Date format: YYYY-MM-DD HH:MM:SS
+    const transactionPattern = /([A-Z]{2,}[A-Z0-9]{5,12})\s+(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})\s+(.*?)\s+(Completed|Pending|Failed)\s+([\d,\.]+)?\s*([\d,\.]+)?\s+([\d,\.]+)?/g;
 
-    for (const line of lines) {
-        const receiptMatch = line.match(/([A-Z]{2,4}[A-Z0-9]{6,10})/);
-        if (!receiptMatch) continue;
+    let match;
+    while ((match = transactionPattern.exec(detailedText)) !== null) {
+        const [, receiptNo, dateTimeStr, details, status, paidInStr, withdrawnStr, balanceStr] = match;
 
-        const receiptNo = receiptMatch[1];
+        // Parse date (YYYY-MM-DD HH:MM:SS format)
+        const date = new Date(dateTimeStr.replace(' ', 'T'));
 
-        // Try to extract date
-        const dateMatch = line.match(/(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})\s+(\d{1,2}:\d{2})/);
-        let date = new Date();
-        if (dateMatch) {
-            const dateParts = dateMatch[1].split(/[\/\-]/);
-            const timeParts = dateMatch[2].split(':');
-            // Assume DD/MM/YYYY format
-            date = new Date(
-                parseInt(dateParts[2]) < 100 ? 2000 + parseInt(dateParts[2]) : parseInt(dateParts[2]),
-                parseInt(dateParts[1]) - 1,
-                parseInt(dateParts[0]),
-                parseInt(timeParts[0]),
-                parseInt(timeParts[1])
-            );
-        }
+        // Parse amounts (remove commas)
+        const paidIn = paidInStr ? parseFloat(paidInStr.replace(/,/g, '')) : 0;
+        const withdrawn = withdrawnStr ? parseFloat(withdrawnStr.replace(/,/g, '')) : 0;
+        const balance = balanceStr ? parseFloat(balanceStr.replace(/,/g, '')) : 0;
 
-        // Extract transaction type and counterparty
-        const { type, counterparty, details } = extractTransactionInfo(line);
-
-        // Extract amounts
-        const amounts = extractAmounts(line);
+        // Extract counterparty and type from details
+        const { type, counterparty } = extractTransactionInfo(details);
 
         transactions.push({
             receiptNo,
             date,
-            details: details || line.substring(0, 100),
+            details,
             counterparty,
             type,
-            paidIn: amounts.paidIn,
-            paidOut: amounts.paidOut,
-            balance: amounts.balance,
+            paidIn,
+            paidOut: withdrawn,
+            balance,
             selected: false,
         });
+    }
+
+    // If regex didn't work, try line-by-line parsing
+    if (transactions.length === 0) {
+        console.log('Regex parsing failed, trying line-by-line...');
+
+        // Split by receipt number pattern and parse each chunk
+        const lines = detailedText.split(/\s+/);
+        let currentReceipt = '';
+        let currentDate = '';
+        let collecting = false;
+        let detailsBuffer: string[] = [];
+
+        for (let i = 0; i < lines.length; i++) {
+            const word = lines[i];
+
+            // Check for receipt number (starts with 2+ uppercase, 8-12 chars total)
+            if (/^[A-Z]{2,}[A-Z0-9]{5,}$/.test(word) && word.length >= 8 && word.length <= 12) {
+                // If we have a previous receipt, save it
+                if (currentReceipt && currentDate) {
+                    const details = detailsBuffer.join(' ');
+                    const { type, counterparty } = extractTransactionInfo(details);
+
+                    // Look for amounts in the remaining buffer
+                    const amounts = extractAmountsFromArray(detailsBuffer);
+
+                    transactions.push({
+                        receiptNo: currentReceipt,
+                        date: new Date(currentDate.replace(' ', 'T')),
+                        details,
+                        counterparty,
+                        type,
+                        paidIn: amounts.paidIn,
+                        paidOut: amounts.paidOut,
+                        balance: amounts.balance,
+                        selected: false,
+                    });
+                }
+
+                currentReceipt = word;
+                detailsBuffer = [];
+                collecting = true;
+            }
+            // Check for date (YYYY-MM-DD)
+            else if (/^\d{4}-\d{2}-\d{2}$/.test(word)) {
+                // Next word might be time
+                const nextWord = lines[i + 1] || '';
+                if (/^\d{2}:\d{2}:\d{2}$/.test(nextWord)) {
+                    currentDate = `${word} ${nextWord}`;
+                    i++; // Skip time word
+                } else {
+                    currentDate = word + ' 00:00:00';
+                }
+            }
+            else if (collecting && word !== 'Receipt' && word !== 'No.' && word !== 'Completion' && word !== 'Time' && word !== 'Transaction' && word !== 'Status') {
+                detailsBuffer.push(word);
+            }
+        }
+
+        // Don't forget the last transaction
+        if (currentReceipt && currentDate) {
+            const details = detailsBuffer.join(' ');
+            const { type, counterparty } = extractTransactionInfo(details);
+            const amounts = extractAmountsFromArray(detailsBuffer);
+
+            transactions.push({
+                receiptNo: currentReceipt,
+                date: new Date(currentDate.replace(' ', 'T')),
+                details,
+                counterparty,
+                type,
+                paidIn: amounts.paidIn,
+                paidOut: amounts.paidOut,
+                balance: amounts.balance,
+                selected: false,
+            });
+        }
     }
 
     // Calculate summary
     const totalPaidIn = transactions.reduce((sum, t) => sum + t.paidIn, 0);
     const totalPaidOut = transactions.reduce((sum, t) => sum + t.paidOut, 0);
 
+    console.log(`Parsed ${transactions.length} transactions`);
+
     return {
         customerName: nameMatch?.[1]?.trim() || 'Unknown',
         phoneNumber: phoneMatch?.[1] || '',
-        periodStart: periodMatch ? parseDate(periodMatch[1]) : new Date(),
-        periodEnd: periodMatch ? parseDate(periodMatch[2]) : new Date(),
+        periodStart: periodMatch ? parseDate(periodMatch[1] || '') : new Date(),
+        periodEnd: periodMatch ? parseDate(periodMatch[2] || '') : new Date(),
         transactions,
         summary: {
             totalPaidIn,
             totalPaidOut,
         },
     };
+}
+
+/**
+ * Extract amounts from word array
+ */
+function extractAmountsFromArray(words: string[]): { paidIn: number; paidOut: number; balance: number } {
+    const amounts: number[] = [];
+
+    for (const word of words) {
+        // Match numbers with optional commas and decimals
+        const cleanWord = word.replace(/[^\d,\.]/g, '');
+        if (/^\d{1,3}(,\d{3})*(\.\d{2})?$/.test(cleanWord) || /^\d+(\.\d{2})?$/.test(cleanWord)) {
+            const amount = parseFloat(cleanWord.replace(/,/g, ''));
+            if (!isNaN(amount) && amount > 0) {
+                amounts.push(amount);
+            }
+        }
+    }
+
+    // Last 3 amounts are typically: Paid In, Withdrawn, Balance
+    // Or last 2 might be: amount and balance
+    if (amounts.length >= 3) {
+        return {
+            paidIn: amounts[amounts.length - 3] || 0,
+            paidOut: amounts[amounts.length - 2] || 0,
+            balance: amounts[amounts.length - 1] || 0,
+        };
+    } else if (amounts.length === 2) {
+        return {
+            paidIn: amounts[0] || 0,
+            paidOut: 0,
+            balance: amounts[1] || 0,
+        };
+    } else if (amounts.length === 1) {
+        return { paidIn: 0, paidOut: 0, balance: amounts[0] || 0 };
+    }
+
+    return { paidIn: 0, paidOut: 0, balance: 0 };
 }
 
 /**
