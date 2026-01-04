@@ -55,11 +55,38 @@ export async function parseMpesaStatement(file: File, password?: string): Promis
         for (let i = 1; i <= pdf.numPages; i++) {
             const page = await pdf.getPage(i);
             const textContent = await page.getTextContent();
-            const pageText = textContent.items
-                .map((item: any) => item.str)
-                .join(' ');
-            fullText += pageText + '\n';
+
+            // Try to preserve some structure by checking transforms
+            let lastY = 0;
+            const pageLines: string[] = [];
+            let currentLine = '';
+
+            for (const item of textContent.items as any[]) {
+                const y = item.transform ? item.transform[5] : 0;
+
+                // If Y position changed significantly, it's a new line
+                if (lastY !== 0 && Math.abs(y - lastY) > 5) {
+                    if (currentLine.trim()) {
+                        pageLines.push(currentLine.trim());
+                    }
+                    currentLine = item.str;
+                } else {
+                    currentLine += ' ' + item.str;
+                }
+                lastY = y;
+            }
+
+            if (currentLine.trim()) {
+                pageLines.push(currentLine.trim());
+            }
+
+            fullText += pageLines.join('\n') + '\n';
         }
+
+        // Debug: log first 2000 chars to see structure
+        console.log('=== PDF TEXT SAMPLE (first 2000 chars) ===');
+        console.log(fullText.substring(0, 2000));
+        console.log('=== END SAMPLE ===');
 
         return parseStatementText(fullText);
     } catch (error: any) {
@@ -91,7 +118,7 @@ export async function parseMpesaStatement(file: File, password?: string): Promis
  * - Details: Merchant Payment to 5603042 - NYANGARESI RAGIRA WYCLIFFE
  * - Transaction Status: Completed
  * - Paid In: amount or empty
- * - Withdrawn: amount or empty
+ * - Withdrawn: amount or empty  
  * - Balance: running balance
  */
 function parseStatementText(text: string): ParsedStatement {
@@ -99,12 +126,10 @@ function parseStatementText(text: string): ParsedStatement {
 
     // Extract header info
     const phoneMatch = text.match(/Mobile\s*Number[:\s]*(\d{10,12})/i);
-    const nameMatch = text.match(/Customer\s*Name[:\s]*([A-Z\s]+?)(?:\s+\d|Mobile|$)/i);
-
-    // Period format: "04 Oct 2025 - 04 Jan 2026" or similar
+    const nameMatch = text.match(/Customer\s*Name[:\s]*([A-Z\s]+?)(?=\s+\d|Mobile|$)/i);
     const periodMatch = text.match(/Statement\s*Period[:\s]*(\d{1,2}\s+\w+\s+\d{4})\s*[-–]\s*(\d{1,2}\s+\w+\s+\d{4})/i);
 
-    // Find the DETAILED STATEMENT section
+    // Find DETAILED STATEMENT section
     const detailedIndex = text.indexOf('DETAILED STATEMENT');
     if (detailedIndex === -1) {
         console.warn('Could not find DETAILED STATEMENT section');
@@ -118,116 +143,84 @@ function parseStatementText(text: string): ParsedStatement {
         };
     }
 
-    // Get text after DETAILED STATEMENT
+    // Get text after DETAILED STATEMENT, skip header row
     const detailedText = text.substring(detailedIndex);
+    const lines = detailedText.split('\n');
 
-    // M-Pesa receipt pattern: starts with 2+ uppercase letters followed by alphanumeric
-    // Date format: YYYY-MM-DD HH:MM:SS
-    const transactionPattern = /([A-Z]{2,}[A-Z0-9]{5,12})\s+(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})\s+(.*?)\s+(Completed|Pending|Failed)\s+([\d,\.]+)?\s*([\d,\.]+)?\s+([\d,\.]+)?/g;
+    // Receipt pattern: 2+ uppercase letters followed by alphanumeric, 8-12 chars total
+    const receiptPattern = /^([A-Z]{2,}[A-Z0-9]{5,})$/;
+    // Date pattern: YYYY-MM-DD HH:MM:SS
+    const dateTimePattern = /^(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})$/;
+    // Amount pattern: number with optional comma separators and decimals
+    const amountPattern = /^-?[\d,]+\.\d{2}$/;
 
-    let match;
-    while ((match = transactionPattern.exec(detailedText)) !== null) {
-        const [, receiptNo, dateTimeStr, details, status, paidInStr, withdrawnStr, balanceStr] = match;
+    let currentTransaction: {
+        receiptNo: string;
+        date: Date | null;
+        detailParts: string[];
+        amounts: number[];
+    } | null = null;
 
-        // Parse date (YYYY-MM-DD HH:MM:SS format)
-        const date = new Date(dateTimeStr.replace(' ', 'T'));
+    for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed) continue;
 
-        // Parse amounts (remove commas)
-        const paidIn = paidInStr ? parseFloat(paidInStr.replace(/,/g, '')) : 0;
-        const withdrawn = withdrawnStr ? parseFloat(withdrawnStr.replace(/,/g, '')) : 0;
-        const balance = balanceStr ? parseFloat(balanceStr.replace(/,/g, '')) : 0;
+        // Skip header row
+        if (trimmed.includes('Receipt No.') || trimmed.includes('Completion Time')) {
+            continue;
+        }
 
-        // Extract counterparty and type from details
-        const { type, counterparty } = extractTransactionInfo(details);
+        // Check if this line starts a new transaction (receipt number)
+        const receiptMatch = trimmed.match(receiptPattern);
+        if (receiptMatch) {
+            // Save previous transaction if exists
+            if (currentTransaction && currentTransaction.receiptNo && currentTransaction.date) {
+                const tx = finalizeTransaction(currentTransaction);
+                if (tx) transactions.push(tx);
+            }
 
-        transactions.push({
-            receiptNo,
-            date,
-            details,
-            counterparty,
-            type,
-            paidIn,
-            paidOut: withdrawn,
-            balance,
-            selected: false,
-        });
+            // Start new transaction
+            currentTransaction = {
+                receiptNo: receiptMatch[1],
+                date: null,
+                detailParts: [],
+                amounts: [],
+            };
+            continue;
+        }
+
+        // If we have a current transaction, collect its data
+        if (currentTransaction) {
+            // Check for date/time
+            const dateMatch = trimmed.match(dateTimePattern);
+            if (dateMatch) {
+                currentTransaction.date = new Date(dateMatch[1].replace(' ', 'T'));
+                continue;
+            }
+
+            // Check for amounts
+            if (amountPattern.test(trimmed)) {
+                const amount = parseFloat(trimmed.replace(/,/g, ''));
+                if (!isNaN(amount)) {
+                    currentTransaction.amounts.push(amount);
+                }
+                continue;
+            }
+
+            // Check for status keywords (skip them)
+            if (trimmed === 'Completed' || trimmed === 'Pending' || trimmed === 'Failed') {
+                continue;
+            }
+
+            // Everything else is part of details
+            currentTransaction.detailParts.push(trimmed);
+        }
     }
 
-    // If regex didn't work, try line-by-line parsing
-    if (transactions.length === 0) {
-        console.log('Regex parsing failed, trying line-by-line...');
-
-        // Split by receipt number pattern and parse each chunk
-        const lines = detailedText.split(/\s+/);
-        let currentReceipt = '';
-        let currentDate = '';
-        let collecting = false;
-        let detailsBuffer: string[] = [];
-
-        for (let i = 0; i < lines.length; i++) {
-            const word = lines[i];
-
-            // Check for receipt number (starts with 2+ uppercase, 8-12 chars total)
-            if (/^[A-Z]{2,}[A-Z0-9]{5,}$/.test(word) && word.length >= 8 && word.length <= 12) {
-                // If we have a previous receipt, save it
-                if (currentReceipt && currentDate) {
-                    const details = detailsBuffer.join(' ');
-                    const { type, counterparty } = extractTransactionInfo(details);
-
-                    // Look for amounts in the remaining buffer
-                    const amounts = extractAmountsFromArray(detailsBuffer);
-
-                    transactions.push({
-                        receiptNo: currentReceipt,
-                        date: new Date(currentDate.replace(' ', 'T')),
-                        details,
-                        counterparty,
-                        type,
-                        paidIn: amounts.paidIn,
-                        paidOut: amounts.paidOut,
-                        balance: amounts.balance,
-                        selected: false,
-                    });
-                }
-
-                currentReceipt = word;
-                detailsBuffer = [];
-                collecting = true;
-            }
-            // Check for date (YYYY-MM-DD)
-            else if (/^\d{4}-\d{2}-\d{2}$/.test(word)) {
-                // Next word might be time
-                const nextWord = lines[i + 1] || '';
-                if (/^\d{2}:\d{2}:\d{2}$/.test(nextWord)) {
-                    currentDate = `${word} ${nextWord}`;
-                    i++; // Skip time word
-                } else {
-                    currentDate = word + ' 00:00:00';
-                }
-            }
-            else if (collecting && word !== 'Receipt' && word !== 'No.' && word !== 'Completion' && word !== 'Time' && word !== 'Transaction' && word !== 'Status') {
-                detailsBuffer.push(word);
-            }
-        }
-
-        // Don't forget the last transaction
-        if (currentReceipt && currentDate) {
-            const details = detailsBuffer.join(' ');
-            const { type, counterparty } = extractTransactionInfo(details);
-            const amounts = extractAmountsFromArray(detailsBuffer);
-
-            transactions.push({
-                receiptNo: currentReceipt,
-                date: new Date(currentDate.replace(' ', 'T')),
-                details,
-                counterparty,
-                type,
-                paidIn: amounts.paidIn,
-                paidOut: amounts.paidOut,
-                balance: amounts.balance,
-                selected: false,
-            });
-        }
+    // Don't forget the last transaction
+    if (currentTransaction && currentTransaction.receiptNo && currentTransaction.date) {
+        const tx = finalizeTransaction(currentTransaction);
+        if (tx) transactions.push(tx);
     }
 
     // Calculate summary
@@ -242,10 +235,54 @@ function parseStatementText(text: string): ParsedStatement {
         periodStart: periodMatch ? parseDate(periodMatch[1] || '') : new Date(),
         periodEnd: periodMatch ? parseDate(periodMatch[2] || '') : new Date(),
         transactions,
-        summary: {
-            totalPaidIn,
-            totalPaidOut,
-        },
+        summary: { totalPaidIn, totalPaidOut },
+    };
+}
+
+/**
+ * Finalize a transaction from collected parts
+ */
+function finalizeTransaction(data: {
+    receiptNo: string;
+    date: Date | null;
+    detailParts: string[];
+    amounts: number[];
+}): StatementTransaction | null {
+    if (!data.date) return null;
+
+    const details = data.detailParts.join(' ').trim();
+    const { type, counterparty } = extractTransactionInfo(details);
+
+    // Parse amounts: 
+    // - If 2 amounts: first is paidIn/withdrawn, second is balance
+    // - If 1 amount: it's the balance, check details for money direction
+    let paidIn = 0;
+    let paidOut = 0;
+    let balance = 0;
+
+    if (data.amounts.length >= 2) {
+        const amount = data.amounts[0];
+        balance = data.amounts[data.amounts.length - 1];
+
+        if (amount > 0) {
+            paidIn = amount;
+        } else {
+            paidOut = Math.abs(amount);
+        }
+    } else if (data.amounts.length === 1) {
+        balance = data.amounts[0];
+    }
+
+    return {
+        receiptNo: data.receiptNo,
+        date: data.date,
+        details,
+        counterparty,
+        type,
+        paidIn,
+        paidOut,
+        balance: Math.abs(balance),
+        selected: false,
     };
 }
 
