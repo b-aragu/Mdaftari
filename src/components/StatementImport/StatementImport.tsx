@@ -259,6 +259,34 @@ export function StatementImport({ onComplete, onBack }: StatementImportProps) {
     const uniquePeople = statement ? getUniqueCounterparties(transactions) : [];
     const selectedCount = filteredTransactions.filter(t => t.selected).length;
 
+    // Compute date range bounds based on filtered person's transactions
+    const dateRangeBounds = (() => {
+        // Filter by person first (before other filters) to get their date range
+        let personTransactions = transactions;
+        if (selectedPerson !== 'all') {
+            personTransactions = filterByCounterparty(transactions, selectedPerson);
+        }
+
+        if (personTransactions.length === 0) {
+            return { minDate: '', maxDate: '' };
+        }
+
+        const dates = personTransactions.map(t => t.date.getTime());
+        const minTime = Math.min(...dates);
+        const maxTime = Math.max(...dates);
+
+        // Format as YYYY-MM-DD for date input
+        const formatDateInput = (time: number) => {
+            const d = new Date(time);
+            return d.toISOString().split('T')[0];
+        };
+
+        return {
+            minDate: formatDateInput(minTime),
+            maxDate: formatDateInput(maxTime),
+        };
+    })();
+
     const formatDate = (date: Date) => {
         return new Intl.DateTimeFormat('en-KE', {
             day: 'numeric',
@@ -444,6 +472,8 @@ export function StatementImport({ onComplete, onBack }: StatementImportProps) {
                                     type="date"
                                     className="filter-input filter-input--small"
                                     value={startDate}
+                                    min={dateRangeBounds.minDate}
+                                    max={dateRangeBounds.maxDate}
                                     onChange={(e) => {
                                         setStartDate(e.target.value);
                                         setTimeout(applyFilters, 0);
@@ -454,6 +484,8 @@ export function StatementImport({ onComplete, onBack }: StatementImportProps) {
                                     type="date"
                                     className="filter-input filter-input--small"
                                     value={endDate}
+                                    min={dateRangeBounds.minDate}
+                                    max={dateRangeBounds.maxDate}
                                     onChange={(e) => {
                                         setEndDate(e.target.value);
                                         setTimeout(applyFilters, 0);
