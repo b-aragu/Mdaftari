@@ -256,12 +256,12 @@ export function StatementImport({ onComplete, onBack }: StatementImportProps) {
                     ) : (
                         <div className="password-section">
                             <p className="password-hint">
-                                M-Pesa statements are protected with your National ID number
+                                Enter the unlock code provided by Safaricom
                             </p>
                             <input
                                 type="password"
                                 className="password-input"
-                                placeholder="Enter National ID"
+                                placeholder="Enter unlock code"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 onKeyDown={(e) => e.key === 'Enter' && handlePasswordSubmit()}

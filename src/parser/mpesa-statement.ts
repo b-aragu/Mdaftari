@@ -5,9 +5,10 @@
  */
 
 import * as pdfjsLib from 'pdfjs-dist';
+import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 
-// Set worker source
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+// Set worker source from local package
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
 export interface StatementTransaction {
     receiptNo: string;
