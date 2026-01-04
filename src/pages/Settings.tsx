@@ -6,7 +6,6 @@ import { Sun, Moon, Trash2, Download, Shield, ChevronRight } from 'lucide-react'
 import { useOutdoorMode } from '../hooks';
 import { clearAllData, exportAllData } from '../storage';
 import './Settings.css';
-import './Settings.css';
 
 export function SettingsPage() {
     const { isOutdoorMode, toggleOutdoorMode } = useOutdoorMode();

@@ -61,7 +61,118 @@ export function ReportsPage() {
     };
 
     const handleExportPDF = () => {
-        alert('PDF export coming soon!');
+        // Generate printable HTML
+        const currentDate = new Date().toLocaleDateString('en-KE', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+
+        const htmlContent = `
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Mdaftari Statement - ${currentDate}</title>
+    <style>
+        body { 
+            font-family: system-ui, -apple-system, sans-serif; 
+            padding: 40px; 
+            max-width: 800px; 
+            margin: 0 auto;
+            color: #000;
+        }
+        h1 { font-size: 24px; margin-bottom: 8px; }
+        .subtitle { color: #666; margin-bottom: 32px; }
+        .summary { 
+            display: flex; 
+            gap: 24px; 
+            margin-bottom: 32px;
+        }
+        .summary-card {
+            flex: 1;
+            border: 2px solid #000;
+            padding: 16px;
+        }
+        .summary-label { 
+            font-size: 12px; 
+            text-transform: uppercase; 
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        .summary-value { font-size: 24px; font-weight: bold; }
+        .received { color: #0B6E4F; }
+        .owed { color: #B91C1C; }
+        .stats {
+            border: 2px solid #000;
+            margin-bottom: 32px;
+        }
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 16px;
+            border-bottom: 1px solid #000;
+        }
+        .stat-row:last-child { border-bottom: none; }
+        .footer {
+            margin-top: 48px;
+            text-align: center;
+            color: #666;
+            font-size: 12px;
+        }
+        @media print {
+            body { padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+    <h1>Mdaftari Statement</h1>
+    <p class="subtitle">Generated on ${currentDate}</p>
+    
+    <div class="summary">
+        <div class="summary-card">
+            <div class="summary-label">Total Received</div>
+            <div class="summary-value received">KES ${formatMoney(totalReceived)}</div>
+        </div>
+        <div class="summary-card">
+            <div class="summary-label">Still Owed to You</div>
+            <div class="summary-value owed">KES ${formatMoney(totalOwed)}</div>
+        </div>
+    </div>
+    
+    <div class="stats">
+        <div class="stat-row">
+            <span>Payments Recorded</span>
+            <strong>${transactions.length}</strong>
+        </div>
+        <div class="stat-row">
+            <span>Collection Rate</span>
+            <strong>${totalReceived + totalOwed > 0
+                ? Math.round((totalReceived / (totalReceived + totalOwed)) * 100) + '%'
+                : '—'
+            }</strong>
+        </div>
+        <div class="stat-row">
+            <span>Outstanding Debt</span>
+            <strong class="owed">${totalOwed > 0 ? 'KES ' + formatMoney(totalOwed) : 'None'}</strong>
+        </div>
+    </div>
+    
+    <div class="footer">
+        <p><strong>Mdaftari</strong> - Track Every Shilling</p>
+        <p>Data stored locally on your device</p>
+    </div>
+    
+    <script>window.print();</script>
+</body>
+</html>
+        `;
+
+        // Open in new window for printing
+        const printWindow = window.open('', '_blank');
+        if (printWindow) {
+            printWindow.document.write(htmlContent);
+            printWindow.document.close();
+        }
     };
 
     return (
