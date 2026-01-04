@@ -147,16 +147,16 @@ function parseStatementText(text: string): ParsedStatement {
     const detailedText = text.substring(detailedIndex);
     const lines = detailedText.split('\n');
 
-    // Receipt pattern: 2+ uppercase letters followed by alphanumeric, 8-12 chars total
-    const receiptPattern = /^([A-Z]{2,}[A-Z0-9]{5,})$/;
-    // Date pattern: YYYY-MM-DD HH:MM:SS
-    const dateTimePattern = /^(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})$/;
+    // Pattern to detect a line that starts with a receipt number
+    // Format: "UA4FL2U92P   2026-01-04 10:40:37   Merchant Payment to..."
+    const transactionLinePattern = /^([A-Z]{2,}[A-Z0-9]{5,})\s+(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})\s+(.*)$/;
+
     // Amount pattern: number with optional comma separators and decimals
     const amountPattern = /^-?[\d,]+\.\d{2}$/;
 
     let currentTransaction: {
         receiptNo: string;
-        date: Date | null;
+        date: Date;
         detailParts: string[];
         amounts: number[];
     } | null = null;
@@ -166,38 +166,44 @@ function parseStatementText(text: string): ParsedStatement {
         if (!trimmed) continue;
 
         // Skip header row
-        if (trimmed.includes('Receipt No.') || trimmed.includes('Completion Time')) {
+        if (trimmed.includes('Receipt No.') || trimmed.includes('Completion Time') || trimmed === 'DETAILED STATEMENT') {
             continue;
         }
 
-        // Check if this line starts a new transaction (receipt number)
-        const receiptMatch = trimmed.match(receiptPattern);
-        if (receiptMatch) {
+        // Check if this line starts a new transaction
+        // Format: "RECEIPT   DATE TIME   Description..."
+        const txMatch = trimmed.match(transactionLinePattern);
+        if (txMatch) {
             // Save previous transaction if exists
-            if (currentTransaction && currentTransaction.receiptNo && currentTransaction.date) {
+            if (currentTransaction) {
                 const tx = finalizeTransaction(currentTransaction);
                 if (tx) transactions.push(tx);
             }
 
             // Start new transaction
+            const restOfLine = txMatch[3] || '';
             currentTransaction = {
-                receiptNo: receiptMatch[1],
-                date: null,
-                detailParts: [],
+                receiptNo: txMatch[1],
+                date: new Date(txMatch[2].replace(' ', 'T')),
+                detailParts: restOfLine ? [restOfLine] : [],
                 amounts: [],
             };
+
+            // Check if there are amounts at the end of this line
+            const words = restOfLine.split(/\s+/);
+            for (const word of words) {
+                if (amountPattern.test(word)) {
+                    const amount = parseFloat(word.replace(/,/g, ''));
+                    if (!isNaN(amount)) {
+                        currentTransaction.amounts.push(amount);
+                    }
+                }
+            }
             continue;
         }
 
-        // If we have a current transaction, collect its data
+        // If we have a current transaction, collect additional data
         if (currentTransaction) {
-            // Check for date/time
-            const dateMatch = trimmed.match(dateTimePattern);
-            if (dateMatch) {
-                currentTransaction.date = new Date(dateMatch[1].replace(' ', 'T'));
-                continue;
-            }
-
             // Check for amounts
             if (amountPattern.test(trimmed)) {
                 const amount = parseFloat(trimmed.replace(/,/g, ''));
@@ -207,12 +213,12 @@ function parseStatementText(text: string): ParsedStatement {
                 continue;
             }
 
-            // Check for status keywords (skip them)
+            // Check for status keywords (skip them as standalone)
             if (trimmed === 'Completed' || trimmed === 'Pending' || trimmed === 'Failed') {
                 continue;
             }
 
-            // Everything else is part of details
+            // Everything else is continuation of details
             currentTransaction.detailParts.push(trimmed);
         }
     }
@@ -244,12 +250,10 @@ function parseStatementText(text: string): ParsedStatement {
  */
 function finalizeTransaction(data: {
     receiptNo: string;
-    date: Date | null;
+    date: Date;
     detailParts: string[];
     amounts: number[];
-}): StatementTransaction | null {
-    if (!data.date) return null;
-
+}): StatementTransaction {
     const details = data.detailParts.join(' ').trim();
     const { type, counterparty } = extractTransactionInfo(details);
 
