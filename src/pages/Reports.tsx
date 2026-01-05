@@ -4,7 +4,7 @@
 
 import { useState, useEffect } from 'react';
 import { Download, TrendingUp, TrendingDown } from 'lucide-react';
-import { getTransactionsByUser, getLedgerEntriesByTransaction, exportAllData } from '../storage';
+import { getTransactionsByUser, getLedgerEntriesByTransaction } from '../storage';
 import type { Transaction, LedgerEntry } from '../ledger/types';
 import './Reports.css';
 
@@ -14,6 +14,7 @@ export function ReportsPage() {
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [ledgerEntries, setLedgerEntries] = useState<LedgerEntry[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [dateRange, setDateRange] = useState<'week' | 'month' | 'all'>('month');
 
     const currentMonth = new Intl.DateTimeFormat('en-KE', { month: 'long', year: 'numeric' }).format(new Date());
 
@@ -39,25 +40,100 @@ export function ReportsPage() {
         loadData();
     }, []);
 
-    // Calculate totals - same logic as Home page
-    const totalReceived = ledgerEntries.reduce((sum, e) => sum + e.amountPaid, 0);
-    const totalOwed = ledgerEntries.reduce((sum, e) => sum + e.amountOwed, 0);
+    // Filter transactions by date range
+    const now = new Date();
+    const filterDate = (() => {
+        if (dateRange === 'week') {
+            const weekAgo = new Date(now);
+            weekAgo.setDate(weekAgo.getDate() - 7);
+            return weekAgo;
+        } else if (dateRange === 'month') {
+            const monthAgo = new Date(now);
+            monthAgo.setMonth(monthAgo.getMonth() - 1);
+            return monthAgo;
+        }
+        return null; // 'all'
+    })();
+
+    const filteredTransactions = filterDate
+        ? transactions.filter(tx => tx.parsedData.dateTime >= filterDate)
+        : transactions;
+
+    const filteredTxIds = new Set(filteredTransactions.map(tx => tx.id));
+    const filteredEntries = ledgerEntries.filter(e => filteredTxIds.has(e.transactionId));
+
+    // Calculate totals from filtered data
+    const totalReceived = filteredEntries.reduce((sum, e) => sum + e.amountPaid, 0);
+    const totalOwed = filteredEntries.reduce((sum, e) => sum + e.amountOwed, 0);
+
+    // Per-person breakdown
+    const personBreakdown = (() => {
+        const people: { [name: string]: { name: string; paid: number; owed: number; count: number } } = {};
+        filteredTransactions.forEach(tx => {
+            const name = tx.parsedData.counterparty.name || tx.parsedData.counterparty.phone || 'Unknown';
+            if (!people[name]) {
+                people[name] = { name, paid: 0, owed: 0, count: 0 };
+            }
+            const entry = filteredEntries.find(e => e.transactionId === tx.id);
+            people[name].paid += entry?.amountPaid || tx.parsedData.amount;
+            people[name].owed += entry?.amountOwed || 0;
+            people[name].count += 1;
+        });
+        return Object.values(people).sort((a, b) => b.paid - a.paid);
+    })();
+
+    // Monthly trend data (last 6 months)
+    const monthlyTrend = (() => {
+        const months: { [key: string]: { label: string; total: number } } = {};
+        const now = new Date();
+
+        // Initialize last 6 months
+        for (let i = 5; i >= 0; i--) {
+            const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+            const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+            const label = new Intl.DateTimeFormat('en-KE', { month: 'short' }).format(d);
+            months[key] = { label, total: 0 };
+        }
+
+        // Sum transactions by month
+        transactions.forEach(tx => {
+            const date = tx.parsedData.dateTime;
+            const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+            if (months[key]) {
+                const entry = ledgerEntries.find(e => e.transactionId === tx.id);
+                months[key].total += entry?.amountPaid || tx.parsedData.amount;
+            }
+        });
+
+        return Object.values(months);
+    })();
 
     const formatMoney = (amount: number) => amount.toLocaleString('en-KE');
 
-    const handleExportCSV = async () => {
-        try {
-            const data = await exportAllData();
-            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `mdaftari-export-${new Date().toISOString().split('T')[0]}.json`;
-            a.click();
-            URL.revokeObjectURL(url);
-        } catch (err) {
-            alert('Failed to export data');
-        }
+    const handleExportCSV = () => {
+        // Generate proper CSV
+        const header = 'Date,Name,Phone,Type,Amount,Paid,Owed,Transaction Code\n';
+        const rows = transactions.map(tx => {
+            const entry = ledgerEntries.find(e => e.transactionId === tx.id);
+            const date = tx.parsedData.dateTime.toISOString().split('T')[0];
+            const name = (tx.parsedData.counterparty.name || '').replace(/,/g, ' ');
+            const phone = tx.parsedData.counterparty.phone || '';
+            const type = tx.parsedData.type;
+            const amount = tx.parsedData.amount;
+            const paid = entry?.amountPaid || amount;
+            const owed = entry?.amountOwed || 0;
+            const code = tx.parsedData.transactionCode;
+            return `${date},"${name}",${phone},${type},${amount},${paid},${owed},${code}`;
+        }).join('\n');
+
+        const csv = header + rows;
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `mdaftari-export-${new Date().toISOString().split('T')[0]}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
     };
 
     const handleExportPDF = () => {
@@ -183,6 +259,19 @@ export function ReportsPage() {
             </header>
 
             <div className="reports-content">
+                {/* Date Range Filter */}
+                <div className="date-filter">
+                    {(['week', 'month', 'all'] as const).map((range) => (
+                        <button
+                            key={range}
+                            className={`filter-btn ${dateRange === range ? 'filter-btn--active' : ''}`}
+                            onClick={() => setDateRange(range)}
+                        >
+                            {range === 'week' ? 'This Week' : range === 'month' ? 'This Month' : 'All Time'}
+                        </button>
+                    ))}
+                </div>
+
                 {/* Summary Cards - Connected to real data */}
                 <div className="summary-grid">
                     <div className="summary-card">
@@ -210,11 +299,31 @@ export function ReportsPage() {
                     </div>
                 </div>
 
+                {/* Monthly Trend Chart */}
+                <section className="trend-section">
+                    <h2 className="section-title">6-Month Trend</h2>
+                    <div className="trend-chart">
+                        {monthlyTrend.map((m, idx) => {
+                            const maxTotal = Math.max(...monthlyTrend.map(x => x.total));
+                            const heightPercent = maxTotal > 0 ? (m.total / maxTotal) * 100 : 0;
+                            return (
+                                <div key={idx} className="trend-bar-container">
+                                    <div
+                                        className="trend-bar"
+                                        style={{ height: `${Math.max(heightPercent, 3)}%` }}
+                                    />
+                                    <span className="trend-bar-label">{m.label}</span>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </section>
+
                 {/* Debt Summary */}
                 <div className="stats-card">
                     <div className="stat-row">
                         <span className="stat-label">Payments Recorded</span>
-                        <span className="stat-value">{transactions.length}</span>
+                        <span className="stat-value">{filteredTransactions.length}</span>
                     </div>
                     <div className="stat-row">
                         <span className="stat-label">Collection Rate</span>
@@ -233,6 +342,31 @@ export function ReportsPage() {
                     </div>
                 </div>
 
+                {/* Per-Person Breakdown */}
+                {personBreakdown.length > 0 && (
+                    <section className="person-breakdown-section">
+                        <h2 className="section-title">Per-Person Breakdown</h2>
+                        <div className="person-table">
+                            <div className="person-table-header">
+                                <span>Name</span>
+                                <span>Payments</span>
+                                <span>Paid</span>
+                                <span>Owed</span>
+                            </div>
+                            {personBreakdown.map((p, idx) => (
+                                <div key={idx} className="person-table-row">
+                                    <span className="person-table-name">{p.name}</span>
+                                    <span className="person-table-count">{p.count}</span>
+                                    <span className="person-table-paid">KES {formatMoney(p.paid)}</span>
+                                    <span className={`person-table-owed ${p.owed > 0 ? 'amount-negative' : ''}`}>
+                                        {p.owed > 0 ? `KES ${formatMoney(p.owed)}` : '—'}
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+                    </section>
+                )}
+
                 {/* Export Section */}
                 <section className="export-section">
                     <h2 className="section-title">Export Data</h2>
@@ -249,8 +383,8 @@ export function ReportsPage() {
                         <button className="export-btn" onClick={handleExportCSV}>
                             <Download size={18} />
                             <div className="export-btn-text">
-                                <span className="export-btn-title">Download JSON</span>
-                                <span className="export-btn-desc">All transactions</span>
+                                <span className="export-btn-title">Download CSV</span>
+                                <span className="export-btn-desc">Spreadsheet format</span>
                             </div>
                         </button>
                     </div>
