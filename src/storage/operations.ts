@@ -86,6 +86,24 @@ export async function transactionCodeExists(code: string): Promise<boolean> {
     return existing !== undefined;
 }
 
+/**
+ * Batch check which receipt numbers already exist in the database
+ * Returns a Set of codes that already exist
+ */
+export async function getExistingReceiptNumbers(codes: string[]): Promise<Set<string>> {
+    const db = await getDatabase();
+    const existingCodes = new Set<string>();
+
+    for (const code of codes) {
+        const existing = await db.getFromIndex('transactions', 'by-transaction-code', code);
+        if (existing) {
+            existingCodes.add(code);
+        }
+    }
+
+    return existingCodes;
+}
+
 // ============================================================
 // WORKER OPERATIONS
 // ============================================================

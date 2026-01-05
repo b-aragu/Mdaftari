@@ -14,7 +14,7 @@ import {
     type StatementTransaction,
     type ParsedStatement
 } from '../../parser/mpesa-statement';
-import { saveTransaction, createLedgerEntry } from '../../storage';
+import { saveTransaction, createLedgerEntry, getExistingReceiptNumbers } from '../../storage';
 import type { ParsedTransaction } from '../../parser/types';
 import './StatementImport.css';
 
@@ -54,6 +54,9 @@ export function StatementImport({ onComplete, onBack }: StatementImportProps) {
     const [password, setPassword] = useState('');
     const [pendingFile, setPendingFile] = useState<File | null>(null);
 
+    // Duplicate detection
+    const [existingReceipts, setExistingReceipts] = useState<Set<string>>(new Set());
+
     const parseFile = useCallback(async (file: File, pwd?: string) => {
         setIsLoading(true);
         setError(null);
@@ -64,6 +67,12 @@ export function StatementImport({ onComplete, onBack }: StatementImportProps) {
 
             // Mark all as initially unselected
             const txs = parsed.transactions.map(t => ({ ...t, selected: false }));
+
+            // Check for existing receipts (duplicates)
+            const receiptCodes = txs.map(t => t.receiptNo);
+            const existing = await getExistingReceiptNumbers(receiptCodes);
+            setExistingReceipts(existing);
+
             setTransactions(txs);
             setFilteredTransactions(txs);
             setNeedsPassword(false);
@@ -570,45 +579,50 @@ export function StatementImport({ onComplete, onBack }: StatementImportProps) {
                                 <p>No transactions found matching filters</p>
                             </div>
                         ) : (
-                            filteredTransactions.map((tx, index) => (
-                                <div
-                                    key={`${index}-${tx.receiptNo}`}
-                                    className={`tx-row ${tx.selected ? 'tx-row--selected' : ''}`}
-                                >
-                                    <button
-                                        className="tx-checkbox"
-                                        onClick={() => toggleTransaction(tx.receiptNo)}
+                            filteredTransactions.map((tx, index) => {
+                                const isDuplicate = existingReceipts.has(tx.receiptNo);
+                                return (
+                                    <div
+                                        key={`${index}-${tx.receiptNo}`}
+                                        className={`tx-row ${tx.selected ? 'tx-row--selected' : ''} ${isDuplicate ? 'tx-row--duplicate' : ''}`}
                                     >
-                                        {tx.selected ? <Check size={18} /> : null}
-                                    </button>
+                                        <button
+                                            className={`tx-checkbox ${isDuplicate ? 'tx-checkbox--disabled' : ''}`}
+                                            onClick={() => !isDuplicate && toggleTransaction(tx.receiptNo)}
+                                            disabled={isDuplicate}
+                                        >
+                                            {isDuplicate ? <AlertTriangle size={14} /> : tx.selected ? <Check size={18} /> : null}
+                                        </button>
 
-                                    <div className="tx-info">
-                                        <div className="tx-main">
-                                            <span className="tx-counterparty">{tx.counterparty}</span>
-                                            <span className={`tx-amount ${tx.paidIn > 0 ? 'amount-positive' : 'amount-negative'}`}>
-                                                {tx.paidIn > 0 ? '+' : '-'}KES {formatMoney(tx.paidIn || tx.paidOut)}
-                                            </span>
+                                        <div className="tx-info">
+                                            <div className="tx-main">
+                                                <span className="tx-counterparty">{tx.counterparty}</span>
+                                                <span className={`tx-amount ${tx.paidIn > 0 ? 'amount-positive' : 'amount-negative'}`}>
+                                                    {tx.paidIn > 0 ? '+' : '-'}KES {formatMoney(tx.paidIn || tx.paidOut)}
+                                                </span>
+                                            </div>
+                                            <div className="tx-secondary">
+                                                <span className="tx-code">{tx.receiptNo}</span>
+                                                <span className="tx-date">{formatDate(tx.date)}</span>
+                                                {isDuplicate && <span className="tx-duplicate-badge">Already imported</span>}
+                                            </div>
                                         </div>
-                                        <div className="tx-secondary">
-                                            <span className="tx-code">{tx.receiptNo}</span>
-                                            <span className="tx-date">{formatDate(tx.date)}</span>
-                                        </div>
+
+                                        {tx.selected && !isDuplicate && (
+                                            <div className="tx-expected">
+                                                <label className="expected-label">Expected:</label>
+                                                <input
+                                                    type="number"
+                                                    className="expected-input"
+                                                    placeholder="Amount owed"
+                                                    value={tx.expectedAmount || ''}
+                                                    onChange={(e) => updateExpectedAmount(tx.receiptNo, parseFloat(e.target.value) || 0)}
+                                                />
+                                            </div>
+                                        )}
                                     </div>
-
-                                    {tx.selected && (
-                                        <div className="tx-expected">
-                                            <label className="expected-label">Expected:</label>
-                                            <input
-                                                type="number"
-                                                className="expected-input"
-                                                placeholder="Amount owed"
-                                                value={tx.expectedAmount || ''}
-                                                onChange={(e) => updateExpectedAmount(tx.receiptNo, parseFloat(e.target.value) || 0)}
-                                            />
-                                        </div>
-                                    )}
-                                </div>
-                            ))
+                                );
+                            })
                         )}
                     </div>
 

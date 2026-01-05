@@ -13,6 +13,7 @@ export {
     getTransactionsByUser,
     getPendingTransactions,
     transactionCodeExists,
+    getExistingReceiptNumbers,
 
     // Worker operations
     addWorker,

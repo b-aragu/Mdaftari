@@ -350,6 +350,27 @@
     background: #f5f5f5;
 }
 
+.tx-row--duplicate {
+    opacity: 0.6;
+    background: #fafafa;
+}
+
+.tx-checkbox--disabled {
+    cursor: not-allowed;
+    background: #f0f0f0;
+    color: var(--color-text-secondary);
+}
+
+.tx-duplicate-badge {
+    font-size: 10px;
+    font-weight: var(--weight-bold);
+    text-transform: uppercase;
+    color: var(--color-text-secondary);
+    background: #e0e0e0;
+    padding: 1px 6px;
+    border-radius: var(--radius-sm);
+}
+
 .tx-checkbox {
     width: 24px;
     height: 24px;
