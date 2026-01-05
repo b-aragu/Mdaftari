@@ -299,6 +299,24 @@ export function StatementImport({ onComplete, onBack }: StatementImportProps) {
 
     return (
         <div className="statement-import">
+            {/* Step Progress Indicator */}
+            <div className="step-indicator">
+                <div className={`step ${step === 'upload' ? 'step--active' : 'step--done'}`}>
+                    <div className="step-number">1</div>
+                    <div className="step-label">Upload</div>
+                </div>
+                <div className="step-line"></div>
+                <div className={`step ${step === 'review' || step === 'confirm' ? 'step--active' : step === 'success' ? 'step--done' : ''}`}>
+                    <div className="step-number">2</div>
+                    <div className="step-label">Review</div>
+                </div>
+                <div className="step-line"></div>
+                <div className={`step ${step === 'success' ? 'step--active' : ''}`}>
+                    <div className="step-number">3</div>
+                    <div className="step-label">Complete</div>
+                </div>
+            </div>
+
             {/* Upload Step */}
             {step === 'upload' && (
                 <div className="upload-step">
