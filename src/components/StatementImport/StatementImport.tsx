@@ -47,6 +47,7 @@ export function StatementImport({ onComplete, onBack }: StatementImportProps) {
     // Import progress
     const [importProgress, setImportProgress] = useState(0);
     const [importedCount, setImportedCount] = useState(0);
+    const [importResults, setImportResults] = useState<{ person: string; count: number; total: number }[]>([]);
 
     // Password for encrypted PDFs
     const [needsPassword, setNeedsPassword] = useState(false);
@@ -296,6 +297,24 @@ export function StatementImport({ onComplete, onBack }: StatementImportProps) {
     };
 
     const formatMoney = (amount: number) => amount.toLocaleString('en-KE');
+
+    // Group selected transactions by person for summary
+    const groupedSelected = (() => {
+        const selected = filteredTransactions.filter(t => t.selected);
+        const groups: Record<string, { count: number; total: number }> = {};
+
+        for (const tx of selected) {
+            if (!groups[tx.counterparty]) {
+                groups[tx.counterparty] = { count: 0, total: 0 };
+            }
+            groups[tx.counterparty].count++;
+            groups[tx.counterparty].total += tx.paidIn;
+        }
+
+        return Object.entries(groups)
+            .map(([person, data]) => ({ person, ...data }))
+            .sort((a, b) => b.total - a.total); // Sort by total amount
+    })();
 
     return (
         <div className="statement-import">
@@ -594,6 +613,29 @@ export function StatementImport({ onComplete, onBack }: StatementImportProps) {
                     </div>
 
                     {error && <p className="error-text">{error}</p>}
+
+                    {/* Pre-Import Summary */}
+                    {groupedSelected.length > 0 && (
+                        <div className="import-summary">
+                            <h3>Import Summary</h3>
+                            <div className="summary-list">
+                                {groupedSelected.map(g => (
+                                    <div key={g.person} className="summary-item">
+                                        <span className="summary-person">{g.person}</span>
+                                        <span className="summary-details">
+                                            {g.count} payment{g.count !== 1 ? 's' : ''} • KES {formatMoney(g.total)}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="summary-total">
+                                <span>Total</span>
+                                <span className="summary-amount">
+                                    KES {formatMoney(filteredTransactions.filter(t => t.selected).reduce((s, t) => s + t.paidIn, 0))}
+                                </span>
+                            </div>
+                        </div>
+                    )}
 
                     {/* Actions */}
                     <div className="review-actions">

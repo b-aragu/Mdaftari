@@ -448,6 +448,66 @@
     color: var(--color-text-secondary);
 }
 
+/* Import Summary */
+.import-summary {
+    background: var(--color-background);
+    border: var(--border-medium);
+    padding: var(--space-4);
+    margin-top: var(--space-4);
+}
+
+.import-summary h3 {
+    font-size: var(--text-sm);
+    font-weight: var(--weight-bold);
+    text-transform: uppercase;
+    margin-bottom: var(--space-3);
+}
+
+.summary-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.summary-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-2) 0;
+    border-bottom: var(--border-thin);
+}
+
+.summary-person {
+    font-weight: var(--weight-bold);
+    font-size: var(--text-xs);
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.summary-details {
+    font-size: var(--text-xs);
+    color: var(--color-text-secondary);
+    text-align: right;
+}
+
+.summary-total {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: var(--space-3);
+    padding-top: var(--space-3);
+    border-top: var(--border-medium);
+    font-weight: var(--weight-bold);
+}
+
+.summary-amount {
+    font-size: var(--text-base);
+    color: var(--color-credit);
+}
+
 /* Actions */
 .review-actions {
     display: flex;
