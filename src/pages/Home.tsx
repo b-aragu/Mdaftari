@@ -3,7 +3,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { Plus, ArrowDownLeft, ArrowUpRight, Calendar, ChevronRight, TrendingUp, TrendingDown } from 'lucide-react';
+import { Plus, ArrowDownLeft, ArrowUpRight, Calendar, ChevronRight, TrendingUp, TrendingDown, Users } from 'lucide-react';
 import { getTransactionsByUser, getLedgerEntriesByTransaction } from '../storage';
 import type { Transaction, LedgerEntry } from '../ledger/types';
 import './Home.css';
@@ -22,11 +22,20 @@ interface DayGroup {
     totalOut: number;
 }
 
+interface PersonGroup {
+    name: string;
+    phone?: string;
+    transactions: Array<{ tx: Transaction; entry?: LedgerEntry }>;
+    totalReceived: number;
+    totalOwed: number;
+}
+
 export function HomePage({ onRecordPayment }: HomePageProps) {
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [ledgerEntries, setLedgerEntries] = useState<LedgerEntry[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [activePeriod, setActivePeriod] = useState<'week' | 'month' | 'all'>('week');
+    const [viewMode, setViewMode] = useState<'date' | 'person'>('person'); // Default to person view
 
     useEffect(() => {
         async function loadData() {
@@ -85,6 +94,33 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
             group.totalOut += entry?.amountPaid || tx.parsedData.amount;
         }
     });
+
+    // Group transactions by person
+    const personGroups: PersonGroup[] = [];
+    transactions.forEach(tx => {
+        const name = tx.parsedData.counterparty.name || 'Unknown';
+        const phone = tx.parsedData.counterparty.phone;
+        let group = personGroups.find(g => g.name === name);
+
+        if (!group) {
+            group = {
+                name,
+                phone,
+                transactions: [],
+                totalReceived: 0,
+                totalOwed: 0,
+            };
+            personGroups.push(group);
+        }
+
+        const entry = ledgerEntries.find(e => e.transactionId === tx.id);
+        group.transactions.push({ tx, entry });
+        group.totalReceived += entry?.amountPaid || tx.parsedData.amount;
+        group.totalOwed += entry?.amountOwed || 0;
+    });
+
+    // Sort by total owed (highest first)
+    personGroups.sort((a, b) => b.totalOwed - a.totalOwed);
 
     function formatDateLabel(date: Date): string {
         const today = new Date();
@@ -167,25 +203,65 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                 </button>
             </section>
 
-            {/* Transactions List - Grouped by Day */}
+            {/* Transactions List */}
             <section className="transactions-section">
                 <div className="section-header">
-                    <h2 className="section-title">Transactions</h2>
-                    <button className="view-all-btn">
-                        <Calendar size={16} />
-                        <span>Filter</span>
-                    </button>
+                    <h2 className="section-title">
+                        {viewMode === 'person' ? 'People' : 'Transactions'}
+                    </h2>
+                    <div className="view-toggle">
+                        <button
+                            className={`view-toggle-btn ${viewMode === 'person' ? 'view-toggle-btn--active' : ''}`}
+                            onClick={() => setViewMode('person')}
+                        >
+                            <Users size={14} />
+                            <span>People</span>
+                        </button>
+                        <button
+                            className={`view-toggle-btn ${viewMode === 'date' ? 'view-toggle-btn--active' : ''}`}
+                            onClick={() => setViewMode('date')}
+                        >
+                            <Calendar size={14} />
+                            <span>By Date</span>
+                        </button>
+                    </div>
                 </div>
 
                 {isLoading ? (
                     <div className="loading-state">Loading...</div>
-                ) : dayGroups.length === 0 ? (
+                ) : transactions.length === 0 ? (
                     <div className="empty-state">
                         <div className="empty-icon">📊</div>
                         <h3>No transactions yet</h3>
                         <p>Record your first M-Pesa transaction to get started</p>
                     </div>
+                ) : viewMode === 'person' ? (
+                    /* Person View */
+                    <div className="person-groups">
+                        {personGroups.map((person, idx) => (
+                            <div key={idx} className="person-card">
+                                <div className="person-info">
+                                    <span className="person-name">{person.name}</span>
+                                    <span className="person-count">
+                                        {person.transactions.length} payment{person.transactions.length !== 1 ? 's' : ''}
+                                    </span>
+                                </div>
+                                <div className="person-totals">
+                                    <span className="person-received">
+                                        Ksh {formatMoney(person.totalReceived)}
+                                    </span>
+                                    {person.totalOwed > 0 && (
+                                        <span className="person-owed">
+                                            Owes: Ksh {formatMoney(person.totalOwed)}
+                                        </span>
+                                    )}
+                                </div>
+                                <ChevronRight size={18} className="person-chevron" />
+                            </div>
+                        ))}
+                    </div>
                 ) : (
+                    /* Date View */
                     <div className="day-groups">
                         {dayGroups.map((group, idx) => (
                             <div key={idx} className="day-group">
@@ -218,7 +294,7 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                                                     </span>
                                                     <div className="tx-meta">
                                                         <code className="tx-code">{tx.parsedData.transactionCode}</code>
-                                                        <span className="tx-time">{formatTime(tx.createdAt)}</span>
+                                                        <span className="tx-time">{formatTime(tx.parsedData.dateTime)}</span>
                                                     </div>
                                                 </div>
 
