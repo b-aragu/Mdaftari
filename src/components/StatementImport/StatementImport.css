@@ -371,6 +371,15 @@
     border-radius: var(--radius-sm);
 }
 
+.tx-customer-badge {
+    font-size: 10px;
+    font-weight: var(--weight-bold);
+    color: var(--color-credit);
+    background: #e8f5e9;
+    padding: 1px 6px;
+    border-radius: var(--radius-sm);
+}
+
 .tx-checkbox {
     width: 24px;
     height: 24px;

@@ -19,6 +19,8 @@ export {
     addWorker,
     getWorker,
     getWorkersByContractor,
+    getAllWorkers,
+    findWorkersByPhones,
     updateWorker,
     deleteWorker,
 

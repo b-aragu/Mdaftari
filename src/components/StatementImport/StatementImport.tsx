@@ -14,7 +14,8 @@ import {
     type StatementTransaction,
     type ParsedStatement
 } from '../../parser/mpesa-statement';
-import { saveTransaction, createLedgerEntry, getExistingReceiptNumbers } from '../../storage';
+import { saveTransaction, createLedgerEntry, getExistingReceiptNumbers, findWorkersByPhones, addWorker } from '../../storage';
+import type { Worker } from '../../ledger/types';
 import type { ParsedTransaction } from '../../parser/types';
 import './StatementImport.css';
 
@@ -57,6 +58,9 @@ export function StatementImport({ onComplete, onBack }: StatementImportProps) {
     // Duplicate detection
     const [existingReceipts, setExistingReceipts] = useState<Set<string>>(new Set());
 
+    // Customer matching
+    const [matchedWorkers, setMatchedWorkers] = useState<Map<string, Worker>>(new Map());
+
     const parseFile = useCallback(async (file: File, pwd?: string) => {
         setIsLoading(true);
         setError(null);
@@ -72,6 +76,21 @@ export function StatementImport({ onComplete, onBack }: StatementImportProps) {
             const receiptCodes = txs.map(t => t.receiptNo);
             const existing = await getExistingReceiptNumbers(receiptCodes);
             setExistingReceipts(existing);
+
+            // Match counterparties to existing workers by phone number
+            // Extract phone numbers from counterparty strings (format: "NAME PHONE")
+            const phonePattern = /(\+?254[\d*]+|07[\d*]+|\d{9,})/g;
+            const phonesToMatch: string[] = [];
+            for (const tx of txs) {
+                const matches = tx.counterparty.match(phonePattern);
+                if (matches) {
+                    phonesToMatch.push(...matches);
+                }
+            }
+            if (phonesToMatch.length > 0) {
+                const matched = await findWorkersByPhones(phonesToMatch);
+                setMatchedWorkers(matched);
+            }
 
             setTransactions(txs);
             setFilteredTransactions(txs);
@@ -605,6 +624,14 @@ export function StatementImport({ onComplete, onBack }: StatementImportProps) {
                                                 <span className="tx-code">{tx.receiptNo}</span>
                                                 <span className="tx-date">{formatDate(tx.date)}</span>
                                                 {isDuplicate && <span className="tx-duplicate-badge">Already imported</span>}
+                                                {/* Check if counterparty phone matches existing worker */}
+                                                {(() => {
+                                                    const phoneMatch = tx.counterparty.match(/(\+?254[\d*]+|07[\d*]+|\d{9,})/);
+                                                    const matchedWorker = phoneMatch ? matchedWorkers.get(phoneMatch[0]) : null;
+                                                    return matchedWorker ? (
+                                                        <span className="tx-customer-badge">✓ {matchedWorker.name}</span>
+                                                    ) : null;
+                                                })()}
                                             </div>
                                         </div>
 

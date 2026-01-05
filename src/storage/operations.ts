@@ -151,6 +151,38 @@ export async function getWorkersByContractor(contractorId: UUID): Promise<Worker
 }
 
 /**
+ * Get all workers (for matching purposes)
+ */
+export async function getAllWorkers(): Promise<Worker[]> {
+    const db = await getDatabase();
+    return db.getAll('workers');
+}
+
+/**
+ * Find workers matching any of the given phone numbers
+ * Returns a Map of phone number → worker
+ */
+export async function findWorkersByPhones(phones: string[]): Promise<Map<string, Worker>> {
+    const allWorkers = await getAllWorkers();
+    const phoneToWorker = new Map<string, Worker>();
+
+    // Normalize phone numbers for matching
+    const normalizePhone = (phone: string) => phone.replace(/[^0-9]/g, '').slice(-9);
+
+    for (const worker of allWorkers) {
+        const normalizedWorkerPhone = normalizePhone(worker.phone);
+        for (const phone of phones) {
+            // Check if the last 9 digits match (handles different formats)
+            if (normalizePhone(phone) === normalizedWorkerPhone) {
+                phoneToWorker.set(phone, worker);
+            }
+        }
+    }
+
+    return phoneToWorker;
+}
+
+/**
  * Update a worker
  */
 export async function updateWorker(
