@@ -54,20 +54,21 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
     const totalIn = ledgerEntries.reduce((sum, e) => sum + e.amountPaid, 0);
     const totalOut = ledgerEntries.reduce((sum, e) => sum + e.amountOwed, 0);
 
-    // Group transactions by day
+    // Group transactions by day (using actual transaction date, not import time)
     const dayGroups: DayGroup[] = [];
     const sortedTxs = [...transactions].sort((a, b) =>
-        b.createdAt.getTime() - a.createdAt.getTime()
+        b.parsedData.dateTime.getTime() - a.parsedData.dateTime.getTime()
     );
 
     sortedTxs.forEach(tx => {
-        const dateKey = tx.createdAt.toDateString();
+        const txDate = tx.parsedData.dateTime;
+        const dateKey = txDate.toDateString();
         let group = dayGroups.find(g => g.date.toDateString() === dateKey);
 
         if (!group) {
             group = {
-                date: tx.createdAt,
-                dateLabel: formatDateLabel(tx.createdAt),
+                date: txDate,
+                dateLabel: formatDateLabel(txDate),
                 transactions: [],
                 totalIn: 0,
                 totalOut: 0,
