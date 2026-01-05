@@ -495,18 +495,35 @@ export function StatementImport({ onComplete, onBack }: StatementImportProps) {
                         </div>
                     </div>
 
-                    {/* Select All */}
-                    <div className="select-all-row">
-                        <button className="select-all-btn" onClick={toggleSelectAll}>
-                            {filteredTransactions.every(t => t.selected) ? (
-                                <><X size={16} /> Deselect All</>
-                            ) : (
-                                <><Check size={16} /> Select All</>
+                    {/* Selection Controls */}
+                    <div className="selection-controls">
+                        <div className="selection-buttons">
+                            <button className="select-all-btn" onClick={toggleSelectAll}>
+                                {filteredTransactions.every(t => t.selected) ? (
+                                    <><X size={16} /> Deselect All</>
+                                ) : (
+                                    <><Check size={16} /> Select All Visible</>
+                                )}
+                            </button>
+                            {selectedCount > 0 && (
+                                <button
+                                    className="clear-selection-btn"
+                                    onClick={() => setFilteredTransactions(prev => prev.map(t => ({ ...t, selected: false })))}
+                                >
+                                    <X size={16} /> Clear
+                                </button>
                             )}
-                        </button>
-                        <span className="selected-count">
-                            {selectedCount} of {filteredTransactions.length} selected
-                        </span>
+                        </div>
+                        <div className="selection-summary">
+                            <span className="selected-count">
+                                {selectedCount} of {filteredTransactions.length} selected
+                            </span>
+                            {selectedCount > 0 && (
+                                <span className="selected-total">
+                                    KES {formatMoney(filteredTransactions.filter(t => t.selected).reduce((sum, t) => sum + t.paidIn, 0))}
+                                </span>
+                            )}
+                        </div>
                     </div>
 
                     {/* Transaction List */}
