@@ -6,15 +6,17 @@ import React, { useState } from 'react';
 import { Navigation } from '../components/Layout';
 import { HomePage, RecordPaymentPage, ReportsPage, SettingsPage } from '../pages';
 import { useOutdoorMode } from '../hooks';
+import { ToastProvider, useToast } from '../context';
 
 
 type Tab = 'home' | 'reports' | 'settings';
 type View = 'main' | 'record';
 
-export function App() {
+function AppContent() {
     const [activeTab, setActiveTab] = useState<Tab>('home');
     const [view, setView] = useState<View>('main');
     const { isOutdoorMode } = useOutdoorMode();
+    const { showToast } = useToast();
 
     // Apply outdoor mode to document
     React.useEffect(() => {
@@ -32,6 +34,7 @@ export function App() {
     const handleSuccess = () => {
         setView('main');
         setActiveTab('home');
+        showToast('Payment recorded successfully!', 'success');
     };
 
     if (view === 'record') {
@@ -46,5 +49,13 @@ export function App() {
 
             <Navigation activeTab={activeTab} onTabChange={setActiveTab} />
         </div>
+    );
+}
+
+export function App() {
+    return (
+        <ToastProvider>
+            <AppContent />
+        </ToastProvider>
     );
 }

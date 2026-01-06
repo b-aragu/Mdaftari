@@ -3,8 +3,10 @@
  */
 
 import { useState, useEffect } from 'react';
-import { Plus, ArrowDownLeft, ArrowUpRight, Calendar, ChevronRight, TrendingUp, TrendingDown, Users, X, ArrowLeft } from 'lucide-react';
+import { Plus, ArrowDownLeft, ArrowUpRight, Calendar, ChevronRight, TrendingUp, TrendingDown, Users, ArrowLeft, FileText } from 'lucide-react';
 import { getTransactionsByUser, getLedgerEntriesByTransaction } from '../storage';
+import { useCountUp } from '../hooks';
+import { SkeletonPersonCard } from '../components/ui';
 import type { Transaction, LedgerEntry } from '../ledger/types';
 import './Home.css';
 
@@ -37,6 +39,11 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
     const [activePeriod, setActivePeriod] = useState<'week' | 'month' | 'all'>('week');
     const [viewMode, setViewMode] = useState<'date' | 'person'>('person');
     const [selectedPerson, setSelectedPerson] = useState<PersonGroup | null>(null);
+    const [selectedTransaction, setSelectedTransaction] = useState<{
+        tx: Transaction;
+        entry?: LedgerEntry;
+    } | null>(null);
+    const [selectedDay, setSelectedDay] = useState<DayGroup | null>(null);
 
     useEffect(() => {
         async function loadData() {
@@ -63,6 +70,12 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
     // Calculate totals
     const totalIn = ledgerEntries.reduce((sum, e) => sum + e.amountPaid, 0);
     const totalOut = ledgerEntries.reduce((sum, e) => sum + e.amountOwed, 0);
+    const netBalance = totalOut; // Total still owed to you
+
+    // Animated counters - only animate once data is loaded
+    const animatedTotalIn = useCountUp(totalIn, 1000, !isLoading);
+    const animatedTotalOut = useCountUp(totalOut, 1000, !isLoading);
+    const animatedNetBalance = useCountUp(netBalance, 1200, !isLoading);
 
     // Group transactions by day (using actual transaction date, not import time)
     const dayGroups: DayGroup[] = [];
@@ -123,6 +136,9 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
     // Sort by total owed (highest first)
     personGroups.sort((a, b) => b.totalOwed - a.totalOwed);
 
+    // Count people who owe money (correct calculation from personGroups)
+    const peopleWhoOwe = personGroups.filter(p => p.totalOwed > 0).length;
+
     function formatDateLabel(date: Date): string {
         const today = new Date();
         const yesterday = new Date(today);
@@ -176,15 +192,174 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
         return Object.values(months);
     })() : [];
 
+    // If day is selected, show full-page date detail view
+    if (selectedDay) {
+        return (
+            <div className="person-page">
+                <header className="person-page-header">
+                    <button className="back-btn back-btn--icon" onClick={() => setSelectedDay(null)}>
+                        <ArrowLeft size={24} />
+                    </button>
+                    <span className="person-page-title">{selectedDay.dateLabel}</span>
+                </header>
+
+                <div className="person-page-content">
+                    {/* Date Summary */}
+                    <div className="person-summary-cards">
+                        <div className="person-stat-card person-stat-card--received">
+                            <span className="stat-label">Received</span>
+                            <span className="stat-value">Ksh {formatMoney(selectedDay.totalIn)}</span>
+                        </div>
+                        <div className="person-stat-card person-stat-card--owed">
+                            <span className="stat-label">Sent Out</span>
+                            <span className="stat-value">Ksh {formatMoney(selectedDay.totalOut)}</span>
+                        </div>
+                    </div>
+
+                    {/* Transactions for this day */}
+                    <section className="person-transactions">
+                        <h3 className="section-label">
+                            {selectedDay.transactions.length} Transaction{selectedDay.transactions.length !== 1 ? 's' : ''}
+                        </h3>
+                        <ul className="transaction-list">
+                            {selectedDay.transactions.map(({ tx, entry }) => {
+                                const isIn = tx.parsedData.type === 'received';
+                                const amount = entry?.amountPaid || tx.parsedData.amount;
+                                return (
+                                    <li
+                                        key={tx.id}
+                                        className="transaction-item transaction-item--clickable"
+                                        onClick={() => setSelectedTransaction({ tx, entry })}
+                                    >
+                                        <div className={`tx-icon ${isIn ? 'tx-icon--in' : 'tx-icon--out'}`}>
+                                            {isIn ? <ArrowDownLeft size={18} /> : <ArrowUpRight size={18} />}
+                                        </div>
+                                        <div className="tx-details">
+                                            <span className="tx-name">
+                                                {tx.parsedData.counterparty.name || tx.parsedData.counterparty.phone || 'Payment'}
+                                            </span>
+                                            <div className="tx-meta">
+                                                <code className="tx-code">{tx.parsedData.transactionCode}</code>
+                                                <span className="tx-time">{formatTime(tx.parsedData.dateTime)}</span>
+                                            </div>
+                                        </div>
+                                        <div className="tx-amount-wrapper">
+                                            <span className={`tx-amount ${isIn ? 'money-in' : 'money-out'}`}>
+                                                {isIn ? '+' : '-'}Ksh {formatMoney(amount)}
+                                            </span>
+                                            {entry && entry.amountOwed > 0 && (
+                                                <span className="tx-owed">Owes: {formatMoney(entry.amountOwed)}</span>
+                                            )}
+                                        </div>
+                                        <ChevronRight size={16} className="tx-chevron" />
+                                    </li>
+                                );
+                            })}
+                        </ul>
+                    </section>
+                </div>
+
+                {/* Transaction Detail Modal */}
+                {selectedTransaction && (
+                    <div className="tx-modal-overlay" onClick={() => setSelectedTransaction(null)}>
+                        <div className="tx-modal" onClick={e => e.stopPropagation()}>
+                            <button className="tx-modal-close" onClick={() => setSelectedTransaction(null)}>
+                                ×
+                            </button>
+
+                            <div className="tx-modal-header">
+                                <h3 className="tx-modal-title">Payment Details</h3>
+                                <span className="tx-modal-subtitle">
+                                    {selectedTransaction.tx.parsedData.counterparty.name || 'Transaction'}
+                                </span>
+                            </div>
+
+                            <div className="tx-modal-amount">
+                                <span className="tx-modal-amount-value money-in">
+                                    Ksh {formatMoney(selectedTransaction.entry?.amountPaid || selectedTransaction.tx.parsedData.amount)}
+                                </span>
+                                <span className="tx-modal-amount-label">Amount Received</span>
+                            </div>
+
+                            <div className="tx-modal-section">
+                                <h4 className="tx-modal-section-title">📋 Transaction Info</h4>
+                                <div className="tx-modal-section-content">
+                                    <div className="tx-modal-row">
+                                        <span className="tx-modal-label">Date & Time</span>
+                                        <span className="tx-modal-value">
+                                            {new Intl.DateTimeFormat('en-KE', {
+                                                weekday: 'short',
+                                                day: 'numeric',
+                                                month: 'short',
+                                                year: 'numeric',
+                                                hour: '2-digit',
+                                                minute: '2-digit',
+                                            }).format(selectedTransaction.tx.parsedData.dateTime)}
+                                        </span>
+                                    </div>
+                                    <div className="tx-modal-row">
+                                        <span className="tx-modal-label">Reference Code</span>
+                                        <code className="tx-modal-code">
+                                            {selectedTransaction.tx.parsedData.transactionCode}
+                                        </code>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {selectedTransaction.entry && (
+                                <div className="tx-modal-section">
+                                    <h4 className="tx-modal-section-title">💰 Payment Breakdown</h4>
+                                    <div className="tx-modal-section-content">
+                                        <div className="tx-modal-row">
+                                            <span className="tx-modal-label">Expected Amount</span>
+                                            <span className="tx-modal-value">
+                                                Ksh {formatMoney(selectedTransaction.entry.amountPaid + selectedTransaction.entry.amountOwed)}
+                                            </span>
+                                        </div>
+                                        <div className="tx-modal-row">
+                                            <span className="tx-modal-label">Amount Received</span>
+                                            <span className="tx-modal-value money-in">
+                                                Ksh {formatMoney(selectedTransaction.entry.amountPaid)}
+                                            </span>
+                                        </div>
+                                        {selectedTransaction.entry.amountOwed > 0 && (
+                                            <div className="tx-modal-row tx-modal-row--highlight">
+                                                <span className="tx-modal-label">Outstanding Balance</span>
+                                                <span className="tx-modal-value money-out">
+                                                    Ksh {formatMoney(selectedTransaction.entry.amountOwed)}
+                                                </span>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            {selectedTransaction.entry && selectedTransaction.entry.amountOwed === 0 && (
+                                <div className="tx-modal-status tx-modal-status--paid">
+                                    ✓ Payment Complete
+                                </div>
+                            )}
+                            {selectedTransaction.entry && selectedTransaction.entry.amountOwed > 0 && (
+                                <div className="tx-modal-status tx-modal-status--pending">
+                                    ⏳ Partial Payment
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+            </div>
+        );
+    }
+
     // If person is selected, show full-page detail view
     if (selectedPerson) {
         return (
             <div className="person-page">
                 <header className="person-page-header">
-                    <button className="back-btn" onClick={() => setSelectedPerson(null)}>
-                        <ArrowLeft size={20} />
-                        <span>Back</span>
+                    <button className="back-btn back-btn--icon" onClick={() => setSelectedPerson(null)}>
+                        <ArrowLeft size={24} />
                     </button>
+                    <span className="person-page-title">{selectedPerson.name}</span>
                 </header>
 
                 <div className="person-page-content">
@@ -208,28 +383,68 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                         </div>
                     </div>
 
-                    {/* Monthly Breakdown Timeline */}
+                    {/* Payment Timeline - Line Chart */}
                     {monthlyBreakdown.length > 0 && (
                         <section className="monthly-breakdown">
                             <h3 className="section-label">Payment Timeline</h3>
-                            <div className="timeline-chart">
-                                {monthlyBreakdown.map((m, idx) => {
-                                    const maxBalance = Math.max(...monthlyBreakdown.map(x => x.balance));
-                                    const heightPercent = maxBalance > 0 ? (m.balance / maxBalance) * 100 : 0;
-                                    return (
-                                        <div key={idx} className="timeline-bar-container">
-                                            <div
-                                                className="timeline-bar"
-                                                style={{ height: `${Math.max(heightPercent, 5)}%` }}
-                                            >
-                                                <span className="timeline-amount">
-                                                    {formatMoney(m.received)}
-                                                </span>
-                                            </div>
-                                            <span className="timeline-month">{m.month}</span>
-                                        </div>
-                                    );
-                                })}
+                            <div className="person-line-chart-container">
+                                <svg viewBox="0 0 300 120" className="person-line-chart" preserveAspectRatio="xMidYMid meet">
+                                    {/* Grid lines */}
+                                    <line x1="30" y1="10" x2="30" y2="90" stroke="#e5e5e5" strokeWidth="1" />
+                                    <line x1="30" y1="90" x2="290" y2="90" stroke="#e5e5e5" strokeWidth="1" />
+                                    {[0, 33, 66, 100].map((pct, i) => (
+                                        <line key={i} x1="30" y1={90 - pct * 0.8} x2="290" y2={90 - pct * 0.8} stroke="#f0f0f0" strokeWidth="1" />
+                                    ))}
+
+                                    {/* Line path */}
+                                    {(() => {
+                                        const maxReceived = Math.max(...monthlyBreakdown.map(x => x.received), 1);
+                                        const spacing = monthlyBreakdown.length > 1 ? 240 / (monthlyBreakdown.length - 1) : 0;
+                                        const points = monthlyBreakdown.map((m, idx) => {
+                                            const x = 50 + idx * spacing;
+                                            const y = 90 - (m.received / maxReceived) * 70;
+                                            return { x, y, data: m };
+                                        });
+                                        const pathD = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
+
+                                        return (
+                                            <>
+                                                {/* Area fill */}
+                                                <path
+                                                    d={`${pathD} L ${points[points.length - 1]?.x || 0} 90 L ${points[0]?.x || 0} 90 Z`}
+                                                    fill="url(#personLineGradient)"
+                                                    opacity="0.3"
+                                                />
+                                                {/* Line */}
+                                                <path d={pathD} fill="none" stroke="#0b6e4f" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                                {/* Data points */}
+                                                {points.map((p, idx) => (
+                                                    <g key={idx}>
+                                                        <circle cx={p.x} cy={p.y} r="5" fill="white" stroke="#0b6e4f" strokeWidth="2" />
+                                                        {p.data.received > 0 && (
+                                                            <circle cx={p.x} cy={p.y} r="2.5" fill="#0b6e4f" />
+                                                        )}
+                                                    </g>
+                                                ))}
+                                            </>
+                                        );
+                                    })()}
+
+                                    {/* Gradient definition */}
+                                    <defs>
+                                        <linearGradient id="personLineGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                                            <stop offset="0%" stopColor="#0b6e4f" stopOpacity="0.4" />
+                                            <stop offset="100%" stopColor="#0b6e4f" stopOpacity="0" />
+                                        </linearGradient>
+                                    </defs>
+                                </svg>
+
+                                {/* X-axis labels */}
+                                <div className="person-line-chart-labels">
+                                    {monthlyBreakdown.map((m, idx) => (
+                                        <span key={idx} className="person-line-chart-label">{m.month}</span>
+                                    ))}
+                                </div>
                             </div>
                         </section>
                     )}
@@ -246,7 +461,11 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                                     const isIn = tx.parsedData.type === 'received';
                                     const amount = entry?.amountPaid || tx.parsedData.amount;
                                     return (
-                                        <li key={tx.id} className="transaction-item">
+                                        <li
+                                            key={tx.id}
+                                            className="transaction-item transaction-item--clickable"
+                                            onClick={() => setSelectedTransaction({ tx, entry })}
+                                        >
                                             <div className={`tx-icon ${isIn ? 'tx-icon--in' : 'tx-icon--out'}`}>
                                                 {isIn ? <ArrowDownLeft size={18} /> : <ArrowUpRight size={18} />}
                                             </div>
@@ -268,12 +487,107 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                                                     <span className="tx-owed">Owes: {formatMoney(entry.amountOwed)}</span>
                                                 )}
                                             </div>
+                                            <ChevronRight size={16} className="tx-chevron" />
                                         </li>
                                     );
                                 })}
                         </ul>
                     </section>
                 </div>
+
+                {/* Transaction Detail Modal */}
+                {selectedTransaction && (
+                    <div className="tx-modal-overlay" onClick={() => setSelectedTransaction(null)}>
+                        <div className="tx-modal" onClick={e => e.stopPropagation()}>
+                            <button className="tx-modal-close" onClick={() => setSelectedTransaction(null)}>
+                                ×
+                            </button>
+
+                            {/* Header */}
+                            <div className="tx-modal-header">
+                                <h3 className="tx-modal-title">Payment Details</h3>
+                                <span className="tx-modal-subtitle">
+                                    {selectedTransaction.tx.parsedData.counterparty.name || 'Transaction'}
+                                </span>
+                            </div>
+
+                            {/* Amount Hero */}
+                            <div className="tx-modal-amount">
+                                <span className="tx-modal-amount-value money-in">
+                                    Ksh {formatMoney(selectedTransaction.entry?.amountPaid || selectedTransaction.tx.parsedData.amount)}
+                                </span>
+                                <span className="tx-modal-amount-label">Amount Received</span>
+                            </div>
+
+                            {/* Transaction Info Section */}
+                            <div className="tx-modal-section">
+                                <h4 className="tx-modal-section-title">📋 Transaction Info</h4>
+                                <div className="tx-modal-section-content">
+                                    <div className="tx-modal-row">
+                                        <span className="tx-modal-label">Date & Time</span>
+                                        <span className="tx-modal-value">
+                                            {new Intl.DateTimeFormat('en-KE', {
+                                                weekday: 'short',
+                                                day: 'numeric',
+                                                month: 'short',
+                                                year: 'numeric',
+                                                hour: '2-digit',
+                                                minute: '2-digit',
+                                            }).format(selectedTransaction.tx.parsedData.dateTime)}
+                                        </span>
+                                    </div>
+                                    <div className="tx-modal-row">
+                                        <span className="tx-modal-label">Reference Code</span>
+                                        <code className="tx-modal-code">
+                                            {selectedTransaction.tx.parsedData.transactionCode}
+                                        </code>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Payment Breakdown Section */}
+                            {selectedTransaction.entry && (
+                                <div className="tx-modal-section">
+                                    <h4 className="tx-modal-section-title">💰 Payment Breakdown</h4>
+                                    <div className="tx-modal-section-content">
+                                        <div className="tx-modal-row">
+                                            <span className="tx-modal-label">Expected Amount</span>
+                                            <span className="tx-modal-value">
+                                                Ksh {formatMoney(selectedTransaction.entry.amountPaid + selectedTransaction.entry.amountOwed)}
+                                            </span>
+                                        </div>
+                                        <div className="tx-modal-row">
+                                            <span className="tx-modal-label">Amount Received</span>
+                                            <span className="tx-modal-value money-in">
+                                                Ksh {formatMoney(selectedTransaction.entry.amountPaid)}
+                                            </span>
+                                        </div>
+                                        {selectedTransaction.entry.amountOwed > 0 && (
+                                            <div className="tx-modal-row tx-modal-row--highlight">
+                                                <span className="tx-modal-label">Outstanding Balance</span>
+                                                <span className="tx-modal-value money-out">
+                                                    Ksh {formatMoney(selectedTransaction.entry.amountOwed)}
+                                                </span>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Status Badge */}
+                            {selectedTransaction.entry && selectedTransaction.entry.amountOwed === 0 && (
+                                <div className="tx-modal-status tx-modal-status--paid">
+                                    ✓ Payment Complete
+                                </div>
+                            )}
+                            {selectedTransaction.entry && selectedTransaction.entry.amountOwed > 0 && (
+                                <div className="tx-modal-status tx-modal-status--pending">
+                                    ⏳ Partial Payment
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
             </div>
         );
     }
@@ -288,6 +602,31 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                 </div>
             </header>
 
+            {/* Net Balance Hero */}
+            {!isLoading && (
+                <section className="net-balance-hero">
+                    {netBalance > 0 ? (
+                        <>
+                            <span className="hero-label">You're owed</span>
+                            <span className="hero-amount hero-amount--owed">
+                                Ksh {formatMoney(animatedNetBalance)}
+                            </span>
+                            {peopleWhoOwe > 0 && (
+                                <span className="hero-context">
+                                    from {peopleWhoOwe} {peopleWhoOwe === 1 ? 'person' : 'people'}
+                                </span>
+                            )}
+                        </>
+                    ) : (
+                        <>
+                            <span className="hero-label">All paid up</span>
+                            <span className="hero-amount hero-amount--clear">✓</span>
+                            <span className="hero-context">No outstanding debts</span>
+                        </>
+                    )}
+                </section>
+            )}
+
             {/* Summary Cards - CountPesa Style */}
             <section className="summary-section">
                 <div className="summary-cards">
@@ -298,7 +637,7 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                         </div>
                         <div className="summary-card-amount">
                             <span className="currency">Ksh</span>
-                            <span className="money money-lg money-in">{formatMoney(totalIn)}</span>
+                            <span className="money money-lg money-in">{formatMoney(animatedTotalIn)}</span>
                         </div>
                     </div>
 
@@ -309,7 +648,7 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                         </div>
                         <div className="summary-card-amount">
                             <span className="currency">Ksh</span>
-                            <span className="money money-lg money-out">{formatMoney(totalOut)}</span>
+                            <span className="money money-lg money-out">{formatMoney(animatedTotalOut)}</span>
                         </div>
                     </div>
                 </div>
@@ -359,12 +698,24 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                 </div>
 
                 {isLoading ? (
-                    <div className="loading-state">Loading...</div>
+                    <div className="skeleton-loading-state">
+                        <SkeletonPersonCard />
+                        <SkeletonPersonCard />
+                        <SkeletonPersonCard />
+                    </div>
                 ) : transactions.length === 0 ? (
                     <div className="empty-state">
-                        <div className="empty-icon">📊</div>
-                        <h3>No transactions yet</h3>
-                        <p>Record your first M-Pesa transaction to get started</p>
+                        <div className="empty-icon">
+                            <FileText size={48} strokeWidth={1.5} />
+                        </div>
+                        <h3>Import your first statement</h3>
+                        <p>Paste an M-Pesa message or import a PDF statement to get started</p>
+                        <div className="empty-state-actions">
+                            <button className="btn-primary" onClick={onRecordPayment}>
+                                <Plus size={18} />
+                                <span>Record Payment</span>
+                            </button>
+                        </div>
                     </div>
                 ) : viewMode === 'person' ? (
                     /* Person View */
@@ -400,7 +751,10 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                     <div className="day-groups">
                         {dayGroups.map((group, idx) => (
                             <div key={idx} className="day-group">
-                                <div className="day-header">
+                                <div
+                                    className="day-header day-header--clickable"
+                                    onClick={() => setSelectedDay(group)}
+                                >
                                     <span className="day-label">{group.dateLabel}</span>
                                     <div className="day-totals">
                                         {group.totalIn > 0 && (
@@ -410,6 +764,7 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                                             <span className="day-total day-total--out">-{formatMoney(group.totalOut)}</span>
                                         )}
                                     </div>
+                                    <ChevronRight size={16} className="day-chevron" />
                                 </div>
 
                                 <ul className="transaction-list">
@@ -418,7 +773,11 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                                         const amount = entry?.amountPaid || tx.parsedData.amount;
 
                                         return (
-                                            <li key={tx.id} className="transaction-item">
+                                            <li
+                                                key={tx.id}
+                                                className="transaction-item transaction-item--clickable"
+                                                onClick={() => setSelectedTransaction({ tx, entry })}
+                                            >
                                                 <div className={`tx-icon ${isIn ? 'tx-icon--in' : 'tx-icon--out'}`}>
                                                     {isIn ? <ArrowDownLeft size={18} /> : <ArrowUpRight size={18} />}
                                                 </div>
@@ -438,7 +797,7 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                                                         {isIn ? '+' : '-'}Ksh {formatMoney(amount)}
                                                     </span>
                                                     {entry && entry.amountOwed > 0 && (
-                                                        <span className="tx-owed">Owed: {formatMoney(entry.amountOwed)}</span>
+                                                        <span className="tx-owed">Owes: {formatMoney(entry.amountOwed)}</span>
                                                     )}
                                                 </div>
 

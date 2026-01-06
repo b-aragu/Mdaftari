@@ -106,40 +106,36 @@
     font-weight: var(--weight-bold);
 }
 
-/* Monthly Trend Chart */
+/* Monthly Trend Chart - Line Chart */
 .trend-section {
     margin-bottom: var(--space-6);
 }
 
-.trend-chart {
-    display: flex;
-    align-items: flex-end;
-    gap: var(--space-2);
-    height: 120px;
-    padding: var(--space-3);
+.line-chart-container {
     border: var(--border-medium);
+    padding: var(--space-4);
+    background: white;
 }
 
-.trend-bar-container {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    height: 100%;
-}
-
-.trend-bar {
+.line-chart {
     width: 100%;
-    max-width: 40px;
-    background: var(--color-success);
-    margin-top: auto;
+    height: 120px;
+    display: block;
 }
 
-.trend-bar-label {
+.line-chart-labels {
+    display: flex;
+    justify-content: space-around;
+    padding: var(--space-2) 0 0;
+    margin-left: 40px;
+}
+
+.line-chart-label {
     font-size: 10px;
     font-weight: var(--weight-bold);
     color: var(--color-text-secondary);
-    margin-top: var(--space-1);
+    flex: 1;
+    text-align: center;
 }
 
 /* Summary Grid */
@@ -289,4 +285,358 @@
 
 [data-outdoor="true"] .export-btn {
     border: var(--border-thick);
+}
+
+/* Section Subtitle */
+.section-subtitle {
+    font-size: var(--text-xs);
+    color: var(--color-text-secondary);
+    margin: 0 0 var(--space-2);
+}
+
+/* Interactive Trend Bars */
+.trend-bar-container--clickable {
+    cursor: pointer;
+}
+
+.trend-bar-container--clickable:active .trend-bar {
+    opacity: 0.7;
+}
+
+.trend-bar-value {
+    font-size: 10px;
+    font-weight: var(--weight-bold);
+    color: var(--color-text-secondary);
+    margin-bottom: var(--space-1);
+}
+
+/* Share Button - Premium WhatsApp Style */
+.export-btn--share {
+    background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+    color: white;
+    border: none;
+    box-shadow: 0 4px 12px rgba(37, 211, 102, 0.3);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.export-btn--share:active {
+    transform: scale(0.98);
+    box-shadow: 0 2px 6px rgba(37, 211, 102, 0.2);
+}
+
+.export-btn--share .export-btn-desc {
+    color: rgba(255, 255, 255, 0.85);
+}
+
+/* Smart Insights - Card Style */
+.insights-section {
+    margin-top: var(--space-6);
+    padding: var(--space-4);
+    background: linear-gradient(180deg, #fafafa 0%, #ffffff 100%);
+    border: var(--border-medium);
+    border-radius: 0;
+}
+
+.insights-section .section-title {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--text-base);
+    margin-bottom: var(--space-4);
+}
+
+.insights-section .section-title svg {
+    color: #f59e0b;
+}
+
+.insights-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.insight-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-4);
+    background: white;
+    border: var(--border-thin);
+    border-radius: 0;
+    transition: transform 0.15s;
+}
+
+.insight-item:active {
+    transform: scale(0.99);
+}
+
+.insight-icon {
+    font-size: 1.4rem;
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f5f5f5;
+    border-radius: 50%;
+}
+
+.insight-text {
+    font-size: var(--text-sm);
+    font-weight: var(--weight-medium);
+    flex: 1;
+    line-height: 1.4;
+}
+
+.insight-item--warning {
+    border-left: 4px solid #f59e0b;
+}
+
+.insight-item--warning .insight-icon {
+    background: #fef3c7;
+}
+
+.insight-item--success {
+    border-left: 4px solid var(--color-success);
+}
+
+.insight-item--success .insight-icon {
+    background: #d1fae5;
+}
+
+.insight-item--info {
+    border-left: 4px solid #3b82f6;
+}
+
+.insight-item--info .insight-icon {
+    background: #dbeafe;
+}
+
+/* Month Detail Modal */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-4);
+}
+
+.modal-content {
+    background: var(--color-background);
+    border: var(--border-medium);
+    padding: var(--space-6);
+    max-width: 320px;
+    width: 100%;
+    position: relative;
+}
+
+.modal-close {
+    position: absolute;
+    top: var(--space-3);
+    right: var(--space-3);
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--color-text-secondary);
+    padding: var(--space-1);
+}
+
+.modal-close:hover {
+    color: var(--color-text-primary);
+}
+
+.modal-title {
+    font-size: var(--text-lg);
+    font-weight: var(--weight-bold);
+    margin: 0 0 var(--space-4);
+}
+
+.modal-stat {
+    display: flex;
+    justify-content: space-between;
+    padding: var(--space-2) 0;
+    border-bottom: var(--border-thin);
+}
+
+.modal-stat:last-of-type {
+    border-bottom: none;
+}
+
+.modal-stat-label {
+    font-size: var(--text-sm);
+    color: var(--color-text-secondary);
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.modal-stat-value {
+    font-size: var(--text-base);
+    font-weight: var(--weight-bold);
+}
+
+.modal-people {
+    margin-top: var(--space-4);
+    padding-top: var(--space-4);
+    border-top: var(--border-thin);
+}
+
+.modal-people-list {
+    list-style: none;
+    padding: 0;
+    margin: var(--space-2) 0 0;
+}
+
+.modal-people-list li {
+    font-size: var(--text-sm);
+    padding: var(--space-1) 0;
+}
+
+.modal-people-more {
+    color: var(--color-text-secondary);
+    font-style: italic;
+}
+
+/* Outdoor Mode for new elements */
+[data-outdoor="true"] .insight-item {
+    border: var(--border-thick);
+}
+
+[data-outdoor="true"] .modal-content {
+    border: var(--border-thick);
+}
+
+/* ==========================================
+   RESPONSIVE DESIGN - Mobile First
+   ========================================== */
+
+/* Small phones (< 360px) */
+@media (max-width: 359px) {
+    .reports-header {
+        padding: var(--space-4) var(--space-3);
+    }
+
+    .reports-content {
+        padding: var(--space-4) var(--space-3);
+    }
+
+    .summary-grid {
+        gap: var(--space-2);
+    }
+
+    .summary-card {
+        padding: var(--space-3);
+    }
+
+    .summary-value {
+        font-size: var(--text-base);
+    }
+
+    .trend-bar-container {
+        min-width: 40px;
+    }
+
+    .export-btn {
+        padding: var(--space-3);
+    }
+
+    .insight-item {
+        padding: var(--space-2) var(--space-3);
+    }
+
+    .insight-icon {
+        width: 28px;
+        height: 28px;
+        font-size: 1.2rem;
+    }
+}
+
+/* Standard phones (360px - 480px) */
+@media (min-width: 360px) and (max-width: 480px) {
+    .reports-content {
+        padding: var(--space-4);
+    }
+
+    .export-options {
+        flex-direction: column;
+    }
+}
+
+/* Large phones / Small tablets (481px - 768px) */
+@media (min-width: 481px) and (max-width: 768px) {
+    .reports-content {
+        max-width: 540px;
+        padding: var(--space-6);
+    }
+
+    .summary-grid {
+        gap: var(--space-4);
+    }
+
+    .export-options {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* Tablets (769px - 1024px) */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .reports-content {
+        max-width: 680px;
+        padding: var(--space-8);
+    }
+
+    .person-table {
+        font-size: var(--text-base);
+    }
+
+    .export-options {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+/* Desktop (> 1024px) */
+@media (min-width: 1025px) {
+    .reports {
+        margin-left: 200px;
+    }
+
+    .reports-content {
+        max-width: 800px;
+        padding: var(--space-8);
+    }
+
+    .summary-grid {
+        gap: var(--space-6);
+    }
+
+    .summary-card:hover {
+        background: #f9f9f9;
+    }
+
+    .trend-bar:hover {
+        opacity: 0.8;
+    }
+
+    .export-options {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    .export-btn:hover {
+        background: #f5f5f5;
+    }
+
+    .export-btn--share:hover {
+        background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+    }
+
+    .insights-section {
+        max-width: 600px;
+    }
 }

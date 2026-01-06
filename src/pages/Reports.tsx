@@ -3,7 +3,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { Download, TrendingUp, TrendingDown } from 'lucide-react';
+import { Download, TrendingUp, TrendingDown, X } from 'lucide-react';
 import { getTransactionsByUser, getLedgerEntriesByTransaction } from '../storage';
 import type { Transaction, LedgerEntry } from '../ledger/types';
 import './Reports.css';
@@ -15,6 +15,12 @@ export function ReportsPage() {
     const [ledgerEntries, setLedgerEntries] = useState<LedgerEntry[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [dateRange, setDateRange] = useState<'week' | 'month' | 'all'>('month');
+    const [selectedMonth, setSelectedMonth] = useState<{
+        label: string;
+        total: number;
+        count: number;
+        people: string[];
+    } | null>(null);
 
     const currentMonth = new Intl.DateTimeFormat('en-KE', { month: 'long', year: 'numeric' }).format(new Date());
 
@@ -82,9 +88,17 @@ export function ReportsPage() {
         return Object.values(people).sort((a, b) => b.paid - a.paid);
     })();
 
-    // Monthly trend data (last 6 months)
+    const formatMoney = (amount: number) => amount.toLocaleString('en-KE');
+    // Monthly trend data with enhanced data for interactivity
     const monthlyTrend = (() => {
-        const months: { [key: string]: { label: string; total: number } } = {};
+        const months: {
+            [key: string]: {
+                label: string;
+                total: number;
+                count: number;
+                people: Set<string>
+            }
+        } = {};
         const now = new Date();
 
         // Initialize last 6 months
@@ -92,7 +106,7 @@ export function ReportsPage() {
             const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
             const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
             const label = new Intl.DateTimeFormat('en-KE', { month: 'short' }).format(d);
-            months[key] = { label, total: 0 };
+            months[key] = { label, total: 0, count: 0, people: new Set() };
         }
 
         // Sum transactions by month
@@ -102,13 +116,70 @@ export function ReportsPage() {
             if (months[key]) {
                 const entry = ledgerEntries.find(e => e.transactionId === tx.id);
                 months[key].total += entry?.amountPaid || tx.parsedData.amount;
+                months[key].count += 1;
+                months[key].people.add(tx.parsedData.counterparty.name || tx.parsedData.counterparty.phone || 'Unknown');
             }
         });
 
-        return Object.values(months);
+        return Object.values(months).map(m => ({
+            label: m.label,
+            total: m.total,
+            count: m.count,
+            people: Array.from(m.people),
+        }));
     })();
 
-    const formatMoney = (amount: number) => amount.toLocaleString('en-KE');
+    // Smart Insights
+    const insights = (() => {
+        const result: { icon: string; text: string; type: 'info' | 'warning' | 'success' }[] = [];
+
+        // Top debtor
+        const topDebtor = personBreakdown.filter(p => p.owed > 0).sort((a, b) => b.owed - a.owed)[0];
+        if (topDebtor) {
+            result.push({
+                icon: '💰',
+                text: `${topDebtor.name.split(' ')[0]} owes the most (Ksh ${formatMoney(topDebtor.owed)})`,
+                type: 'warning'
+            });
+        }
+
+        // Best payer
+        const topPayer = personBreakdown.sort((a, b) => b.paid - a.paid)[0];
+        if (topPayer && topPayer.paid > 0) {
+            result.push({
+                icon: '⭐',
+                text: `${topPayer.name.split(' ')[0]} has paid the most (Ksh ${formatMoney(topPayer.paid)})`,
+                type: 'success'
+            });
+        }
+
+        // Collection trend (compare current month vs previous)
+        const currentMonthData = monthlyTrend[monthlyTrend.length - 1];
+        const prevMonthData = monthlyTrend[monthlyTrend.length - 2];
+        if (currentMonthData && prevMonthData && prevMonthData.total > 0) {
+            const changePercent = Math.round(((currentMonthData.total - prevMonthData.total) / prevMonthData.total) * 100);
+            if (changePercent !== 0) {
+                result.push({
+                    icon: changePercent > 0 ? '📈' : '📉',
+                    text: `Collections ${changePercent > 0 ? 'up' : 'down'} ${Math.abs(changePercent)}% vs last month`,
+                    type: changePercent > 0 ? 'success' : 'info'
+                });
+            }
+        }
+
+        // Debt count
+        const debtorCount = personBreakdown.filter(p => p.owed > 0).length;
+        const totalPeople = personBreakdown.length;
+        if (debtorCount > 0 && totalPeople > 0) {
+            result.push({
+                icon: '👥',
+                text: `${debtorCount} of ${totalPeople} people still owe money`,
+                type: 'info'
+            });
+        }
+
+        return result;
+    })();
 
     const handleExportCSV = () => {
         // Generate proper CSV
@@ -299,23 +370,68 @@ export function ReportsPage() {
                     </div>
                 </div>
 
-                {/* Monthly Trend Chart */}
+                {/* Monthly Trend Chart - Line Chart */}
                 <section className="trend-section">
                     <h2 className="section-title">6-Month Trend</h2>
-                    <div className="trend-chart">
-                        {monthlyTrend.map((m, idx) => {
-                            const maxTotal = Math.max(...monthlyTrend.map(x => x.total));
-                            const heightPercent = maxTotal > 0 ? (m.total / maxTotal) * 100 : 0;
-                            return (
-                                <div key={idx} className="trend-bar-container">
-                                    <div
-                                        className="trend-bar"
-                                        style={{ height: `${Math.max(heightPercent, 3)}%` }}
-                                    />
-                                    <span className="trend-bar-label">{m.label}</span>
-                                </div>
-                            );
-                        })}
+                    <p className="section-subtitle">Tap a point for details</p>
+
+                    <div className="line-chart-container">
+                        <svg viewBox="0 0 300 140" className="line-chart" preserveAspectRatio="xMidYMid meet">
+                            {/* Grid lines */}
+                            <line x1="40" y1="10" x2="40" y2="105" stroke="#e5e5e5" strokeWidth="1" />
+                            <line x1="40" y1="105" x2="290" y2="105" stroke="#e5e5e5" strokeWidth="1" />
+                            {[0, 25, 50, 75, 100].map((pct, i) => (
+                                <line key={i} x1="40" y1={105 - pct * 0.95} x2="290" y2={105 - pct * 0.95} stroke="#f0f0f0" strokeWidth="1" />
+                            ))}
+
+                            {/* Line path */}
+                            {(() => {
+                                const maxTotal = Math.max(...monthlyTrend.map(x => x.total), 1);
+                                const points = monthlyTrend.map((m, idx) => {
+                                    const x = 60 + idx * 40;
+                                    const y = 105 - (m.total / maxTotal) * 90;
+                                    return { x, y, data: m };
+                                });
+                                const pathD = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
+
+                                return (
+                                    <>
+                                        {/* Area fill */}
+                                        <path
+                                            d={`${pathD} L ${points[points.length - 1]?.x || 0} 105 L ${points[0]?.x || 0} 105 Z`}
+                                            fill="url(#lineGradient)"
+                                            opacity="0.3"
+                                        />
+                                        {/* Line */}
+                                        <path d={pathD} fill="none" stroke="#0b6e4f" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                                        {/* Data points */}
+                                        {points.map((p, idx) => (
+                                            <g key={idx} onClick={() => p.data.total > 0 && setSelectedMonth(p.data)} style={{ cursor: p.data.total > 0 ? 'pointer' : 'default' }}>
+                                                <circle cx={p.x} cy={p.y} r="6" fill="white" stroke="#0b6e4f" strokeWidth="2" />
+                                                {p.data.total > 0 && (
+                                                    <circle cx={p.x} cy={p.y} r="3" fill="#0b6e4f" />
+                                                )}
+                                            </g>
+                                        ))}
+                                    </>
+                                );
+                            })()}
+
+                            {/* Gradient definition */}
+                            <defs>
+                                <linearGradient id="lineGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                                    <stop offset="0%" stopColor="#0b6e4f" stopOpacity="0.4" />
+                                    <stop offset="100%" stopColor="#0b6e4f" stopOpacity="0" />
+                                </linearGradient>
+                            </defs>
+                        </svg>
+
+                        {/* X-axis labels */}
+                        <div className="line-chart-labels">
+                            {monthlyTrend.map((m, idx) => (
+                                <span key={idx} className="line-chart-label">{m.label}</span>
+                            ))}
+                        </div>
                     </div>
                 </section>
 
@@ -369,7 +485,7 @@ export function ReportsPage() {
 
                 {/* Export Section */}
                 <section className="export-section">
-                    <h2 className="section-title">Export Data</h2>
+                    <h2 className="section-title">Export & Share</h2>
 
                     <div className="export-options">
                         <button className="export-btn" onClick={handleExportPDF}>
@@ -390,6 +506,45 @@ export function ReportsPage() {
                     </div>
                 </section>
             </div>
+
+            {/* Month Detail Modal */}
+            {selectedMonth && (
+                <div className="modal-overlay" onClick={() => setSelectedMonth(null)}>
+                    <div className="modal-content" onClick={e => e.stopPropagation()}>
+                        <button className="modal-close" onClick={() => setSelectedMonth(null)}>
+                            <X size={20} />
+                        </button>
+                        <h3 className="modal-title">{selectedMonth.label} Details</h3>
+                        <div className="modal-stat">
+                            <span className="modal-stat-label">Total Collected</span>
+                            <span className="modal-stat-value amount-positive">
+                                KES {formatMoney(selectedMonth.total)}
+                            </span>
+                        </div>
+                        <div className="modal-stat">
+                            <span className="modal-stat-label">Transactions</span>
+                            <span className="modal-stat-value">{selectedMonth.count}</span>
+                        </div>
+                        {selectedMonth.people.length > 0 && (
+                            <div className="modal-people">
+                                <span className="modal-stat-label">
+                                    👥 People ({selectedMonth.people.length})
+                                </span>
+                                <ul className="modal-people-list">
+                                    {selectedMonth.people.slice(0, 5).map((name, idx) => (
+                                        <li key={idx}>{name}</li>
+                                    ))}
+                                    {selectedMonth.people.length > 5 && (
+                                        <li className="modal-people-more">
+                                            +{selectedMonth.people.length - 5} more
+                                        </li>
+                                    )}
+                                </ul>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

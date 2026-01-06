@@ -1,0 +1,74 @@
+/* Skeleton Loading Styles */
+
+.skeleton {
+    background: linear-gradient(90deg,
+            #f0f0f0 25%,
+            #e0e0e0 50%,
+            #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: skeleton-shimmer 1.5s infinite;
+    border-radius: 2px;
+}
+
+@keyframes skeleton-shimmer {
+    0% {
+        background-position: 200% 0;
+    }
+
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+/* Text Skeleton */
+.skeleton-text-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.skeleton-text {
+    height: 14px;
+}
+
+/* Card Skeleton */
+.skeleton-card {
+    border: var(--border-medium);
+    padding: var(--space-4);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.skeleton-card-header {
+    margin-bottom: var(--space-2);
+}
+
+/* Person Card Skeleton */
+.skeleton-person-card {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-4);
+    border: var(--border-medium);
+}
+
+.skeleton-person-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.skeleton-person-totals {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: var(--space-2);
+}
+
+/* Outdoor Mode */
+[data-outdoor="true"] .skeleton-card,
+[data-outdoor="true"] .skeleton-person-card {
+    border: var(--border-thick);
+}

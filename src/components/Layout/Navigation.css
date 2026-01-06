@@ -29,6 +29,11 @@
     text-transform: uppercase;
     cursor: pointer;
     min-height: var(--touch-min);
+    transition: transform 0.15s ease-out, color 0.15s ease-out;
+}
+
+.nav-item:active {
+    transform: scale(0.95);
 }
 
 .nav-item--active {
