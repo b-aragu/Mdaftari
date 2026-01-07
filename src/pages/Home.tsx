@@ -938,7 +938,7 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                 {/* Quick Action */}
                 <button className="record-btn" onClick={onRecordPayment}>
                     <Plus size={20} strokeWidth={2.5} />
-                    <span>Record Payment</span>
+                    <span>{appMode === 'collections' ? 'Record Collection' : 'Record Payment'}</span>
                 </button>
             </section>
 

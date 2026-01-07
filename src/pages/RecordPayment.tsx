@@ -15,12 +15,13 @@ const TEMP_USER_ID = 'local-user';
 interface RecordPaymentProps {
     onBack: () => void;
     onSuccess: () => void;
+    mode: 'collections' | 'payments';
 }
 
 type InputMethod = 'paste' | 'manual' | 'import';
 type Step = 'input' | 'confirm';
 
-export function RecordPaymentPage({ onBack, onSuccess }: RecordPaymentProps) {
+export function RecordPaymentPage({ onBack, onSuccess, mode }: RecordPaymentProps) {
     const [inputMethod, setInputMethod] = useState<InputMethod>('paste');
     const [step, setStep] = useState<Step>('input');
 
@@ -99,12 +100,12 @@ export function RecordPaymentPage({ onBack, onSuccess }: RecordPaymentProps) {
                     },
                 };
             } else {
-                // Manual entry
+                // Manual entry - type depends on mode
                 transaction = {
                     transactionCode: transactionCode || `MAN${Date.now()}`,
                     amount: parsedAmount,
                     currency: 'KES',
-                    type: 'received',
+                    type: mode === 'collections' ? 'received' : 'sent',
                     counterparty: { name: fromTo || undefined },
                     dateTime: new Date(),
                     rawMessage: '',
@@ -144,7 +145,9 @@ export function RecordPaymentPage({ onBack, onSuccess }: RecordPaymentProps) {
                 <button className="back-btn" onClick={onBack}>
                     <ArrowLeft size={20} />
                 </button>
-                <h1 className="record-title">Record Payment</h1>
+                <h1 className="record-title">
+                    {mode === 'collections' ? 'Record Collection' : 'Record Payment'}
+                </h1>
                 <div className="header-spacer" />
             </header>
 
@@ -229,11 +232,13 @@ export function RecordPaymentPage({ onBack, onSuccess }: RecordPaymentProps) {
                             </div>
 
                             <div className="field-group">
-                                <label className="field-label">From / To</label>
+                                <label className="field-label">
+                                    {mode === 'collections' ? 'From (who paid you)' : 'To (who you paid)'}
+                                </label>
                                 <input
                                     type="text"
                                     className="field-input"
-                                    placeholder="Name or phone number"
+                                    placeholder={mode === 'collections' ? 'Name or phone of payer' : 'Name or phone of recipient'}
                                     value={fromTo}
                                     onChange={(e) => setFromTo(e.target.value)}
                                 />
@@ -296,13 +301,15 @@ export function RecordPaymentPage({ onBack, onSuccess }: RecordPaymentProps) {
                         </div>
 
                         <div className="confirm-row">
-                            <span className="confirm-label">From / To</span>
+                            <span className="confirm-label">
+                                {mode === 'collections' ? 'From' : 'To'}
+                            </span>
                             <input
                                 type="text"
                                 className="confirm-input"
                                 value={fromTo}
                                 onChange={(e) => setFromTo(e.target.value)}
-                                placeholder="Name or phone"
+                                placeholder={mode === 'collections' ? 'Who paid you' : 'Who you paid'}
                             />
                         </div>
 

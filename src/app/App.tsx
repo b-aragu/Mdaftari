@@ -18,6 +18,10 @@ function AppContent() {
     const [activeTab, setActiveTab] = useState<Tab>('home');
     const [view, setView] = useState<View>('main');
     const [showOnboarding, setShowOnboarding] = useState(false);
+    const [appMode, setAppMode] = useState<'collections' | 'payments'>(() => {
+        const saved = localStorage.getItem('mdaftari_app_mode');
+        return (saved === 'payments') ? 'payments' : 'collections';
+    });
     const { isOutdoorMode } = useOutdoorMode();
     const { showToast } = useToast();
 
@@ -27,6 +31,16 @@ function AppContent() {
         if (!hasCompletedOnboarding) {
             setShowOnboarding(true);
         }
+    }, []);
+
+    // Sync appMode from localStorage (in case it changes in Home/Reports)
+    useEffect(() => {
+        const handleStorageChange = () => {
+            const saved = localStorage.getItem('mdaftari_app_mode');
+            setAppMode((saved === 'payments') ? 'payments' : 'collections');
+        };
+        window.addEventListener('storage', handleStorageChange);
+        return () => window.removeEventListener('storage', handleStorageChange);
     }, []);
 
     // Apply outdoor mode to document
@@ -40,6 +54,9 @@ function AppContent() {
     };
 
     const handleRecordPayment = () => {
+        // Re-read mode from localStorage in case it changed
+        const saved = localStorage.getItem('mdaftari_app_mode');
+        setAppMode((saved === 'payments') ? 'payments' : 'collections');
         setView('record');
     };
 
@@ -50,11 +67,11 @@ function AppContent() {
     const handleSuccess = () => {
         setView('main');
         setActiveTab('home');
-        showToast('Payment recorded successfully!', 'success');
+        showToast(appMode === 'collections' ? 'Collection recorded!' : 'Payment recorded!', 'success');
     };
 
     if (view === 'record') {
-        return <RecordPaymentPage onBack={handleBack} onSuccess={handleSuccess} />;
+        return <RecordPaymentPage onBack={handleBack} onSuccess={handleSuccess} mode={appMode} />;
     }
 
     return (
