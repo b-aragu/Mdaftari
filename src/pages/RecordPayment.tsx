@@ -210,7 +210,9 @@ export function RecordPaymentPage({ onBack, onSuccess, mode }: RecordPaymentProp
                     ) : (
                         <div className="input-section">
                             <div className="field-group">
-                                <label className="field-label">Amount Received (KES)</label>
+                                <label className="field-label">
+                                    {mode === 'collections' ? 'Amount Received (KES)' : 'Amount Paying (KES)'}
+                                </label>
                                 <input
                                     type="number"
                                     className="field-input"
@@ -221,7 +223,9 @@ export function RecordPaymentPage({ onBack, onSuccess, mode }: RecordPaymentProp
                             </div>
 
                             <div className="field-group">
-                                <label className="field-label">Expected Amount (KES)</label>
+                                <label className="field-label">
+                                    {mode === 'collections' ? 'Expected Amount (KES)' : 'Total Owed (KES)'}
+                                </label>
                                 <input
                                     type="number"
                                     className="field-input"
@@ -281,7 +285,9 @@ export function RecordPaymentPage({ onBack, onSuccess, mode }: RecordPaymentProp
 
                     <div className="confirm-card">
                         <div className="confirm-row">
-                            <span className="confirm-label">Amount Received</span>
+                            <span className="confirm-label">
+                                {mode === 'collections' ? 'Amount Received' : 'Amount Paying'}
+                            </span>
                             <input
                                 type="number"
                                 className="confirm-input"

@@ -258,7 +258,7 @@ function parseStatementText(text: string): ParsedStatement {
 
 /**
  * Finalize a transaction from collected parts
- * Returns null for withdrawals (we only want Paid In transactions)
+ * Returns all transactions - filtering is done in the UI based on mode
  */
 function finalizeTransaction(data: {
     receiptNo: string;
@@ -289,8 +289,9 @@ function finalizeTransaction(data: {
         balance = data.amounts[0];
     }
 
-    // Skip withdrawals - only return transactions with paidIn > 0
-    if (paidIn <= 0) {
+    // Return all transactions - UI will filter by mode (collections = paidIn, payments = paidOut)
+    // Only skip if there's no meaningful data
+    if (paidIn <= 0 && paidOut <= 0 && balance <= 0) {
         return null;
     }
 
