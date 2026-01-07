@@ -3,7 +3,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { Plus, ArrowDownLeft, ArrowUpRight, Calendar, ChevronRight, TrendingUp, TrendingDown, Users, ArrowLeft, FileText, Trash2, Edit3, Search, X } from 'lucide-react';
+import { Plus, ArrowDownLeft, ArrowUpRight, Calendar, ChevronRight, Users, ArrowLeft, FileText, Trash2, Edit3, Search, X, Wallet, CreditCard } from 'lucide-react';
 import { getTransactionsByUser, getLedgerEntriesByTransaction, updateTransaction, deleteTransaction } from '../storage';
 import { useCountUp } from '../hooks';
 import { SkeletonPersonCard } from '../components/ui';
@@ -36,6 +36,10 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [ledgerEntries, setLedgerEntries] = useState<LedgerEntry[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [appMode, setAppMode] = useState<'collections' | 'payments'>(() => {
+        const saved = localStorage.getItem('mdaftari_app_mode');
+        return (saved === 'payments') ? 'payments' : 'collections';
+    });
     const [activePeriod, setActivePeriod] = useState<'week' | 'month' | 'all'>('week');
     const [viewMode, setViewMode] = useState<'date' | 'person'>('person');
     const [selectedPerson, setSelectedPerson] = useState<PersonGroup | null>(null);
@@ -74,6 +78,15 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
         loadData();
     }, [loadData]);
 
+    // Handle mode change with localStorage persistence
+    const handleModeChange = (mode: 'collections' | 'payments') => {
+        setAppMode(mode);
+        localStorage.setItem('mdaftari_app_mode', mode);
+        // Reset selection when changing modes
+        setSelectedPerson(null);
+        setSelectedDay(null);
+    };
+
     // Filter transactions by active period
     const now = new Date();
     const filterDate = (() => {
@@ -89,21 +102,34 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
         return null; // 'all' - no filter
     })();
 
-    const filteredTransactions = filterDate
+    // First filter by date period
+    const periodFilteredTx = filterDate
         ? transactions.filter(tx => tx.parsedData.dateTime >= filterDate)
         : transactions;
 
+    // Then filter by app mode (collections = received, payments = sent/paybill/buyGoods)
+    const filteredTransactions = periodFilteredTx.filter(tx => {
+        if (appMode === 'collections') {
+            return tx.parsedData.type === 'received';
+        } else {
+            return ['sent', 'paybill', 'buyGoods'].includes(tx.parsedData.type);
+        }
+    });
+
     const filteredLedgerEntries = filterDate
         ? ledgerEntries.filter(e => {
-            const tx = transactions.find(t => t.id === e.transactionId);
-            return tx && tx.parsedData.dateTime >= filterDate;
+            const tx = filteredTransactions.find(t => t.id === e.transactionId);
+            return !!tx;
         })
-        : ledgerEntries;
+        : ledgerEntries.filter(e => {
+            const tx = filteredTransactions.find(t => t.id === e.transactionId);
+            return !!tx;
+        });
 
     // Calculate totals from filtered data
     const totalIn = filteredLedgerEntries.reduce((sum, e) => sum + e.amountPaid, 0);
     const totalOut = filteredLedgerEntries.reduce((sum, e) => sum + e.amountOwed, 0);
-    const netBalance = totalOut; // Total still owed to you
+    const netBalance = totalOut; // Total still owed/owing
 
     // Animated counters - only animate once data is loaded
     const animatedTotalIn = useCountUp(totalIn, 1000, !isLoading);
@@ -801,26 +827,53 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                 </div>
             </header>
 
+            {/* Mode Selector */}
+            <div className="mode-selector">
+                <button
+                    className={`mode-btn ${appMode === 'collections' ? 'mode-btn--active mode-btn--collections' : ''}`}
+                    onClick={() => handleModeChange('collections')}
+                >
+                    <Wallet size={18} />
+                    <span>Collections</span>
+                </button>
+                <button
+                    className={`mode-btn ${appMode === 'payments' ? 'mode-btn--active mode-btn--payments' : ''}`}
+                    onClick={() => handleModeChange('payments')}
+                >
+                    <CreditCard size={18} />
+                    <span>Payments</span>
+                </button>
+            </div>
+
             {/* Net Balance Hero */}
             {!isLoading && (
-                <section className="net-balance-hero">
+                <section className={`net-balance-hero ${appMode === 'payments' ? 'net-balance-hero--payments' : ''}`}>
                     {netBalance > 0 ? (
                         <>
-                            <span className="hero-label">You're owed</span>
-                            <span className="hero-amount hero-amount--owed">
+                            <span className="hero-label">
+                                {appMode === 'collections' ? "You're owed" : "You paid"}
+                            </span>
+                            <span className={`hero-amount ${appMode === 'collections' ? 'hero-amount--owed' : 'hero-amount--paid'}`}>
                                 Ksh {formatMoney(animatedNetBalance)}
                             </span>
                             {peopleWhoOwe > 0 && (
                                 <span className="hero-context">
-                                    from {peopleWhoOwe} {peopleWhoOwe === 1 ? 'person' : 'people'}
+                                    {appMode === 'collections'
+                                        ? `from ${peopleWhoOwe} ${peopleWhoOwe === 1 ? 'person' : 'people'}`
+                                        : `to ${peopleWhoOwe} ${peopleWhoOwe === 1 ? 'person' : 'people'}`
+                                    }
                                 </span>
                             )}
                         </>
                     ) : (
                         <>
-                            <span className="hero-label">All paid up</span>
+                            <span className="hero-label">
+                                {appMode === 'collections' ? "All paid up" : "No payments"}
+                            </span>
                             <span className="hero-amount hero-amount--clear">✓</span>
-                            <span className="hero-context">No outstanding debts</span>
+                            <span className="hero-context">
+                                {appMode === 'collections' ? "No outstanding debts" : "No outgoing payments"}
+                            </span>
                         </>
                     )}
                 </section>
@@ -829,25 +882,25 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
             {/* Summary Cards - CountPesa Style */}
             <section className="summary-section">
                 <div className="summary-cards">
-                    <div className="summary-card summary-card--in">
+                    <div className={`summary-card ${appMode === 'collections' ? 'summary-card--in' : 'summary-card--out-primary'}`}>
                         <div className="summary-card-header">
-                            <TrendingUp size={20} />
-                            <span>Received</span>
+                            {appMode === 'collections' ? <ArrowDownLeft size={20} /> : <ArrowUpRight size={20} />}
+                            <span>{appMode === 'collections' ? 'Received' : 'Paid Out'}</span>
                         </div>
                         <div className="summary-card-amount">
                             <span className="currency">Ksh</span>
-                            <span className="money money-lg money-in">{formatMoney(animatedTotalIn)}</span>
+                            <span className={`money money-lg ${appMode === 'collections' ? 'money-in' : 'money-out'}`}>{formatMoney(animatedTotalIn)}</span>
                         </div>
                     </div>
 
-                    <div className="summary-card summary-card--out">
+                    <div className={`summary-card ${appMode === 'collections' ? 'summary-card--out' : 'summary-card--owe'}`}>
                         <div className="summary-card-header">
-                            <TrendingDown size={20} />
-                            <span>Still Owed</span>
+                            {appMode === 'collections' ? <ArrowUpRight size={20} /> : <ArrowDownLeft size={20} />}
+                            <span>{appMode === 'collections' ? 'Still Owed' : 'You Owe'}</span>
                         </div>
                         <div className="summary-card-amount">
                             <span className="currency">Ksh</span>
-                            <span className="money money-lg money-out">{formatMoney(animatedTotalOut)}</span>
+                            <span className={`money money-lg ${appMode === 'collections' ? 'money-out' : 'money-debt'}`}>{formatMoney(animatedTotalOut)}</span>
                         </div>
                     </div>
                 </div>
@@ -957,7 +1010,7 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                             .map((person, idx) => (
                                 <div
                                     key={idx}
-                                    className="person-card"
+                                    className={`person-card ${appMode === 'payments' ? 'person-card--payments' : ''}`}
                                     onClick={() => setSelectedPerson(person)}
                                 >
                                     <div className="person-info">
@@ -967,12 +1020,12 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                                         </span>
                                     </div>
                                     <div className="person-totals">
-                                        <span className="person-received">
+                                        <span className={`person-received ${appMode === 'payments' ? 'person-received--payments' : ''}`}>
                                             Ksh {formatMoney(person.totalReceived)}
                                         </span>
                                         {person.totalOwed > 0 && (
-                                            <span className="person-owed">
-                                                Owes: Ksh {formatMoney(person.totalOwed)}
+                                            <span className={`person-owed ${appMode === 'payments' ? 'person-owed--payments' : ''}`}>
+                                                {appMode === 'collections' ? 'Owes' : 'You Paid'}: Ksh {formatMoney(person.totalOwed)}
                                             </span>
                                         )}
                                     </div>

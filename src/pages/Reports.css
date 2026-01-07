@@ -30,6 +30,68 @@
     /* Space for fixed bottom nav */
 }
 
+/* Mode Selector */
+.mode-selector {
+    display: flex;
+    margin-bottom: var(--space-4);
+    border: var(--border-medium);
+}
+
+.mode-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    padding: var(--space-4);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-bold);
+    background: transparent;
+    border: none;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.mode-btn svg {
+    transition: transform 0.2s ease;
+}
+
+.mode-btn:active svg {
+    transform: scale(0.9);
+}
+
+.mode-btn--active {
+    color: var(--color-text-primary);
+    background: var(--color-background);
+}
+
+.mode-btn--active::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+}
+
+.mode-btn--collections.mode-btn--active {
+    color: var(--color-success);
+}
+
+.mode-btn--collections.mode-btn--active::after {
+    background: var(--color-success);
+}
+
+.mode-btn--payments.mode-btn--active {
+    color: #dc2626;
+}
+
+.mode-btn--payments.mode-btn--active::after {
+    background: #dc2626;
+}
+
 /* Date Range Filter */
 .date-filter {
     display: flex;

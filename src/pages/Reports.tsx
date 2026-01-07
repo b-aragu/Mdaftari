@@ -3,7 +3,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { Download, TrendingUp, TrendingDown, X } from 'lucide-react';
+import { Download, ArrowDownLeft, ArrowUpRight, X, Wallet, CreditCard } from 'lucide-react';
 import { getTransactionsByUser, getLedgerEntriesByTransaction } from '../storage';
 import type { Transaction, LedgerEntry } from '../ledger/types';
 import './Reports.css';
@@ -14,6 +14,10 @@ export function ReportsPage() {
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [ledgerEntries, setLedgerEntries] = useState<LedgerEntry[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [appMode, setAppMode] = useState<'collections' | 'payments'>(() => {
+        const saved = localStorage.getItem('mdaftari_app_mode');
+        return (saved === 'payments') ? 'payments' : 'collections';
+    });
     const [dateRange, setDateRange] = useState<'week' | 'month' | 'all'>('month');
     const [selectedMonth, setSelectedMonth] = useState<{
         label: string;
@@ -61,9 +65,25 @@ export function ReportsPage() {
         return null; // 'all'
     })();
 
-    const filteredTransactions = filterDate
+    // Handle mode change with localStorage sync
+    const handleModeChange = (mode: 'collections' | 'payments') => {
+        setAppMode(mode);
+        localStorage.setItem('mdaftari_app_mode', mode);
+    };
+
+    // First filter by date
+    const periodFilteredTx = filterDate
         ? transactions.filter(tx => tx.parsedData.dateTime >= filterDate)
         : transactions;
+
+    // Then filter by mode
+    const filteredTransactions = periodFilteredTx.filter(tx => {
+        if (appMode === 'collections') {
+            return tx.parsedData.type === 'received';
+        } else {
+            return ['sent', 'paybill', 'buyGoods'].includes(tx.parsedData.type);
+        }
+    });
 
     const filteredTxIds = new Set(filteredTransactions.map(tx => tx.id));
     const filteredEntries = ledgerEntries.filter(e => filteredTxIds.has(e.transactionId));
@@ -278,6 +298,24 @@ export function ReportsPage() {
             </header>
 
             <div className="reports-content">
+                {/* Mode Selector */}
+                <div className="mode-selector">
+                    <button
+                        className={`mode-btn ${appMode === 'collections' ? 'mode-btn--active mode-btn--collections' : ''}`}
+                        onClick={() => handleModeChange('collections')}
+                    >
+                        <Wallet size={18} />
+                        <span>Collections</span>
+                    </button>
+                    <button
+                        className={`mode-btn ${appMode === 'payments' ? 'mode-btn--active mode-btn--payments' : ''}`}
+                        onClick={() => handleModeChange('payments')}
+                    >
+                        <CreditCard size={18} />
+                        <span>Payments</span>
+                    </button>
+                </div>
+
                 {/* Date Range Filter */}
                 <div className="date-filter">
                     {(['week', 'month', 'all'] as const).map((range) => (
@@ -293,27 +331,31 @@ export function ReportsPage() {
 
                 {/* Summary Cards - Connected to real data */}
                 <div className="summary-grid">
-                    <div className="summary-card">
-                        <div className="summary-icon">
-                            <TrendingUp size={20} />
+                    <div className={`summary-card ${appMode === 'payments' ? 'summary-card--payments' : ''}`}>
+                        <div className={`summary-icon ${appMode === 'payments' ? 'summary-icon--red' : ''}`}>
+                            {appMode === 'collections' ? <ArrowDownLeft size={20} /> : <ArrowUpRight size={20} />}
                         </div>
                         <div className="summary-data">
-                            <span className="summary-value amount-positive">
+                            <span className={`summary-value ${appMode === 'collections' ? 'amount-positive' : 'amount-negative'}`}>
                                 {isLoading ? '...' : `KES ${formatMoney(totalReceived)}`}
                             </span>
-                            <span className="summary-label">Total Received</span>
+                            <span className="summary-label">
+                                {appMode === 'collections' ? 'Total Received' : 'Total Paid Out'}
+                            </span>
                         </div>
                     </div>
 
                     <div className="summary-card">
                         <div className="summary-icon summary-icon--red">
-                            <TrendingDown size={20} />
+                            {appMode === 'collections' ? <ArrowUpRight size={20} /> : <ArrowDownLeft size={20} />}
                         </div>
                         <div className="summary-data">
                             <span className="summary-value amount-negative">
                                 {isLoading ? '...' : `KES ${formatMoney(totalOwed)}`}
                             </span>
-                            <span className="summary-label">Still Owed to You</span>
+                            <span className="summary-label">
+                                {appMode === 'collections' ? 'Still Owed to You' : 'You Still Owe'}
+                            </span>
                         </div>
                     </div>
                 </div>
