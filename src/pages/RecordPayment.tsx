@@ -372,6 +372,7 @@ export function RecordPaymentPage({ onBack, onSuccess, mode }: RecordPaymentProp
                 <StatementImport
                     onComplete={onSuccess}
                     onBack={() => setInputMethod('paste')}
+                    mode={mode}
                 />
             )}
         </div>

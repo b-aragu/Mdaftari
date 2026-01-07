@@ -24,11 +24,12 @@ const TEMP_USER_ID = 'local-user';
 interface StatementImportProps {
     onComplete: () => void;
     onBack: () => void;
+    mode: 'collections' | 'payments';
 }
 
 type ImportStep = 'upload' | 'review' | 'confirm' | 'success';
 
-export function StatementImport({ onComplete, onBack }: StatementImportProps) {
+export function StatementImport({ onComplete, onBack, mode }: StatementImportProps) {
     const [step, setStep] = useState<ImportStep>('upload');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -150,17 +151,19 @@ export function StatementImport({ onComplete, onBack }: StatementImportProps) {
             filtered = filterByType(filtered, selectedType as StatementTransaction['type']);
         }
 
-        // Amount range filter
+        // Amount range filter - use paidIn for collections, paidOut for payments
+        const getAmount = (t: StatementTransaction) => mode === 'collections' ? t.paidIn : t.paidOut;
+
         if (minAmount) {
             const min = parseFloat(minAmount);
             if (!isNaN(min)) {
-                filtered = filtered.filter(t => t.paidIn >= min);
+                filtered = filtered.filter(t => getAmount(t) >= min);
             }
         }
         if (maxAmount) {
             const max = parseFloat(maxAmount);
             if (!isNaN(max)) {
-                filtered = filtered.filter(t => t.paidIn <= max);
+                filtered = filtered.filter(t => getAmount(t) <= max);
             }
         }
 
@@ -176,7 +179,7 @@ export function StatementImport({ onComplete, onBack }: StatementImportProps) {
         }
 
         setFilteredTransactions(filtered);
-    }, [transactions, selectedPerson, selectedType, searchText, minAmount, maxAmount, startDate, endDate]);
+    }, [transactions, selectedPerson, selectedType, searchText, minAmount, maxAmount, startDate, endDate, mode]);
 
     const handlePersonChange = (person: string) => {
         setSelectedPerson(person);
@@ -228,12 +231,16 @@ export function StatementImport({ onComplete, onBack }: StatementImportProps) {
                 const tx = selected[i];
                 if (!tx) continue;
 
+                // Determine amount based on mode
+                const amount = mode === 'collections' ? tx.paidIn : tx.paidOut;
+                if (amount <= 0) continue; // Skip if no relevant amount
+
                 // Convert to ParsedTransaction format
                 const parsedData: ParsedTransaction = {
-                    amount: tx.paidIn > 0 ? tx.paidIn : tx.paidOut,
+                    amount: amount,
                     transactionCode: tx.receiptNo,
                     currency: 'KES',
-                    type: tx.type === 'received' ? 'received' : 'sent',
+                    type: mode === 'collections' ? 'received' : 'sent',
                     dateTime: tx.date,
                     counterparty: {
                         name: tx.counterparty,
@@ -250,19 +257,19 @@ export function StatementImport({ onComplete, onBack }: StatementImportProps) {
                     parsedData,
                     TEMP_USER_ID,
                     tx.expectedAmount,
-                    `Imported from M-Pesa statement`
+                    `Imported from M-Pesa statement (${mode === 'collections' ? 'Collection' : 'Payment'})`
                 );
 
                 // Create ledger entry
-                const amountPaid = tx.paidIn;
-                const amountOwed = tx.expectedAmount ? tx.expectedAmount - tx.paidIn : 0;
+                const amountRecorded = amount;
+                const amountOwed = tx.expectedAmount ? tx.expectedAmount - amount : 0;
 
                 await createLedgerEntry(
                     savedTx.id,
                     null, // No worker in personal finance mode
-                    amountPaid,
+                    amountRecorded,
                     Math.max(0, amountOwed),
-                    amountPaid,
+                    amountRecorded,
                     Math.max(0, amountOwed)
                 );
 
@@ -332,11 +339,12 @@ export function StatementImport({ onComplete, onBack }: StatementImportProps) {
         const groups: Record<string, { count: number; total: number }> = {};
 
         for (const tx of selected) {
+            const amount = mode === 'collections' ? tx.paidIn : tx.paidOut;
             if (!groups[tx.counterparty]) {
                 groups[tx.counterparty] = { count: 0, total: 0 };
             }
             groups[tx.counterparty].count++;
-            groups[tx.counterparty].total += tx.paidIn;
+            groups[tx.counterparty].total += amount;
         }
 
         return Object.entries(groups)
@@ -370,9 +378,9 @@ export function StatementImport({ onComplete, onBack }: StatementImportProps) {
                     <div className="upload-icon">
                         <FileText size={48} />
                     </div>
-                    <h2>Import M-Pesa Statement</h2>
+                    <h2>Import {mode === 'collections' ? 'Collections' : 'Payments'}</h2>
                     <p className="upload-desc">
-                        Upload your M-Pesa PDF statement to import transactions
+                        Upload your M-Pesa PDF statement to import {mode === 'collections' ? '"Paid In" (received)' : '"Withdrawn" (paid out)'} transactions
                     </p>
 
                     {!needsPassword ? (
@@ -585,7 +593,7 @@ export function StatementImport({ onComplete, onBack }: StatementImportProps) {
                             </span>
                             {selectedCount > 0 && (
                                 <span className="selected-total">
-                                    KES {formatMoney(filteredTransactions.filter(t => t.selected).reduce((sum, t) => sum + t.paidIn, 0))}
+                                    KES {formatMoney(filteredTransactions.filter(t => t.selected).reduce((sum, t) => sum + (mode === 'collections' ? t.paidIn : t.paidOut), 0))}
                                 </span>
                             )}
                         </div>
@@ -616,9 +624,15 @@ export function StatementImport({ onComplete, onBack }: StatementImportProps) {
                                         <div className="tx-info">
                                             <div className="tx-main">
                                                 <span className="tx-counterparty">{tx.counterparty}</span>
-                                                <span className={`tx-amount ${tx.paidIn > 0 ? 'amount-positive' : 'amount-negative'}`}>
-                                                    {tx.paidIn > 0 ? '+' : '-'}KES {formatMoney(tx.paidIn || tx.paidOut)}
-                                                </span>
+                                                {(() => {
+                                                    const amount = mode === 'collections' ? tx.paidIn : tx.paidOut;
+                                                    const isPositive = mode === 'collections';
+                                                    return (
+                                                        <span className={`tx-amount ${isPositive ? 'amount-positive' : 'amount-negative'}`}>
+                                                            {isPositive ? '+' : '-'}KES {formatMoney(amount)}
+                                                        </span>
+                                                    );
+                                                })()}
                                             </div>
                                             <div className="tx-secondary">
                                                 <span className="tx-code">{tx.receiptNo}</span>
@@ -664,15 +678,15 @@ export function StatementImport({ onComplete, onBack }: StatementImportProps) {
                                     <div key={g.person} className="summary-item">
                                         <span className="summary-person">{g.person}</span>
                                         <span className="summary-details">
-                                            {g.count} payment{g.count !== 1 ? 's' : ''} • KES {formatMoney(g.total)}
+                                            {g.count} {mode === 'collections' ? 'collection' : 'payment'}{g.count !== 1 ? 's' : ''} • KES {formatMoney(g.total)}
                                         </span>
                                     </div>
                                 ))}
                             </div>
                             <div className="summary-total">
-                                <span>Total</span>
+                                <span>Total {mode === 'collections' ? 'Collections' : 'Payments'}</span>
                                 <span className="summary-amount">
-                                    KES {formatMoney(filteredTransactions.filter(t => t.selected).reduce((s, t) => s + t.paidIn, 0))}
+                                    KES {formatMoney(filteredTransactions.filter(t => t.selected).reduce((s, t) => s + (mode === 'collections' ? t.paidIn : t.paidOut), 0))}
                                 </span>
                             </div>
                         </div>
