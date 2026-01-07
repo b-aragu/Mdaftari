@@ -161,3 +161,62 @@
 [data-outdoor="true"] .settings-toggle {
     border: var(--border-thick);
 }
+
+/* Delete Confirmation Modal */
+.settings-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: var(--space-4);
+}
+
+.settings-modal {
+    background: var(--color-background);
+    width: 100%;
+    max-width: 320px;
+    padding: var(--space-6);
+    text-align: center;
+}
+
+.settings-modal h3 {
+    font-size: var(--text-lg);
+    font-weight: var(--weight-bold);
+    margin: 0 0 var(--space-3);
+    color: #dc2626;
+}
+
+.settings-modal p {
+    font-size: var(--text-sm);
+    color: var(--color-text-secondary);
+    margin: 0 0 var(--space-5);
+    line-height: 1.5;
+}
+
+.settings-modal-actions {
+    display: flex;
+    gap: var(--space-3);
+}
+
+.settings-modal-btn {
+    flex: 1;
+    padding: var(--space-4);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-bold);
+    border: var(--border-medium);
+    cursor: pointer;
+}
+
+.settings-modal-btn--cancel {
+    background: var(--color-background);
+    color: var(--color-text-primary);
+}
+
+.settings-modal-btn--delete {
+    background: #dc2626;
+    color: var(--color-background);
+    border-color: #dc2626;
+}

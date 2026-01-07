@@ -14,6 +14,8 @@ export {
     getPendingTransactions,
     transactionCodeExists,
     getExistingReceiptNumbers,
+    updateTransaction,
+    deleteTransaction,
 
     // Worker operations
     addWorker,

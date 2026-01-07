@@ -2,13 +2,15 @@
  * Settings Page
  */
 
-import { Sun, Moon, Trash2, Download, Shield, ChevronRight } from 'lucide-react';
+import { useState } from 'react';
+import { Sun, Moon, Trash2, Download, Shield, ChevronRight, HelpCircle } from 'lucide-react';
 import { useOutdoorMode } from '../hooks';
 import { clearAllData, exportAllData } from '../storage';
 import './Settings.css';
 
 export function SettingsPage() {
     const { isOutdoorMode, toggleOutdoorMode } = useOutdoorMode();
+    const [showConfirmDelete, setShowConfirmDelete] = useState(false);
 
     const handleExport = async () => {
         try {
@@ -21,19 +23,24 @@ export function SettingsPage() {
             a.click();
             URL.revokeObjectURL(url);
         } catch (err) {
-            alert('Failed to export data');
+            console.error('Failed to export data:', err);
         }
     };
 
     const handleClearData = async () => {
-        if (confirm('This will delete all your data. Are you sure?')) {
-            try {
-                await clearAllData();
-                window.location.reload();
-            } catch (err) {
-                alert('Failed to clear data');
-            }
+        try {
+            await clearAllData();
+            // Also clear onboarding flag so user sees tutorial again
+            localStorage.removeItem('mdaftari_onboarding_complete');
+            window.location.reload();
+        } catch (err) {
+            console.error('Failed to clear data:', err);
         }
+    };
+
+    const handleShowOnboarding = () => {
+        localStorage.removeItem('mdaftari_onboarding_complete');
+        window.location.reload();
     };
 
     return (
@@ -65,6 +72,24 @@ export function SettingsPage() {
                     </div>
                 </section>
 
+                {/* Help Section */}
+                <section className="settings-section">
+                    <h2 className="settings-section-title">Help</h2>
+
+                    <div className="settings-list">
+                        <button className="settings-item" onClick={handleShowOnboarding}>
+                            <div className="settings-item-icon">
+                                <HelpCircle size={20} />
+                            </div>
+                            <div className="settings-item-content">
+                                <span className="settings-item-label">Show Tutorial</span>
+                                <span className="settings-item-desc">View the getting started guide</span>
+                            </div>
+                            <ChevronRight size={18} className="settings-item-arrow" />
+                        </button>
+                    </div>
+                </section>
+
                 {/* Data Section */}
                 <section className="settings-section">
                     <h2 className="settings-section-title">Data</h2>
@@ -81,7 +106,7 @@ export function SettingsPage() {
                             <ChevronRight size={18} className="settings-item-arrow" />
                         </button>
 
-                        <button className="settings-item settings-item--danger" onClick={handleClearData}>
+                        <button className="settings-item settings-item--danger" onClick={() => setShowConfirmDelete(true)}>
                             <div className="settings-item-icon">
                                 <Trash2 size={20} />
                             </div>
@@ -119,6 +144,25 @@ export function SettingsPage() {
                     <p className="settings-tagline">Track Every Shilling</p>
                 </div>
             </div>
+
+            {/* Delete Confirmation Modal */}
+            {showConfirmDelete && (
+                <div className="settings-modal-overlay" onClick={() => setShowConfirmDelete(false)}>
+                    <div className="settings-modal" onClick={e => e.stopPropagation()}>
+                        <h3>Delete All Data?</h3>
+                        <p>This will permanently delete all your transactions and payment history.</p>
+                        <div className="settings-modal-actions">
+                            <button className="settings-modal-btn settings-modal-btn--cancel" onClick={() => setShowConfirmDelete(false)}>
+                                Cancel
+                            </button>
+                            <button className="settings-modal-btn settings-modal-btn--delete" onClick={handleClearData}>
+                                Delete Everything
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
+

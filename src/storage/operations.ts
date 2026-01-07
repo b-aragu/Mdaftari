@@ -104,6 +104,75 @@ export async function getExistingReceiptNumbers(codes: string[]): Promise<Set<st
     return existingCodes;
 }
 
+/**
+ * Update a transaction's expected amount and notes
+ */
+export async function updateTransaction(
+    id: UUID,
+    updates: {
+        expectedAmount?: number;
+        notes?: string;
+    }
+): Promise<Transaction> {
+    const db = await getDatabase();
+    const transaction = await db.get('transactions', id);
+
+    if (!transaction) {
+        throw new Error('Transaction not found');
+    }
+
+    const updatedTransaction: Transaction = {
+        ...transaction,
+        expectedAmount: updates.expectedAmount ?? transaction.expectedAmount,
+        notes: updates.notes ?? transaction.notes,
+        syncStatus: 'pending',
+    };
+
+    await db.put('transactions', updatedTransaction);
+    await addToSyncQueue('update', 'transaction', updatedTransaction);
+
+    // Update associated ledger entries if expected amount changed
+    if (updates.expectedAmount !== undefined) {
+        const entries = await db.getAllFromIndex('ledgerEntries', 'by-transaction', id);
+        for (const entry of entries) {
+            const amountOwed = Math.max(0, updates.expectedAmount - entry.amountPaid);
+            const updatedEntry: LedgerEntry = {
+                ...entry,
+                amountOwed,
+                cumulativeOwed: amountOwed,
+                syncStatus: 'pending',
+            };
+            await db.put('ledgerEntries', updatedEntry);
+            await addToSyncQueue('update', 'ledgerEntry', updatedEntry);
+        }
+    }
+
+    return updatedTransaction;
+}
+
+/**
+ * Delete a transaction and its associated ledger entries
+ */
+export async function deleteTransaction(id: UUID): Promise<void> {
+    const db = await getDatabase();
+    const transaction = await db.get('transactions', id);
+
+    if (!transaction) {
+        throw new Error('Transaction not found');
+    }
+
+    // Delete associated ledger entries first
+    const entries = await db.getAllFromIndex('ledgerEntries', 'by-transaction', id);
+    for (const entry of entries) {
+        await db.delete('ledgerEntries', entry.id);
+        await addToSyncQueue('delete', 'ledgerEntry', { id: entry.id });
+    }
+
+    // Delete the transaction
+    await db.delete('transactions', id);
+    await addToSyncQueue('delete', 'transaction', { id });
+}
+
 // ============================================================
 // WORKER OPERATIONS
 // ============================================================

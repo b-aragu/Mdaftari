@@ -2,12 +2,14 @@
  * Main App Component
  */
 
-import React, { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Navigation } from '../components/Layout';
 import { HomePage, RecordPaymentPage, ReportsPage, SettingsPage } from '../pages';
+import { Onboarding } from '../components/Onboarding';
 import { useOutdoorMode } from '../hooks';
 import { ToastProvider, useToast } from '../context';
 
+const ONBOARDING_KEY = 'mdaftari_onboarding_complete';
 
 type Tab = 'home' | 'reports' | 'settings';
 type View = 'main' | 'record';
@@ -15,13 +17,27 @@ type View = 'main' | 'record';
 function AppContent() {
     const [activeTab, setActiveTab] = useState<Tab>('home');
     const [view, setView] = useState<View>('main');
+    const [showOnboarding, setShowOnboarding] = useState(false);
     const { isOutdoorMode } = useOutdoorMode();
     const { showToast } = useToast();
 
+    // Check if user has completed onboarding
+    useEffect(() => {
+        const hasCompletedOnboarding = localStorage.getItem(ONBOARDING_KEY);
+        if (!hasCompletedOnboarding) {
+            setShowOnboarding(true);
+        }
+    }, []);
+
     // Apply outdoor mode to document
-    React.useEffect(() => {
+    useEffect(() => {
         document.documentElement.setAttribute('data-outdoor', String(isOutdoorMode));
     }, [isOutdoorMode]);
+
+    const handleOnboardingComplete = () => {
+        localStorage.setItem(ONBOARDING_KEY, 'true');
+        setShowOnboarding(false);
+    };
 
     const handleRecordPayment = () => {
         setView('record');
@@ -43,6 +59,8 @@ function AppContent() {
 
     return (
         <div className="app">
+            {showOnboarding && <Onboarding onComplete={handleOnboardingComplete} />}
+
             {activeTab === 'home' && <HomePage onRecordPayment={handleRecordPayment} />}
             {activeTab === 'reports' && <ReportsPage />}
             {activeTab === 'settings' && <SettingsPage />}

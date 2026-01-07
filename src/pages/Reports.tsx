@@ -129,58 +129,6 @@ export function ReportsPage() {
         }));
     })();
 
-    // Smart Insights
-    const insights = (() => {
-        const result: { icon: string; text: string; type: 'info' | 'warning' | 'success' }[] = [];
-
-        // Top debtor
-        const topDebtor = personBreakdown.filter(p => p.owed > 0).sort((a, b) => b.owed - a.owed)[0];
-        if (topDebtor) {
-            result.push({
-                icon: '💰',
-                text: `${topDebtor.name.split(' ')[0]} owes the most (Ksh ${formatMoney(topDebtor.owed)})`,
-                type: 'warning'
-            });
-        }
-
-        // Best payer
-        const topPayer = personBreakdown.sort((a, b) => b.paid - a.paid)[0];
-        if (topPayer && topPayer.paid > 0) {
-            result.push({
-                icon: '⭐',
-                text: `${topPayer.name.split(' ')[0]} has paid the most (Ksh ${formatMoney(topPayer.paid)})`,
-                type: 'success'
-            });
-        }
-
-        // Collection trend (compare current month vs previous)
-        const currentMonthData = monthlyTrend[monthlyTrend.length - 1];
-        const prevMonthData = monthlyTrend[monthlyTrend.length - 2];
-        if (currentMonthData && prevMonthData && prevMonthData.total > 0) {
-            const changePercent = Math.round(((currentMonthData.total - prevMonthData.total) / prevMonthData.total) * 100);
-            if (changePercent !== 0) {
-                result.push({
-                    icon: changePercent > 0 ? '📈' : '📉',
-                    text: `Collections ${changePercent > 0 ? 'up' : 'down'} ${Math.abs(changePercent)}% vs last month`,
-                    type: changePercent > 0 ? 'success' : 'info'
-                });
-            }
-        }
-
-        // Debt count
-        const debtorCount = personBreakdown.filter(p => p.owed > 0).length;
-        const totalPeople = personBreakdown.length;
-        if (debtorCount > 0 && totalPeople > 0) {
-            result.push({
-                icon: '👥',
-                text: `${debtorCount} of ${totalPeople} people still owe money`,
-                type: 'info'
-            });
-        }
-
-        return result;
-    })();
-
     const handleExportCSV = () => {
         // Generate proper CSV
         const header = 'Date,Name,Phone,Type,Amount,Paid,Owed,Transaction Code\n';

@@ -2,9 +2,9 @@
  * Home Page - CountPesa Inspired
  */
 
-import { useState, useEffect } from 'react';
-import { Plus, ArrowDownLeft, ArrowUpRight, Calendar, ChevronRight, TrendingUp, TrendingDown, Users, ArrowLeft, FileText } from 'lucide-react';
-import { getTransactionsByUser, getLedgerEntriesByTransaction } from '../storage';
+import { useState, useEffect, useCallback } from 'react';
+import { Plus, ArrowDownLeft, ArrowUpRight, Calendar, ChevronRight, TrendingUp, TrendingDown, Users, ArrowLeft, FileText, Trash2, Edit3, Search, X } from 'lucide-react';
+import { getTransactionsByUser, getLedgerEntriesByTransaction, updateTransaction, deleteTransaction } from '../storage';
 import { useCountUp } from '../hooks';
 import { SkeletonPersonCard } from '../components/ui';
 import type { Transaction, LedgerEntry } from '../ledger/types';
@@ -44,32 +44,65 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
         entry?: LedgerEntry;
     } | null>(null);
     const [selectedDay, setSelectedDay] = useState<DayGroup | null>(null);
+    const [isEditing, setIsEditing] = useState(false);
+    const [editExpectedAmount, setEditExpectedAmount] = useState('');
+    const [editNotes, setEditNotes] = useState('');
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
 
-    useEffect(() => {
-        async function loadData() {
-            try {
-                const txs = await getTransactionsByUser(TEMP_USER_ID);
-                setTransactions(txs);
+    const loadData = useCallback(async () => {
+        try {
+            setIsLoading(true);
+            const txs = await getTransactionsByUser(TEMP_USER_ID);
+            setTransactions(txs);
 
-                // Get ledger entries for each transaction
-                const allEntries: LedgerEntry[] = [];
-                for (const tx of txs) {
-                    const entries = await getLedgerEntriesByTransaction(tx.id);
-                    allEntries.push(...entries);
-                }
-                setLedgerEntries(allEntries);
-            } catch (err) {
-                console.error('Failed to load data:', err);
-            } finally {
-                setIsLoading(false);
+            // Get ledger entries for each transaction
+            const allEntries: LedgerEntry[] = [];
+            for (const tx of txs) {
+                const entries = await getLedgerEntriesByTransaction(tx.id);
+                allEntries.push(...entries);
             }
+            setLedgerEntries(allEntries);
+        } catch (err) {
+            console.error('Failed to load data:', err);
+        } finally {
+            setIsLoading(false);
         }
-        loadData();
     }, []);
 
-    // Calculate totals
-    const totalIn = ledgerEntries.reduce((sum, e) => sum + e.amountPaid, 0);
-    const totalOut = ledgerEntries.reduce((sum, e) => sum + e.amountOwed, 0);
+    useEffect(() => {
+        loadData();
+    }, [loadData]);
+
+    // Filter transactions by active period
+    const now = new Date();
+    const filterDate = (() => {
+        if (activePeriod === 'week') {
+            const weekAgo = new Date(now);
+            weekAgo.setDate(weekAgo.getDate() - 7);
+            return weekAgo;
+        } else if (activePeriod === 'month') {
+            const monthAgo = new Date(now);
+            monthAgo.setMonth(monthAgo.getMonth() - 1);
+            return monthAgo;
+        }
+        return null; // 'all' - no filter
+    })();
+
+    const filteredTransactions = filterDate
+        ? transactions.filter(tx => tx.parsedData.dateTime >= filterDate)
+        : transactions;
+
+    const filteredLedgerEntries = filterDate
+        ? ledgerEntries.filter(e => {
+            const tx = transactions.find(t => t.id === e.transactionId);
+            return tx && tx.parsedData.dateTime >= filterDate;
+        })
+        : ledgerEntries;
+
+    // Calculate totals from filtered data
+    const totalIn = filteredLedgerEntries.reduce((sum, e) => sum + e.amountPaid, 0);
+    const totalOut = filteredLedgerEntries.reduce((sum, e) => sum + e.amountOwed, 0);
     const netBalance = totalOut; // Total still owed to you
 
     // Animated counters - only animate once data is loaded
@@ -77,9 +110,9 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
     const animatedTotalOut = useCountUp(totalOut, 1000, !isLoading);
     const animatedNetBalance = useCountUp(netBalance, 1200, !isLoading);
 
-    // Group transactions by day (using actual transaction date, not import time)
+    // Group transactions by day (using filtered transactions)
     const dayGroups: DayGroup[] = [];
-    const sortedTxs = [...transactions].sort((a, b) =>
+    const sortedTxs = [...filteredTransactions].sort((a, b) =>
         b.parsedData.dateTime.getTime() - a.parsedData.dateTime.getTime()
     );
 
@@ -109,9 +142,9 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
         }
     });
 
-    // Group transactions by person
+    // Group transactions by person (using filtered transactions)
     const personGroups: PersonGroup[] = [];
-    transactions.forEach(tx => {
+    filteredTransactions.forEach(tx => {
         const name = tx.parsedData.counterparty.name || 'Unknown';
         const phone = tx.parsedData.counterparty.phone;
         let group = personGroups.find(g => g.name === name);
@@ -191,6 +224,50 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
 
         return Object.values(months);
     })() : [];
+
+    // Handler functions for edit/delete
+    const handleStartEdit = () => {
+        if (selectedTransaction) {
+            const expected = selectedTransaction.entry
+                ? selectedTransaction.entry.amountPaid + selectedTransaction.entry.amountOwed
+                : selectedTransaction.tx.parsedData.amount;
+            setEditExpectedAmount(expected.toString());
+            setEditNotes(selectedTransaction.tx.notes || '');
+            setIsEditing(true);
+        }
+    };
+
+    const handleSaveEdit = async () => {
+        if (selectedTransaction) {
+            try {
+                const expectedAmount = parseFloat(editExpectedAmount) || 0;
+                await updateTransaction(selectedTransaction.tx.id, {
+                    expectedAmount,
+                    notes: editNotes || undefined,
+                });
+                setIsEditing(false);
+                setSelectedTransaction(null);
+                await loadData();
+            } catch (err) {
+                console.error('Failed to update transaction:', err);
+            }
+        }
+    };
+
+    const handleDelete = async () => {
+        if (selectedTransaction) {
+            try {
+                await deleteTransaction(selectedTransaction.tx.id);
+                setShowDeleteConfirm(false);
+                setSelectedTransaction(null);
+                setSelectedPerson(null);
+                setSelectedDay(null);
+                await loadData();
+            } catch (err) {
+                console.error('Failed to delete transaction:', err);
+            }
+        }
+    };
 
     // If day is selected, show full-page date detail view
     if (selectedDay) {
@@ -342,6 +419,67 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                             {selectedTransaction.entry && selectedTransaction.entry.amountOwed > 0 && (
                                 <div className="tx-modal-status tx-modal-status--pending">
                                     ⏳ Partial Payment
+                                </div>
+                            )}
+
+                            {/* Edit Form */}
+                            {isEditing ? (
+                                <div className="tx-modal-edit">
+                                    <div className="tx-modal-section">
+                                        <h4 className="tx-modal-section-title">✏️ Edit Transaction</h4>
+                                        <div className="tx-modal-section-content">
+                                            <div className="tx-modal-field">
+                                                <label>Expected Amount (Ksh)</label>
+                                                <input
+                                                    type="number"
+                                                    value={editExpectedAmount}
+                                                    onChange={e => setEditExpectedAmount(e.target.value)}
+                                                    className="tx-modal-input"
+                                                />
+                                            </div>
+                                            <div className="tx-modal-field">
+                                                <label>Notes</label>
+                                                <input
+                                                    type="text"
+                                                    value={editNotes}
+                                                    onChange={e => setEditNotes(e.target.value)}
+                                                    placeholder="Add a note..."
+                                                    className="tx-modal-input"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="tx-modal-actions">
+                                        <button className="tx-modal-btn tx-modal-btn--cancel" onClick={() => setIsEditing(false)}>
+                                            Cancel
+                                        </button>
+                                        <button className="tx-modal-btn tx-modal-btn--save" onClick={handleSaveEdit}>
+                                            Save Changes
+                                        </button>
+                                    </div>
+                                </div>
+                            ) : showDeleteConfirm ? (
+                                <div className="tx-modal-delete-confirm">
+                                    <p>Are you sure you want to delete this transaction?</p>
+                                    <div className="tx-modal-actions">
+                                        <button className="tx-modal-btn tx-modal-btn--cancel" onClick={() => setShowDeleteConfirm(false)}>
+                                            Cancel
+                                        </button>
+                                        <button className="tx-modal-btn tx-modal-btn--delete" onClick={handleDelete}>
+                                            Delete
+                                        </button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="tx-modal-actions">
+                                    <button className="tx-modal-btn tx-modal-btn--edit" onClick={handleStartEdit}>
+                                        <Edit3 size={16} />
+                                        Edit
+                                    </button>
+                                    <button className="tx-modal-btn tx-modal-btn--delete" onClick={() => setShowDeleteConfirm(true)}>
+                                        <Trash2 size={16} />
+                                        Delete
+                                    </button>
                                 </div>
                             )}
                         </div>
@@ -585,6 +723,67 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                                     ⏳ Partial Payment
                                 </div>
                             )}
+
+                            {/* Edit Form */}
+                            {isEditing ? (
+                                <div className="tx-modal-edit">
+                                    <div className="tx-modal-section">
+                                        <h4 className="tx-modal-section-title">✏️ Edit Transaction</h4>
+                                        <div className="tx-modal-section-content">
+                                            <div className="tx-modal-field">
+                                                <label>Expected Amount (Ksh)</label>
+                                                <input
+                                                    type="number"
+                                                    value={editExpectedAmount}
+                                                    onChange={e => setEditExpectedAmount(e.target.value)}
+                                                    className="tx-modal-input"
+                                                />
+                                            </div>
+                                            <div className="tx-modal-field">
+                                                <label>Notes</label>
+                                                <input
+                                                    type="text"
+                                                    value={editNotes}
+                                                    onChange={e => setEditNotes(e.target.value)}
+                                                    placeholder="Add a note..."
+                                                    className="tx-modal-input"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="tx-modal-actions">
+                                        <button className="tx-modal-btn tx-modal-btn--cancel" onClick={() => setIsEditing(false)}>
+                                            Cancel
+                                        </button>
+                                        <button className="tx-modal-btn tx-modal-btn--save" onClick={handleSaveEdit}>
+                                            Save Changes
+                                        </button>
+                                    </div>
+                                </div>
+                            ) : showDeleteConfirm ? (
+                                <div className="tx-modal-delete-confirm">
+                                    <p>Are you sure you want to delete this transaction?</p>
+                                    <div className="tx-modal-actions">
+                                        <button className="tx-modal-btn tx-modal-btn--cancel" onClick={() => setShowDeleteConfirm(false)}>
+                                            Cancel
+                                        </button>
+                                        <button className="tx-modal-btn tx-modal-btn--delete" onClick={handleDelete}>
+                                            Delete
+                                        </button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="tx-modal-actions">
+                                    <button className="tx-modal-btn tx-modal-btn--edit" onClick={handleStartEdit}>
+                                        <Edit3 size={16} />
+                                        Edit
+                                    </button>
+                                    <button className="tx-modal-btn tx-modal-btn--delete" onClick={() => setShowDeleteConfirm(true)}>
+                                        <Trash2 size={16} />
+                                        Delete
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}
@@ -653,6 +852,23 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                     </div>
                 </div>
 
+                {/* Search Bar */}
+                <div className="search-bar">
+                    <Search size={18} className="search-icon" />
+                    <input
+                        type="text"
+                        placeholder="Search people..."
+                        value={searchQuery}
+                        onChange={e => setSearchQuery(e.target.value)}
+                        className="search-input"
+                    />
+                    {searchQuery && (
+                        <button className="search-clear" onClick={() => setSearchQuery('')}>
+                            <X size={16} />
+                        </button>
+                    )}
+                </div>
+
                 {/* Period Selector */}
                 <div className="period-selector">
                     {['week', 'month', 'all'].map((period) => (
@@ -705,46 +921,64 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                     </div>
                 ) : transactions.length === 0 ? (
                     <div className="empty-state">
-                        <div className="empty-icon">
-                            <FileText size={48} strokeWidth={1.5} />
+                        <div className="empty-illustration">
+                            <div className="empty-icon-circle">
+                                <FileText size={40} strokeWidth={1.5} />
+                            </div>
                         </div>
-                        <h3>Import your first statement</h3>
-                        <p>Paste an M-Pesa message or import a PDF statement to get started</p>
-                        <div className="empty-state-actions">
-                            <button className="btn-primary" onClick={onRecordPayment}>
-                                <Plus size={18} />
-                                <span>Record Payment</span>
-                            </button>
+
+                        <h3 className="empty-title">No payments yet</h3>
+                        <p className="empty-description">
+                            Start tracking your M-Pesa transactions to see who owes you money
+                        </p>
+
+                        <button className="empty-cta" onClick={onRecordPayment}>
+                            <Plus size={20} strokeWidth={2.5} />
+                            Record Your First Payment
+                        </button>
+
+                        <div className="empty-tips">
+                            <h4>💡 Getting Started</h4>
+                            <ul>
+                                <li>📱 Paste an M-Pesa confirmation message</li>
+                                <li>📄 Or upload a PDF statement</li>
+                                <li>👥 Track multiple people at once</li>
+                            </ul>
                         </div>
                     </div>
                 ) : viewMode === 'person' ? (
                     /* Person View */
                     <div className="person-groups">
-                        {personGroups.map((person, idx) => (
-                            <div
-                                key={idx}
-                                className="person-card"
-                                onClick={() => setSelectedPerson(person)}
-                            >
-                                <div className="person-info">
-                                    <span className="person-name">{person.name}</span>
-                                    <span className="person-count">
-                                        {person.transactions.length} payment{person.transactions.length !== 1 ? 's' : ''}
-                                    </span>
-                                </div>
-                                <div className="person-totals">
-                                    <span className="person-received">
-                                        Ksh {formatMoney(person.totalReceived)}
-                                    </span>
-                                    {person.totalOwed > 0 && (
-                                        <span className="person-owed">
-                                            Owes: Ksh {formatMoney(person.totalOwed)}
+                        {personGroups
+                            .filter(person =>
+                                !searchQuery ||
+                                person.name.toLowerCase().includes(searchQuery.toLowerCase())
+                            )
+                            .map((person, idx) => (
+                                <div
+                                    key={idx}
+                                    className="person-card"
+                                    onClick={() => setSelectedPerson(person)}
+                                >
+                                    <div className="person-info">
+                                        <span className="person-name">{person.name}</span>
+                                        <span className="person-count">
+                                            {person.transactions.length} payment{person.transactions.length !== 1 ? 's' : ''}
                                         </span>
-                                    )}
+                                    </div>
+                                    <div className="person-totals">
+                                        <span className="person-received">
+                                            Ksh {formatMoney(person.totalReceived)}
+                                        </span>
+                                        {person.totalOwed > 0 && (
+                                            <span className="person-owed">
+                                                Owes: Ksh {formatMoney(person.totalOwed)}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <ChevronRight size={18} className="person-chevron" />
                                 </div>
-                                <ChevronRight size={18} className="person-chevron" />
-                            </div>
-                        ))}
+                            ))}
                     </div>
                 ) : (
                     /* Date View */
