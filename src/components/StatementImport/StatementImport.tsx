@@ -94,7 +94,12 @@ export function StatementImport({ onComplete, onBack, mode }: StatementImportPro
             }
 
             setTransactions(txs);
-            setFilteredTransactions(txs);
+
+            // Filter transactions by mode: Collections = paidIn > 0, Payments = paidOut > 0
+            const relevantTxs = txs.filter(t =>
+                mode === 'collections' ? t.paidIn > 0 : t.paidOut > 0
+            );
+            setFilteredTransactions(relevantTxs);
             setNeedsPassword(false);
             setPendingFile(null);
             setPassword('');
@@ -131,7 +136,10 @@ export function StatementImport({ onComplete, onBack, mode }: StatementImportPro
     }, [pendingFile, password, parseFile]);
 
     const applyFilters = useCallback(() => {
-        let filtered = [...transactions];
+        // Start with transactions filtered by mode
+        let filtered = transactions.filter(t =>
+            mode === 'collections' ? t.paidIn > 0 : t.paidOut > 0
+        );
 
         // Text search: matches name/counterparty, details, or receipt number
         if (searchText.trim()) {
@@ -651,11 +659,13 @@ export function StatementImport({ onComplete, onBack, mode }: StatementImportPro
 
                                         {tx.selected && !isDuplicate && (
                                             <div className="tx-expected">
-                                                <label className="expected-label">Expected:</label>
+                                                <label className="expected-label">
+                                                    {mode === 'collections' ? 'Expected:' : 'Owed to them:'}
+                                                </label>
                                                 <input
                                                     type="number"
                                                     className="expected-input"
-                                                    placeholder="Amount owed"
+                                                    placeholder={mode === 'collections' ? 'Amount owed to you' : 'Amount you owe'}
                                                     value={tx.expectedAmount || ''}
                                                     onChange={(e) => updateExpectedAmount(tx.receiptNo, parseFloat(e.target.value) || 0)}
                                                 />
