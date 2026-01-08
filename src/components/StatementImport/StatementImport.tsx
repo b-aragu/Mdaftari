@@ -116,7 +116,7 @@ export function StatementImport({ onComplete, onBack, mode }: StatementImportPro
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [mode]);
 
     const handleFileUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
