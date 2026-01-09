@@ -234,15 +234,19 @@ export function StatementImport({ onComplete, onBack, mode }: StatementImportPro
         setImportProgress(0);
         setImportedCount(0);
 
-        try {
-            for (let i = 0; i < selected.length; i++) {
-                const tx = selected[i];
-                if (!tx) continue;
+        let skippedDuplicates = 0;
+        let successCount = 0;
+        let failedCount = 0;
 
-                // Determine amount based on mode
-                const amount = mode === 'collections' ? tx.paidIn : tx.paidOut;
-                if (amount <= 0) continue; // Skip if no relevant amount
+        for (let i = 0; i < selected.length; i++) {
+            const tx = selected[i];
+            if (!tx) continue;
 
+            // Determine amount based on mode
+            const amount = mode === 'collections' ? tx.paidIn : tx.paidOut;
+            if (amount <= 0) continue; // Skip if no relevant amount
+
+            try {
                 // Convert to ParsedTransaction format
                 const parsedData: ParsedTransaction = {
                     amount: amount,
@@ -281,23 +285,29 @@ export function StatementImport({ onComplete, onBack, mode }: StatementImportPro
                     Math.max(0, amountOwed)
                 );
 
-                setImportProgress(Math.round(((i + 1) / selected.length) * 100));
-                setImportedCount(i + 1);
+                successCount++;
+            } catch (err: any) {
+                if (err.message?.includes('already exists')) {
+                    skippedDuplicates++;
+                } else {
+                    console.error('Failed to import transaction:', tx.receiptNo, err);
+                    failedCount++;
+                }
             }
 
-            setStep('success');
-        } catch (err: any) {
-            console.error('Import failed:', err);
-            if (err.message?.includes('already exists')) {
-                setError('Some transactions already exist. Duplicate receipts were skipped.');
-                setStep('success');
-            } else {
-                setError(`Import failed: ${err.message}`);
-                setStep('review');
-            }
-        } finally {
-            setIsLoading(false);
+            setImportProgress(Math.round(((i + 1) / selected.length) * 100));
+            setImportedCount(successCount);
         }
+
+        // Show appropriate message
+        if (skippedDuplicates > 0) {
+            setError(`${successCount} imported, ${skippedDuplicates} duplicates skipped${failedCount > 0 ? `, ${failedCount} failed` : ''}`);
+        } else if (failedCount > 0) {
+            setError(`${successCount} imported, ${failedCount} failed`);
+        }
+
+        setStep('success');
+        setIsLoading(false);
     };
 
     const uniquePeople = statement ? getUniqueCounterparties(transactions) : [];
