@@ -238,13 +238,18 @@ export function StatementImport({ onComplete, onBack, mode }: StatementImportPro
         let successCount = 0;
         let failedCount = 0;
 
+        console.log(`Starting import of ${selected.length} transactions in ${mode} mode`);
+
         for (let i = 0; i < selected.length; i++) {
             const tx = selected[i];
             if (!tx) continue;
 
             // Determine amount based on mode
             const amount = mode === 'collections' ? tx.paidIn : tx.paidOut;
-            if (amount <= 0) continue; // Skip if no relevant amount
+            if (amount <= 0) {
+                console.log(`Skipping ${tx.receiptNo}: amount is ${amount} (paidIn=${tx.paidIn}, paidOut=${tx.paidOut})`);
+                continue;
+            }
 
             try {
                 // Convert to ParsedTransaction format
@@ -288,6 +293,7 @@ export function StatementImport({ onComplete, onBack, mode }: StatementImportPro
                 successCount++;
             } catch (err: any) {
                 if (err.message?.includes('already exists')) {
+                    console.log(`Duplicate: ${tx.receiptNo} already exists in DB`);
                     skippedDuplicates++;
                 } else {
                     console.error('Failed to import transaction:', tx.receiptNo, err);
@@ -300,6 +306,7 @@ export function StatementImport({ onComplete, onBack, mode }: StatementImportPro
         }
 
         // Show appropriate message
+        console.log(`Import complete: ${successCount} success, ${skippedDuplicates} duplicates, ${failedCount} failed`);
         if (skippedDuplicates > 0) {
             setError(`${successCount} imported, ${skippedDuplicates} duplicates skipped${failedCount > 0 ? `, ${failedCount} failed` : ''}`);
         } else if (failedCount > 0) {

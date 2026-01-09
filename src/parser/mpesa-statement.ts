@@ -245,6 +245,14 @@ function parseStatementText(text: string): ParsedStatement {
     const totalPaidOut = transactions.reduce((sum, t) => sum + t.paidOut, 0);
 
     console.log(`Parsed ${transactions.length} transactions`);
+    console.log(`Total paidIn: ${totalPaidIn}, Total paidOut: ${totalPaidOut}`);
+    console.log(`Transactions with paidOut > 0:`, transactions.filter(t => t.paidOut > 0).length);
+    console.log(`Sample paidOut transactions:`, transactions.filter(t => t.paidOut > 0).slice(0, 5).map(t => ({
+        receiptNo: t.receiptNo,
+        paidIn: t.paidIn,
+        paidOut: t.paidOut,
+        counterparty: t.counterparty
+    })));
 
     return {
         customerName: nameMatch?.[1]?.trim() || 'Unknown',
