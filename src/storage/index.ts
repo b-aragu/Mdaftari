@@ -9,6 +9,7 @@ export { getDatabase, generateId, closeDatabase } from './db';
 export {
     // Transaction operations
     saveTransaction,
+    generateTransactionKey,
     getTransaction,
     getTransactionsByUser,
     getPendingTransactions,

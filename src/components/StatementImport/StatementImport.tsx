@@ -63,23 +63,29 @@ export function StatementImport({ onComplete, onBack, mode }: StatementImportPro
     const [matchedWorkers, setMatchedWorkers] = useState<Map<string, Worker>>(new Map());
 
     const parseFile = useCallback(async (file: File, pwd?: string) => {
+        console.log('parseFile called with password:', pwd ? 'YES' : 'NO');
         setIsLoading(true);
         setError(null);
 
         try {
             const parsed = await parseMpesaStatement(file, pwd);
+            console.log('Parse successful! Setting statement...');
             setStatement(parsed);
 
             // Mark all as initially unselected
             const txs = parsed.transactions.map(t => ({ ...t, selected: false }));
+            console.log(`Created ${txs.length} transaction objects`);
 
             // Check for existing receipts (duplicates)
+            console.log('Checking for existing receipts...');
             const receiptCodes = txs.map(t => t.receiptNo);
             const existing = await getExistingReceiptNumbers(receiptCodes);
+            console.log(`Found ${existing.size} existing receipts`);
             setExistingReceipts(existing);
 
             // Match counterparties to existing workers by phone number
             // Extract phone numbers from counterparty strings (format: "NAME PHONE")
+            console.log('Matching workers by phone...');
             const phonePattern = /(\+?254[\d*]+|07[\d*]+|\d{9,})/g;
             const phonesToMatch: string[] = [];
             for (const tx of txs) {
@@ -88,25 +94,44 @@ export function StatementImport({ onComplete, onBack, mode }: StatementImportPro
                     phonesToMatch.push(...matches);
                 }
             }
+            console.log(`Found ${phonesToMatch.length} phones to match`);
             if (phonesToMatch.length > 0) {
                 const matched = await findWorkersByPhones(phonesToMatch);
+                console.log(`Matched ${matched.size} workers`);
                 setMatchedWorkers(matched);
             }
 
+            console.log('Setting transactions...');
             setTransactions(txs);
 
             // Filter transactions by mode: Collections = paidIn > 0, Payments = paidOut > 0
             const relevantTxs = txs.filter(t =>
                 mode === 'collections' ? t.paidIn > 0 : t.paidOut > 0
             );
+            console.log(`Filtered ${relevantTxs.length} transactions for ${mode} mode`);
+
+            // Check for duplicate receipt codes in the parsed data
+            const receiptCounts = relevantTxs.reduce((acc, tx) => {
+                acc[tx.receiptNo] = (acc[tx.receiptNo] || 0) + 1;
+                return acc;
+            }, {} as Record<string, number>);
+            const duplicateReceipts = Object.entries(receiptCounts).filter(([_, count]) => count > 1);
+            if (duplicateReceipts.length > 0) {
+                console.warn(`⚠️ Found ${duplicateReceipts.length} duplicate receipt codes in PDF!`, duplicateReceipts);
+            } else {
+                console.log('✅ All receipt codes are unique in parsed data');
+            }
+
             setFilteredTransactions(relevantTxs);
             setNeedsPassword(false);
             setPendingFile(null);
             setPassword('');
+            console.log('Setting step to review...');
             setStep('review');
         } catch (err: any) {
             console.error('Failed to parse statement:', err);
             if (err.message === 'PASSWORD_REQUIRED') {
+                console.log('Password required - showing password input');
                 setNeedsPassword(true);
                 setPendingFile(file);
                 setError('This PDF is password-protected. Please enter your National ID.');
@@ -114,6 +139,7 @@ export function StatementImport({ onComplete, onBack, mode }: StatementImportPro
                 setError('Failed to parse the PDF. Please ensure it is a valid M-Pesa statement.');
             }
         } finally {
+            console.log('parseFile finally - setting isLoading to false');
             setIsLoading(false);
         }
     }, [mode]);

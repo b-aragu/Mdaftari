@@ -13,7 +13,15 @@ import type { ParsedTransaction } from '../parser/types';
 // ============================================================
 
 /**
- * Save a new transaction to the database
+ * Generate a unique transaction key combining transactionCode + amount
+ * This handles M-Pesa bundling where same receipt has multiple entries (main tx + fee)
+ */
+export function generateTransactionKey(parsed: ParsedTransaction): string {
+    return `${parsed.transactionCode}_${parsed.amount.toFixed(2)}`;
+}
+
+/**
+ * Save a new transaction and add to sync queue
  */
 export async function saveTransaction(
     parsedData: ParsedTransaction,
@@ -23,15 +31,25 @@ export async function saveTransaction(
 ): Promise<Transaction> {
     const db = await getDatabase();
 
-    // Check for duplicate transaction code
+    // Generate composite key for duplicate detection
+    const compositeKey = generateTransactionKey(parsedData);
+
+    // Check for duplicate using composite key (receiptNo + amount)
+    // First, get by transaction code, then check if amount matches
     const existing = await db.getFromIndex(
         'transactions',
         'by-transaction-code',
         parsedData.transactionCode
     );
 
+    // If found, check if it's truly a duplicate (same amount) or a bundled fee
     if (existing) {
-        throw new Error(`Transaction ${parsedData.transactionCode} already exists`);
+        const existingKey = generateTransactionKey(existing.parsedData);
+        if (existingKey === compositeKey) {
+            throw new Error(`Transaction ${parsedData.transactionCode} already exists`);
+        }
+        // Different amount = it's a bundled transaction (main + fee), allow it
+        console.log(`Allowing bundled transaction: ${parsedData.transactionCode} (different amount)`);
     }
 
     const transaction: Transaction = {
@@ -472,18 +490,30 @@ export async function markAsSynced(
  * @param mode - 'collections' to clear received transactions, 'payments' to clear sent transactions
  */
 export async function clearDataByMode(mode: 'collections' | 'payments'): Promise<{ deletedCount: number }> {
+    console.log(`clearDataByMode called with mode: ${mode}`);
     const db = await getDatabase();
 
     // Determine the transaction type to delete
     const typeToDelete = mode === 'collections' ? 'received' : 'sent';
+    console.log(`Looking for transactions with type: ${typeToDelete}`);
 
     // Get all transactions
     const allTransactions = await db.getAll('transactions');
+    console.log(`Total transactions in DB: ${allTransactions.length}`);
+
+    // Log types found
+    const typeBreakdown = allTransactions.reduce((acc, tx) => {
+        const type = tx.parsedData?.type || 'unknown';
+        acc[type] = (acc[type] || 0) + 1;
+        return acc;
+    }, {} as Record<string, number>);
+    console.log(`Transaction types in DB:`, typeBreakdown);
 
     // Filter transactions by type
     const transactionsToDelete = allTransactions.filter(tx =>
         tx.parsedData?.type === typeToDelete
     );
+    console.log(`Found ${transactionsToDelete.length} transactions to delete`);
 
     let deletedCount = 0;
 
