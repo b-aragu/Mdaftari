@@ -4,7 +4,7 @@
  * CRUD operations for all entities with offline-first support.
  */
 
-import { getDatabase, generateId } from './db';
+import { getDatabase, generateId, closeDatabase } from './db';
 import type { Transaction, Worker, LedgerEntry, SyncQueueItem, UUID } from '../ledger/types';
 import type { ParsedTransaction } from '../parser/types';
 
@@ -467,16 +467,45 @@ export async function markAsSynced(
 // ============================================================
 
 /**
- * Clear all data (for testing or logout)
+ * Clear all data (for testing or complete reset)
+ * Deletes the entire IndexedDB database and clears localStorage
  */
 export async function clearAllData(): Promise<void> {
-    const db = await getDatabase();
+    // Close database connection first
+    closeDatabase();
 
-    await db.clear('transactions');
-    await db.clear('workers');
-    await db.clear('ledgerEntries');
-    await db.clear('syncQueue');
-    await db.clear('users');
+    // Delete the entire IndexedDB database
+    return new Promise((resolve, reject) => {
+        const deleteRequest = indexedDB.deleteDatabase('mdaftari');
+
+        deleteRequest.onerror = () => {
+            console.error('Error deleting database');
+            reject(new Error('Failed to delete database'));
+        };
+
+        deleteRequest.onsuccess = () => {
+            console.log('Database deleted successfully');
+
+            // Clear all localStorage items related to Mdaftari
+            const keysToRemove: string[] = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && (key.startsWith('mdaftari') || key.includes('mdaftari') || key.includes('appMode'))) {
+                    keysToRemove.push(key);
+                }
+            }
+            keysToRemove.forEach(key => localStorage.removeItem(key));
+
+            console.log('All data cleared successfully');
+            resolve();
+        };
+
+        deleteRequest.onblocked = () => {
+            console.warn('Database deletion blocked - please close other tabs');
+            // Still try to resolve after a short delay
+            setTimeout(resolve, 1000);
+        };
+    });
 }
 
 /**
