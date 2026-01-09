@@ -241,12 +241,6 @@ function parseStatementText(text: string): ParsedStatement {
     const totalPaidIn = transactions.reduce((sum, t) => sum + t.paidIn, 0);
     const totalPaidOut = transactions.reduce((sum, t) => sum + t.paidOut, 0);
 
-        receiptNo: t.receiptNo,
-        paidIn: t.paidIn,
-        paidOut: t.paidOut,
-        counterparty: t.counterparty
-    })));
-
     return {
         customerName: nameMatch?.[1]?.trim() || 'Unknown',
         phoneNumber: phoneMatch?.[1] || '',
