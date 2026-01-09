@@ -49,7 +49,6 @@ export async function saveTransaction(
             throw new Error(`Transaction ${parsedData.transactionCode} already exists`);
         }
         // Different amount = it's a bundled transaction (main + fee), allow it
-        console.log(`Allowing bundled transaction: ${parsedData.transactionCode} (different amount)`);
     }
 
     const transaction: Transaction = {
@@ -490,16 +489,13 @@ export async function markAsSynced(
  * @param mode - 'collections' to clear received transactions, 'payments' to clear sent transactions
  */
 export async function clearDataByMode(mode: 'collections' | 'payments'): Promise<{ deletedCount: number }> {
-    console.log(`clearDataByMode called with mode: ${mode}`);
     const db = await getDatabase();
 
     // Determine the transaction type to delete
     const typeToDelete = mode === 'collections' ? 'received' : 'sent';
-    console.log(`Looking for transactions with type: ${typeToDelete}`);
 
     // Get all transactions
     const allTransactions = await db.getAll('transactions');
-    console.log(`Total transactions in DB: ${allTransactions.length}`);
 
     // Log types found
     const typeBreakdown = allTransactions.reduce((acc, tx) => {
@@ -507,13 +503,11 @@ export async function clearDataByMode(mode: 'collections' | 'payments'): Promise
         acc[type] = (acc[type] || 0) + 1;
         return acc;
     }, {} as Record<string, number>);
-    console.log(`Transaction types in DB:`, typeBreakdown);
 
     // Filter transactions by type
     const transactionsToDelete = allTransactions.filter(tx =>
         tx.parsedData?.type === typeToDelete
     );
-    console.log(`Found ${transactionsToDelete.length} transactions to delete`);
 
     let deletedCount = 0;
 
@@ -532,7 +526,6 @@ export async function clearDataByMode(mode: 'collections' | 'payments'): Promise
         deletedCount++;
     }
 
-    console.log(`Cleared ${deletedCount} ${mode} transactions`);
     return { deletedCount };
 }
 

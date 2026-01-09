@@ -84,9 +84,6 @@ export async function parseMpesaStatement(file: File, password?: string): Promis
         }
 
         // Debug: log first 2000 chars to see structure
-        console.log('=== PDF TEXT SAMPLE (first 2000 chars) ===');
-        console.log(fullText.substring(0, 2000));
-        console.log('=== END SAMPLE ===');
 
         return parseStatementText(fullText);
     } catch (error: any) {
@@ -244,10 +241,6 @@ function parseStatementText(text: string): ParsedStatement {
     const totalPaidIn = transactions.reduce((sum, t) => sum + t.paidIn, 0);
     const totalPaidOut = transactions.reduce((sum, t) => sum + t.paidOut, 0);
 
-    console.log(`Parsed ${transactions.length} transactions`);
-    console.log(`Total paidIn: ${totalPaidIn}, Total paidOut: ${totalPaidOut}`);
-    console.log(`Transactions with paidOut > 0:`, transactions.filter(t => t.paidOut > 0).length);
-    console.log(`Sample paidOut transactions:`, transactions.filter(t => t.paidOut > 0).slice(0, 5).map(t => ({
         receiptNo: t.receiptNo,
         paidIn: t.paidIn,
         paidOut: t.paidOut,
