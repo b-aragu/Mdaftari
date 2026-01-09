@@ -896,7 +896,7 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                     <div className={`summary-card ${appMode === 'collections' ? 'summary-card--out' : 'summary-card--owe'}`}>
                         <div className="summary-card-header">
                             {appMode === 'collections' ? <ArrowUpRight size={20} /> : <ArrowDownLeft size={20} />}
-                            <span>{appMode === 'collections' ? 'Still Owed' : 'You Owe'}</span>
+                            <span>{appMode === 'collections' ? 'Still Owed' : 'They Owe'}</span>
                         </div>
                         <div className="summary-card-amount">
                             <span className="currency">Ksh</span>
@@ -980,9 +980,14 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                             </div>
                         </div>
 
-                        <h3 className="empty-title">No payments yet</h3>
+                        <h3 className="empty-title">
+                            {appMode === 'collections' ? 'No collections yet' : 'No payments yet'}
+                        </h3>
                         <p className="empty-description">
-                            Start tracking your M-Pesa transactions to see who owes you money
+                            {appMode === 'collections'
+                                ? 'Start tracking your M-Pesa transactions to see who owes you money'
+                                : 'Start tracking your M-Pesa payments to see who you\'ve paid'
+                            }
                         </p>
 
                         <button className="empty-cta" onClick={onRecordPayment}>

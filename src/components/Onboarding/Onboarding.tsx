@@ -27,8 +27,8 @@ const slides: Slide[] = [
     },
     {
         icon: <Users size={48} strokeWidth={1.5} />,
-        title: 'See Who Owes You',
-        description: 'View all your transactions grouped by person. Quickly see who has paid and who still owes.',
+        title: 'Track Everyone',
+        description: 'View all your transactions grouped by person. Quickly see payment history and outstanding amounts.',
         tip: 'Tip: Tap on a person to see their full payment history',
     },
     {
