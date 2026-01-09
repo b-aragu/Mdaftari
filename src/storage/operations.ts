@@ -467,6 +467,46 @@ export async function markAsSynced(
 // ============================================================
 
 /**
+ * Clear data for a specific mode (collections or payments)
+ * Deletes only transactions of the specified type and their associated ledger entries
+ * @param mode - 'collections' to clear received transactions, 'payments' to clear sent transactions
+ */
+export async function clearDataByMode(mode: 'collections' | 'payments'): Promise<{ deletedCount: number }> {
+    const db = await getDatabase();
+
+    // Determine the transaction type to delete
+    const typeToDelete = mode === 'collections' ? 'received' : 'sent';
+
+    // Get all transactions
+    const allTransactions = await db.getAll('transactions');
+
+    // Filter transactions by type
+    const transactionsToDelete = allTransactions.filter(tx =>
+        tx.parsedData?.type === typeToDelete
+    );
+
+    let deletedCount = 0;
+
+    // Delete each transaction and its associated ledger entries
+    for (const tx of transactionsToDelete) {
+        // Get ledger entries for this transaction
+        const ledgerEntries = await db.getAllFromIndex('ledgerEntries', 'by-transaction', tx.id);
+
+        // Delete ledger entries
+        for (const entry of ledgerEntries) {
+            await db.delete('ledgerEntries', entry.id);
+        }
+
+        // Delete the transaction
+        await db.delete('transactions', tx.id);
+        deletedCount++;
+    }
+
+    console.log(`Cleared ${deletedCount} ${mode} transactions`);
+    return { deletedCount };
+}
+
+/**
  * Clear all data (for testing or complete reset)
  * Deletes the entire IndexedDB database and clears localStorage
  */

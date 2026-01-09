@@ -39,6 +39,7 @@ export {
     markAsSynced,
 
     // Utility
+    clearDataByMode,
     clearAllData,
     exportAllData,
 } from './operations';

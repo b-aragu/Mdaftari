@@ -5,12 +5,14 @@
 import { useState } from 'react';
 import { Sun, Moon, Trash2, Download, Shield, ChevronRight, HelpCircle } from 'lucide-react';
 import { useOutdoorMode } from '../hooks';
-import { clearAllData, exportAllData } from '../storage';
+import { clearAllData, clearDataByMode, exportAllData } from '../storage';
 import './Settings.css';
 
 export function SettingsPage() {
     const { isOutdoorMode, toggleOutdoorMode } = useOutdoorMode();
     const [showConfirmDelete, setShowConfirmDelete] = useState(false);
+    const [showConfirmCollections, setShowConfirmCollections] = useState(false);
+    const [showConfirmPayments, setShowConfirmPayments] = useState(false);
 
     const handleExport = async () => {
         try {
@@ -24,6 +26,26 @@ export function SettingsPage() {
             URL.revokeObjectURL(url);
         } catch (err) {
             console.error('Failed to export data:', err);
+        }
+    };
+
+    const handleClearCollections = async () => {
+        try {
+            const result = await clearDataByMode('collections');
+            alert(`Cleared ${result.deletedCount} collection transactions`);
+            window.location.reload();
+        } catch (err) {
+            console.error('Failed to clear collections:', err);
+        }
+    };
+
+    const handleClearPayments = async () => {
+        try {
+            const result = await clearDataByMode('payments');
+            alert(`Cleared ${result.deletedCount} payment transactions`);
+            window.location.reload();
+        } catch (err) {
+            console.error('Failed to clear payments:', err);
         }
     };
 
@@ -106,13 +128,35 @@ export function SettingsPage() {
                             <ChevronRight size={18} className="settings-item-arrow" />
                         </button>
 
+                        <button className="settings-item settings-item--warning" onClick={() => setShowConfirmCollections(true)}>
+                            <div className="settings-item-icon">
+                                <Trash2 size={20} />
+                            </div>
+                            <div className="settings-item-content">
+                                <span className="settings-item-label">Clear Collections Data</span>
+                                <span className="settings-item-desc">Delete only received transactions</span>
+                            </div>
+                            <ChevronRight size={18} className="settings-item-arrow" />
+                        </button>
+
+                        <button className="settings-item settings-item--warning" onClick={() => setShowConfirmPayments(true)}>
+                            <div className="settings-item-icon">
+                                <Trash2 size={20} />
+                            </div>
+                            <div className="settings-item-content">
+                                <span className="settings-item-label">Clear Payments Data</span>
+                                <span className="settings-item-desc">Delete only sent transactions</span>
+                            </div>
+                            <ChevronRight size={18} className="settings-item-arrow" />
+                        </button>
+
                         <button className="settings-item settings-item--danger" onClick={() => setShowConfirmDelete(true)}>
                             <div className="settings-item-icon">
                                 <Trash2 size={20} />
                             </div>
                             <div className="settings-item-content">
                                 <span className="settings-item-label">Clear All Data</span>
-                                <span className="settings-item-desc">Delete all transactions</span>
+                                <span className="settings-item-desc">Delete ALL transactions (both modes)</span>
                             </div>
                             <ChevronRight size={18} className="settings-item-arrow" />
                         </button>
@@ -145,18 +189,54 @@ export function SettingsPage() {
                 </div>
             </div>
 
-            {/* Delete Confirmation Modal */}
+            {/* Delete All Confirmation Modal */}
             {showConfirmDelete && (
                 <div className="settings-modal-overlay" onClick={() => setShowConfirmDelete(false)}>
                     <div className="settings-modal" onClick={e => e.stopPropagation()}>
                         <h3>Delete All Data?</h3>
-                        <p>This will permanently delete all your transactions and payment history.</p>
+                        <p>This will permanently delete ALL your transactions and payment history (both Collections and Payments).</p>
                         <div className="settings-modal-actions">
                             <button className="settings-modal-btn settings-modal-btn--cancel" onClick={() => setShowConfirmDelete(false)}>
                                 Cancel
                             </button>
                             <button className="settings-modal-btn settings-modal-btn--delete" onClick={handleClearData}>
                                 Delete Everything
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Clear Collections Confirmation Modal */}
+            {showConfirmCollections && (
+                <div className="settings-modal-overlay" onClick={() => setShowConfirmCollections(false)}>
+                    <div className="settings-modal" onClick={e => e.stopPropagation()}>
+                        <h3>Clear Collections Data?</h3>
+                        <p>This will delete only your <strong>received</strong> transactions. Your payment transactions will be kept.</p>
+                        <div className="settings-modal-actions">
+                            <button className="settings-modal-btn settings-modal-btn--cancel" onClick={() => setShowConfirmCollections(false)}>
+                                Cancel
+                            </button>
+                            <button className="settings-modal-btn settings-modal-btn--warning" onClick={handleClearCollections}>
+                                Clear Collections
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Clear Payments Confirmation Modal */}
+            {showConfirmPayments && (
+                <div className="settings-modal-overlay" onClick={() => setShowConfirmPayments(false)}>
+                    <div className="settings-modal" onClick={e => e.stopPropagation()}>
+                        <h3>Clear Payments Data?</h3>
+                        <p>This will delete only your <strong>sent</strong> transactions. Your collection transactions will be kept.</p>
+                        <div className="settings-modal-actions">
+                            <button className="settings-modal-btn settings-modal-btn--cancel" onClick={() => setShowConfirmPayments(false)}>
+                                Cancel
+                            </button>
+                            <button className="settings-modal-btn settings-modal-btn--warning" onClick={handleClearPayments}>
+                                Clear Payments
                             </button>
                         </div>
                     </div>

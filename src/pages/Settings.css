@@ -70,6 +70,15 @@
     border-color: var(--color-debt);
 }
 
+.settings-item--warning:hover {
+    background: #fff8e6;
+}
+
+.settings-item--warning .settings-item-icon {
+    color: #d97706;
+    border-color: #d97706;
+}
+
 .settings-item-icon {
     width: 36px;
     height: 36px;
@@ -219,4 +228,10 @@
     background: #dc2626;
     color: var(--color-background);
     border-color: #dc2626;
+}
+
+.settings-modal-btn--warning {
+    background: #d97706;
+    color: var(--color-background);
+    border-color: #d97706;
 }
