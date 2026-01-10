@@ -432,7 +432,7 @@ export function ReportsPage() {
                         <span className="stat-value">{filteredTransactions.length}</span>
                     </div>
                     <div className="stat-row">
-                        <span className="stat-label">Collection Rate</span>
+                        <span className="stat-label">{appMode === 'collections' ? 'Collection Rate' : 'Completion Rate'}</span>
                         <span className="stat-value">
                             {totalReceived + totalOwed > 0
                                 ? `${Math.round((totalReceived / (totalReceived + totalOwed)) * 100)}%`
@@ -441,7 +441,7 @@ export function ReportsPage() {
                         </span>
                     </div>
                     <div className="stat-row">
-                        <span className="stat-label">Outstanding Debt</span>
+                        <span className="stat-label">{appMode === 'collections' ? 'Outstanding Debt' : 'Outstanding Balance'}</span>
                         <span className={`stat-value ${totalOwed > 0 ? 'amount-negative' : 'amount-positive'}`}>
                             {totalOwed > 0 ? `KES ${formatMoney(totalOwed)}` : 'None'}
                         </span>

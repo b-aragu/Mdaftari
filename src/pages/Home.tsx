@@ -381,7 +381,7 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                                 <span className="tx-modal-amount-value money-in">
                                     Ksh {formatMoney(selectedTransaction.entry?.amountPaid || selectedTransaction.tx.parsedData.amount)}
                                 </span>
-                                <span className="tx-modal-amount-label">Amount Received</span>
+                                <span className="tx-modal-amount-label">{appMode === 'collections' ? 'Amount Received' : 'Amount Paid'}</span>
                             </div>
 
                             <div className="tx-modal-section">
@@ -420,7 +420,7 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                                             </span>
                                         </div>
                                         <div className="tx-modal-row">
-                                            <span className="tx-modal-label">Amount Received</span>
+                                            <span className="tx-modal-label">{appMode === 'collections' ? 'Amount Received' : 'Amount Paid'}</span>
                                             <span className="tx-modal-value money-in">
                                                 Ksh {formatMoney(selectedTransaction.entry.amountPaid)}
                                             </span>
@@ -538,11 +538,11 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                     {/* Summary Cards */}
                     <div className="person-summary-cards">
                         <div className="person-stat-card person-stat-card--received">
-                            <span className="stat-label">Total Received</span>
+                            <span className="stat-label">{appMode === 'collections' ? 'Total Received' : 'Total Paid'}</span>
                             <span className="stat-value">Ksh {formatMoney(selectedPerson.totalReceived)}</span>
                         </div>
                         <div className="person-stat-card person-stat-card--owed">
-                            <span className="stat-label">Still Owed</span>
+                            <span className="stat-label">{appMode === 'collections' ? 'Still Owed' : 'Outstanding'}</span>
                             <span className="stat-value">Ksh {formatMoney(selectedPerson.totalOwed)}</span>
                         </div>
                     </div>
@@ -680,7 +680,7 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                                 <span className="tx-modal-amount-value money-in">
                                     Ksh {formatMoney(selectedTransaction.entry?.amountPaid || selectedTransaction.tx.parsedData.amount)}
                                 </span>
-                                <span className="tx-modal-amount-label">Amount Received</span>
+                                <span className="tx-modal-amount-label">{appMode === 'collections' ? 'Amount Received' : 'Amount Paid'}</span>
                             </div>
 
                             {/* Transaction Info Section */}
@@ -721,7 +721,7 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                                             </span>
                                         </div>
                                         <div className="tx-modal-row">
-                                            <span className="tx-modal-label">Amount Received</span>
+                                            <span className="tx-modal-label">{appMode === 'collections' ? 'Amount Received' : 'Amount Paid'}</span>
                                             <span className="tx-modal-value money-in">
                                                 Ksh {formatMoney(selectedTransaction.entry.amountPaid)}
                                             </span>
