@@ -3,7 +3,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { Plus, ArrowDownLeft, ArrowUpRight, Calendar, ChevronRight, Users, ArrowLeft, FileText, Trash2, Edit3, Search, X, Wallet, CreditCard } from 'lucide-react';
+import { Plus, ArrowDownLeft, ArrowUpRight, Calendar, ChevronRight, Users, ArrowLeft, FileText, Trash2, Edit3, Search, X, Wallet, CreditCard, LayoutGrid } from 'lucide-react';
 import { getTransactionsByUser, getLedgerEntriesByTransaction, updateTransaction, deleteTransaction } from '../storage';
 import { useCountUp } from '../hooks';
 import { SkeletonPersonCard } from '../components/ui';
@@ -36,9 +36,11 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [ledgerEntries, setLedgerEntries] = useState<LedgerEntry[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [appMode, setAppMode] = useState<'collections' | 'payments'>(() => {
+    const [appMode, setAppMode] = useState<'collections' | 'payments' | 'overview'>(() => {
         const saved = localStorage.getItem('mdaftari_app_mode');
-        return (saved === 'payments') ? 'payments' : 'collections';
+        if (saved === 'payments') return 'payments';
+        if (saved === 'overview') return 'overview';
+        return 'collections';
     });
     const [activePeriod, setActivePeriod] = useState<'week' | 'month' | 'all'>('week');
     const [viewMode, setViewMode] = useState<'date' | 'person'>('person');
@@ -79,7 +81,7 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
     }, [loadData]);
 
     // Handle mode change with localStorage persistence
-    const handleModeChange = (mode: 'collections' | 'payments') => {
+    const handleModeChange = (mode: 'collections' | 'payments' | 'overview') => {
         setAppMode(mode);
         localStorage.setItem('mdaftari_app_mode', mode);
         // Reset selection when changing modes
@@ -107,13 +109,15 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
         ? transactions.filter(tx => tx.parsedData.dateTime >= filterDate)
         : transactions;
 
-    // Then filter by app mode (collections = received, payments = sent/paybill/buyGoods)
+    // Then filter by app mode (collections = received, payments = sent/paybill/buyGoods, overview = all)
     const filteredTransactions = periodFilteredTx.filter(tx => {
         if (appMode === 'collections') {
             return tx.parsedData.type === 'received';
-        } else {
+        } else if (appMode === 'payments') {
             return ['sent', 'paybill', 'buyGoods'].includes(tx.parsedData.type);
         }
+        // overview mode - show all
+        return true;
     });
 
     const filteredLedgerEntries = filterDate
@@ -131,10 +135,29 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
     const totalOut = filteredLedgerEntries.reduce((sum, e) => sum + e.amountOwed, 0);
     const netBalance = totalOut; // Total still owed/owing
 
+    // Overview mode: Calculate separate totals for collections and payments
+    const collectionsTransactions = periodFilteredTx.filter(tx => tx.parsedData.type === 'received');
+    const paymentsTransactions = periodFilteredTx.filter(tx => ['sent', 'paybill', 'buyGoods'].includes(tx.parsedData.type));
+
+    const collectionsEntries = ledgerEntries.filter(e => collectionsTransactions.some(t => t.id === e.transactionId));
+    const paymentsEntries = ledgerEntries.filter(e => paymentsTransactions.some(t => t.id === e.transactionId));
+
+    const collectionsReceived = collectionsEntries.reduce((sum, e) => sum + e.amountPaid, 0);
+    const collectionsOwed = collectionsEntries.reduce((sum, e) => sum + e.amountOwed, 0); // They owe you
+    const paymentsPaid = paymentsEntries.reduce((sum, e) => sum + e.amountPaid, 0);
+    const paymentsOwed = paymentsEntries.reduce((sum, e) => sum + e.amountOwed, 0); // You owe them
+
+    const overviewNetBalance = (collectionsReceived + collectionsOwed) - (paymentsPaid + paymentsOwed);
+
     // Animated counters - only animate once data is loaded
     const animatedTotalIn = useCountUp(totalIn, 1000, !isLoading);
     const animatedTotalOut = useCountUp(totalOut, 1000, !isLoading);
     const animatedNetBalance = useCountUp(netBalance, 1200, !isLoading);
+    const animatedCollectionsReceived = useCountUp(collectionsReceived, 1000, !isLoading);
+    const animatedCollectionsOwed = useCountUp(collectionsOwed, 1000, !isLoading);
+    const animatedPaymentsPaid = useCountUp(paymentsPaid, 1000, !isLoading);
+    const animatedPaymentsOwed = useCountUp(paymentsOwed, 1000, !isLoading);
+    const animatedOverviewNet = useCountUp(overviewNetBalance, 1200, !isLoading);
 
     // Group transactions by day (using filtered transactions)
     const dayGroups: DayGroup[] = [];
@@ -828,7 +851,7 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
             </header>
 
             {/* Mode Selector */}
-            <div className="mode-selector">
+            <div className="mode-selector mode-selector--three">
                 <button
                     className={`mode-btn ${appMode === 'collections' ? 'mode-btn--active mode-btn--collections' : ''}`}
                     onClick={() => handleModeChange('collections')}
@@ -843,12 +866,29 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                     <CreditCard size={18} />
                     <span>Payments</span>
                 </button>
+                <button
+                    className={`mode-btn ${appMode === 'overview' ? 'mode-btn--active mode-btn--overview' : ''}`}
+                    onClick={() => handleModeChange('overview')}
+                >
+                    <LayoutGrid size={18} />
+                    <span>Overview</span>
+                </button>
             </div>
 
             {/* Net Balance Hero */}
             {!isLoading && (
-                <section className={`net-balance-hero ${appMode === 'payments' ? 'net-balance-hero--payments' : ''}`}>
-                    {netBalance > 0 ? (
+                <section className={`net-balance-hero ${appMode === 'payments' ? 'net-balance-hero--payments' : ''} ${appMode === 'overview' ? 'net-balance-hero--overview' : ''}`}>
+                    {appMode === 'overview' ? (
+                        <>
+                            <span className="hero-label">Net Position</span>
+                            <span className={`hero-amount ${overviewNetBalance >= 0 ? 'hero-amount--positive' : 'hero-amount--negative'}`}>
+                                {overviewNetBalance >= 0 ? '+' : '-'}Ksh {formatMoney(Math.abs(animatedOverviewNet))}
+                            </span>
+                            <span className="hero-context">
+                                {overviewNetBalance >= 0 ? 'You are ahead' : 'You are behind'}
+                            </span>
+                        </>
+                    ) : netBalance > 0 ? (
                         <>
                             <span className="hero-label">
                                 {appMode === 'collections' ? "You're owed" : "You paid"}
@@ -881,28 +921,77 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
 
             {/* Summary Cards - CountPesa Style */}
             <section className="summary-section">
-                <div className="summary-cards">
-                    <div className={`summary-card ${appMode === 'collections' ? 'summary-card--in' : 'summary-card--paid'}`}>
-                        <div className="summary-card-header">
-                            {appMode === 'collections' ? <ArrowDownLeft size={20} /> : <ArrowUpRight size={20} />}
-                            <span>{appMode === 'collections' ? 'Received' : 'Paid Out'}</span>
-                        </div>
-                        <div className="summary-card-amount">
-                            <span className="currency">Ksh</span>
-                            <span className={`money money-lg ${appMode === 'collections' ? 'money-in' : 'money-in'}`}>{formatMoney(animatedTotalIn)}</span>
-                        </div>
-                    </div>
+                <div className={`summary-cards ${appMode === 'overview' ? 'summary-cards--four' : ''}`}>
+                    {appMode === 'overview' ? (
+                        <>
+                            {/* Overview Mode - 4 Cards */}
+                            <div className="summary-card summary-card--in">
+                                <div className="summary-card-header">
+                                    <ArrowDownLeft size={20} />
+                                    <span>Received</span>
+                                </div>
+                                <div className="summary-card-amount">
+                                    <span className="currency">Ksh</span>
+                                    <span className="money money-lg money-in">{formatMoney(animatedCollectionsReceived)}</span>
+                                </div>
+                            </div>
+                            <div className="summary-card summary-card--paid">
+                                <div className="summary-card-header">
+                                    <ArrowUpRight size={20} />
+                                    <span>Paid Out</span>
+                                </div>
+                                <div className="summary-card-amount">
+                                    <span className="currency">Ksh</span>
+                                    <span className="money money-lg money-in">{formatMoney(animatedPaymentsPaid)}</span>
+                                </div>
+                            </div>
+                            <div className="summary-card summary-card--out">
+                                <div className="summary-card-header">
+                                    <ArrowDownLeft size={20} />
+                                    <span>They Owe You</span>
+                                </div>
+                                <div className="summary-card-amount">
+                                    <span className="currency">Ksh</span>
+                                    <span className="money money-lg money-out">{formatMoney(animatedCollectionsOwed)}</span>
+                                </div>
+                            </div>
+                            <div className="summary-card summary-card--owe">
+                                <div className="summary-card-header">
+                                    <ArrowUpRight size={20} />
+                                    <span>You Owe Them</span>
+                                </div>
+                                <div className="summary-card-amount">
+                                    <span className="currency">Ksh</span>
+                                    <span className="money money-lg money-debt">{formatMoney(animatedPaymentsOwed)}</span>
+                                </div>
+                            </div>
+                        </>
+                    ) : (
+                        <>
+                            {/* Collections/Payments Mode - 2 Cards */}
+                            <div className={`summary-card ${appMode === 'collections' ? 'summary-card--in' : 'summary-card--paid'}`}>
+                                <div className="summary-card-header">
+                                    {appMode === 'collections' ? <ArrowDownLeft size={20} /> : <ArrowUpRight size={20} />}
+                                    <span>{appMode === 'collections' ? 'Received' : 'Paid Out'}</span>
+                                </div>
+                                <div className="summary-card-amount">
+                                    <span className="currency">Ksh</span>
+                                    <span className={`money money-lg ${appMode === 'collections' ? 'money-in' : 'money-in'}`}>{formatMoney(animatedTotalIn)}</span>
+                                </div>
+                            </div>
 
-                    <div className={`summary-card ${appMode === 'collections' ? 'summary-card--out' : 'summary-card--owe'}`}>
-                        <div className="summary-card-header">
-                            {appMode === 'collections' ? <ArrowDownLeft size={20} /> : <ArrowUpRight size={20} />}
-                            <span>{appMode === 'collections' ? 'Still Owed' : 'You Still Owe'}</span>
-                        </div>
-                        <div className="summary-card-amount">
-                            <span className="currency">Ksh</span>
-                            <span className={`money money-lg ${appMode === 'collections' ? 'money-out' : 'money-debt'}`}>{formatMoney(animatedTotalOut)}</span>
-                        </div>
-                    </div>
+                            <div className={`summary-card ${appMode === 'collections' ? 'summary-card--out' : 'summary-card--owe'}`}>
+                                <div className="summary-card-header">
+                                    {appMode === 'collections' ? <ArrowDownLeft size={20} /> : <ArrowUpRight size={20} />}
+                                    <span>{appMode === 'collections' ? 'Still Owed' : 'You Still Owe'}</span>
+                                </div>
+                                <div className="summary-card-amount">
+                                    <span className="currency">Ksh</span>
+                                    <span className={`money money-lg ${appMode === 'collections' ? 'money-out' : 'money-debt'}`}>{formatMoney(animatedTotalOut)}</span>
+                                </div>
+                            </div>
+                        </>
+                    )}
                 </div>
 
                 {/* Search Bar */}

@@ -106,6 +106,43 @@
     background: #dc2626;
 }
 
+.mode-btn--overview.mode-btn--active {
+    background: #6366f1;
+    /* Indigo for overview */
+}
+
+/* 3-way mode selector */
+.mode-selector--three {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+}
+
+.mode-selector--three .mode-btn {
+    font-size: var(--font-xs);
+    padding: var(--space-2) var(--space-2);
+}
+
+/* 4-card grid for Overview mode */
+.summary-cards--four {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: var(--space-3) !important;
+}
+
+/* Net position colors */
+.hero-amount--positive {
+    color: var(--color-success);
+}
+
+.hero-amount--negative {
+    color: #dc2626;
+}
+
+/* Overview hero styling */
+.net-balance-hero--overview {
+    background: linear-gradient(180deg, #eef2ff 0%, var(--color-background) 100%);
+}
+
 /* Net Balance Hero - Cleaner */
 .net-balance-hero {
     max-width: 600px;
