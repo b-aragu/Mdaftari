@@ -895,7 +895,7 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
 
                     <div className={`summary-card ${appMode === 'collections' ? 'summary-card--out' : 'summary-card--owe'}`}>
                         <div className="summary-card-header">
-                            <ArrowUpRight size={20} />
+                            {appMode === 'collections' ? <ArrowDownLeft size={20} /> : <ArrowUpRight size={20} />}
                             <span>{appMode === 'collections' ? 'Still Owed' : 'You Still Owe'}</span>
                         </div>
                         <div className="summary-card-amount">

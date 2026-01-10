@@ -347,7 +347,7 @@ export function ReportsPage() {
 
                     <div className="summary-card">
                         <div className="summary-icon summary-icon--red">
-                            {appMode === 'collections' ? <ArrowUpRight size={20} /> : <ArrowDownLeft size={20} />}
+                            {appMode === 'collections' ? <ArrowDownLeft size={20} /> : <ArrowUpRight size={20} />}
                         </div>
                         <div className="summary-data">
                             <span className="summary-value amount-negative">
