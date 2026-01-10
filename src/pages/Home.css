@@ -219,6 +219,15 @@
     border-left: 3px solid #dc2626;
 }
 
+/* Paid Out card in Payments mode - green for success */
+.summary-card--paid .summary-card-header {
+    color: var(--color-success);
+}
+
+.summary-card--paid {
+    border-left: 3px solid var(--color-success);
+}
+
 .summary-card--owe .summary-card-header {
     color: #b45309;
 }

@@ -868,11 +868,11 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                     ) : (
                         <>
                             <span className="hero-label">
-                                {appMode === 'collections' ? "All paid up" : "No payments"}
+                                {appMode === 'collections' ? "All paid up" : "All settled"}
                             </span>
                             <span className="hero-amount hero-amount--clear">✓</span>
                             <span className="hero-context">
-                                {appMode === 'collections' ? "No outstanding debts" : "No outgoing payments"}
+                                {appMode === 'collections' ? "No outstanding debts" : "No outstanding payments"}
                             </span>
                         </>
                     )}
@@ -882,20 +882,20 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
             {/* Summary Cards - CountPesa Style */}
             <section className="summary-section">
                 <div className="summary-cards">
-                    <div className={`summary-card ${appMode === 'collections' ? 'summary-card--in' : 'summary-card--out-primary'}`}>
+                    <div className={`summary-card ${appMode === 'collections' ? 'summary-card--in' : 'summary-card--paid'}`}>
                         <div className="summary-card-header">
                             {appMode === 'collections' ? <ArrowDownLeft size={20} /> : <ArrowUpRight size={20} />}
                             <span>{appMode === 'collections' ? 'Received' : 'Paid Out'}</span>
                         </div>
                         <div className="summary-card-amount">
                             <span className="currency">Ksh</span>
-                            <span className={`money money-lg ${appMode === 'collections' ? 'money-in' : 'money-out'}`}>{formatMoney(animatedTotalIn)}</span>
+                            <span className={`money money-lg ${appMode === 'collections' ? 'money-in' : 'money-in'}`}>{formatMoney(animatedTotalIn)}</span>
                         </div>
                     </div>
 
                     <div className={`summary-card ${appMode === 'collections' ? 'summary-card--out' : 'summary-card--owe'}`}>
                         <div className="summary-card-header">
-                            {appMode === 'collections' ? <ArrowUpRight size={20} /> : <ArrowDownLeft size={20} />}
+                            <ArrowUpRight size={20} />
                             <span>{appMode === 'collections' ? 'Still Owed' : 'You Still Owe'}</span>
                         </div>
                         <div className="summary-card-amount">
