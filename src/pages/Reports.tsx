@@ -3,7 +3,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { Download, ArrowDownLeft, ArrowUpRight, X, Wallet, CreditCard } from 'lucide-react';
+import { Download, ArrowDownLeft, ArrowUpRight, X, Wallet, CreditCard, LayoutGrid } from 'lucide-react';
 import { getTransactionsByUser, getLedgerEntriesByTransaction } from '../storage';
 import type { Transaction, LedgerEntry } from '../ledger/types';
 import './Reports.css';
@@ -14,9 +14,11 @@ export function ReportsPage() {
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [ledgerEntries, setLedgerEntries] = useState<LedgerEntry[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [appMode, setAppMode] = useState<'collections' | 'payments'>(() => {
+    const [appMode, setAppMode] = useState<'collections' | 'payments' | 'overview'>(() => {
         const saved = localStorage.getItem('mdaftari_app_mode');
-        return (saved === 'payments') ? 'payments' : 'collections';
+        if (saved === 'payments') return 'payments';
+        if (saved === 'overview') return 'overview';
+        return 'collections';
     });
     const [dateRange, setDateRange] = useState<'week' | 'month' | 'all'>('month');
     const [selectedMonth, setSelectedMonth] = useState<{
@@ -66,7 +68,7 @@ export function ReportsPage() {
     })();
 
     // Handle mode change with localStorage sync
-    const handleModeChange = (mode: 'collections' | 'payments') => {
+    const handleModeChange = (mode: 'collections' | 'payments' | 'overview') => {
         setAppMode(mode);
         localStorage.setItem('mdaftari_app_mode', mode);
     };
@@ -80,9 +82,11 @@ export function ReportsPage() {
     const filteredTransactions = periodFilteredTx.filter(tx => {
         if (appMode === 'collections') {
             return tx.parsedData.type === 'received';
-        } else {
+        } else if (appMode === 'payments') {
             return ['sent', 'paybill', 'buyGoods'].includes(tx.parsedData.type);
         }
+        // Overview mode - show all
+        return true;
     });
 
     const filteredTxIds = new Set(filteredTransactions.map(tx => tx.id));
@@ -91,6 +95,21 @@ export function ReportsPage() {
     // Calculate totals from filtered data
     const totalReceived = filteredEntries.reduce((sum, e) => sum + e.amountPaid, 0);
     const totalOwed = filteredEntries.reduce((sum, e) => sum + e.amountOwed, 0);
+
+    // Overview mode: Calculate separate totals for Collections and Payments
+    const collectionsTransactions = periodFilteredTx.filter(tx => tx.parsedData.type === 'received');
+    const paymentsTransactions = periodFilteredTx.filter(tx => ['sent', 'paybill', 'buyGoods'].includes(tx.parsedData.type));
+
+    const collectionsEntries = ledgerEntries.filter(e => collectionsTransactions.some(t => t.id === e.transactionId));
+    const paymentsEntries = ledgerEntries.filter(e => paymentsTransactions.some(t => t.id === e.transactionId));
+
+    const collectionsTotal = collectionsEntries.reduce((sum, e) => sum + e.amountPaid, 0);
+    const collectionsOwed = collectionsEntries.reduce((sum, e) => sum + e.amountOwed, 0);
+    const paymentsTotal = paymentsEntries.reduce((sum, e) => sum + e.amountPaid, 0);
+    const paymentsOwed = paymentsEntries.reduce((sum, e) => sum + e.amountOwed, 0);
+
+    // Calculate max for bar chart scaling
+    const maxTotal = Math.max(collectionsTotal, paymentsTotal, 1);
 
     // Per-person breakdown
     const personBreakdown = (() => {
@@ -299,7 +318,7 @@ export function ReportsPage() {
 
             <div className="reports-content">
                 {/* Mode Selector */}
-                <div className="mode-selector">
+                <div className="mode-selector mode-selector--three">
                     <button
                         className={`mode-btn ${appMode === 'collections' ? 'mode-btn--active mode-btn--collections' : ''}`}
                         onClick={() => handleModeChange('collections')}
@@ -313,6 +332,13 @@ export function ReportsPage() {
                     >
                         <CreditCard size={18} />
                         <span>Payments</span>
+                    </button>
+                    <button
+                        className={`mode-btn ${appMode === 'overview' ? 'mode-btn--active mode-btn--overview' : ''}`}
+                        onClick={() => handleModeChange('overview')}
+                    >
+                        <LayoutGrid size={18} />
+                        <span>Overview</span>
                     </button>
                 </div>
 
@@ -359,6 +385,51 @@ export function ReportsPage() {
                         </div>
                     </div>
                 </div>
+
+                {/* Overview Mode: Collections vs Payments Comparison */}
+                {appMode === 'overview' && (
+                    <section className="comparison-section">
+                        <h2 className="section-title">Collections vs Payments</h2>
+                        <div className="comparison-chart">
+                            <div className="comparison-bar">
+                                <div className="comparison-bar-label">
+                                    <ArrowDownLeft size={16} className="comparison-icon comparison-icon--in" />
+                                    <span>Received</span>
+                                </div>
+                                <div className="comparison-bar-track">
+                                    <div
+                                        className="comparison-bar-fill comparison-bar-fill--in"
+                                        style={{ width: `${(collectionsTotal / maxTotal) * 100}%` }}
+                                    />
+                                </div>
+                                <span className="comparison-bar-value money-in">KES {formatMoney(collectionsTotal)}</span>
+                            </div>
+                            <div className="comparison-bar">
+                                <div className="comparison-bar-label">
+                                    <ArrowUpRight size={16} className="comparison-icon comparison-icon--out" />
+                                    <span>Paid Out</span>
+                                </div>
+                                <div className="comparison-bar-track">
+                                    <div
+                                        className="comparison-bar-fill comparison-bar-fill--out"
+                                        style={{ width: `${(paymentsTotal / maxTotal) * 100}%` }}
+                                    />
+                                </div>
+                                <span className="comparison-bar-value money-out">KES {formatMoney(paymentsTotal)}</span>
+                            </div>
+                        </div>
+                        <div className="comparison-summary">
+                            <div className="comparison-stat">
+                                <span className="comparison-stat-label">They Owe You</span>
+                                <span className="comparison-stat-value amount-negative">KES {formatMoney(collectionsOwed)}</span>
+                            </div>
+                            <div className="comparison-stat">
+                                <span className="comparison-stat-label">You Owe Them</span>
+                                <span className="comparison-stat-value amount-negative">KES {formatMoney(paymentsOwed)}</span>
+                            </div>
+                        </div>
+                    </section>
+                )}
 
                 {/* Monthly Trend Chart - Line Chart */}
                 <section className="trend-section">

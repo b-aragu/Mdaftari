@@ -75,6 +75,115 @@
     background: #dc2626;
 }
 
+.mode-btn--overview.mode-btn--active {
+    background: #6366f1;
+}
+
+/* 3-way mode selector */
+.mode-selector--three {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+}
+
+.mode-selector--three .mode-btn {
+    font-size: var(--font-xs);
+    padding: var(--space-2);
+}
+
+/* Collections vs Payments Comparison Chart */
+.comparison-section {
+    margin-bottom: var(--space-6);
+    background: var(--color-background);
+    border-radius: 12px;
+    padding: var(--space-4);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    border: 1px solid rgba(0, 0, 0, 0.04);
+}
+
+.comparison-chart {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+
+.comparison-bar {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+}
+
+.comparison-bar-label {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-width: 90px;
+    font-size: var(--text-sm);
+    font-weight: var(--weight-bold);
+}
+
+.comparison-icon--in {
+    color: var(--color-success);
+}
+
+.comparison-icon--out {
+    color: #6366f1;
+}
+
+.comparison-bar-track {
+    flex: 1;
+    height: 24px;
+    background: #f0f0f0;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.comparison-bar-fill {
+    height: 100%;
+    transition: width 0.5s ease;
+    border-radius: 4px;
+}
+
+.comparison-bar-fill--in {
+    background: linear-gradient(90deg, var(--color-success), #34d399);
+}
+
+.comparison-bar-fill--out {
+    background: linear-gradient(90deg, #6366f1, #818cf8);
+}
+
+.comparison-bar-value {
+    min-width: 100px;
+    text-align: right;
+    font-weight: var(--weight-bold);
+    font-size: var(--text-sm);
+}
+
+.comparison-summary {
+    display: flex;
+    justify-content: space-between;
+    margin-top: var(--space-4);
+    padding-top: var(--space-4);
+    border-top: 1px solid #f0f0f0;
+}
+
+.comparison-stat {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+}
+
+.comparison-stat-label {
+    font-size: var(--text-xs);
+    text-transform: uppercase;
+    color: var(--color-text-secondary);
+    font-weight: var(--weight-bold);
+}
+
+.comparison-stat-value {
+    font-size: var(--text-base);
+    font-weight: var(--weight-bold);
+}
+
 /* Date Range Filter */
 .date-filter {
     display: flex;
