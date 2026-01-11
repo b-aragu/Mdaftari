@@ -27,7 +27,8 @@ export async function saveTransaction(
     parsedData: ParsedTransaction,
     userId: UUID,
     expectedAmount?: number,
-    notes?: string
+    notes?: string,
+    options?: { category?: string; isRecurring?: boolean }
 ): Promise<Transaction> {
     const db = await getDatabase();
 
@@ -60,6 +61,8 @@ export async function saveTransaction(
         createdAt: new Date(),
         syncStatus: 'pending',
         userId,
+        category: options?.category,
+        isRecurring: options?.isRecurring,
     };
 
     await db.add('transactions', transaction);

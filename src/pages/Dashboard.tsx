@@ -83,13 +83,14 @@ export function Dashboard() {
 
     const handleConfirm = useCallback(async (
         transaction: ParsedTransaction,
-        expectedAmount: number
+        expectedAmount: number,
+        options?: { category?: string; isRecurring?: boolean }
     ) => {
         setIsSaving(true);
         setError(null);
 
         try {
-            const savedTx = await saveTransaction(transaction, TEMP_USER_ID, expectedAmount);
+            const savedTx = await saveTransaction(transaction, TEMP_USER_ID, expectedAmount, undefined, options);
             const partial = detectPartialPayment(transaction.amount, expectedAmount);
 
             const entry = await createLedgerEntry(

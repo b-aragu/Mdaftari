@@ -10,12 +10,13 @@ import { Input } from '../ui/Input';
 import { Card, CardHeader, CardContent } from '../ui/Card';
 import { Badge, ReceivedBadge, SentBadge, PartialBadge } from '../ui/Badge';
 import { detectPartialPayment } from '../../ledger';
+import { CATEGORIES } from '../../constants/categories';
 import type { ParsedTransaction, ParseResult } from '../../parser/types';
 import './TransactionConfirm.css';
 
 export interface TransactionConfirmProps {
     parseResult: ParseResult;
-    onConfirm: (transaction: ParsedTransaction, expectedAmount: number) => void;
+    onConfirm: (transaction: ParsedTransaction, expectedAmount: number, options?: { category?: string; isRecurring?: boolean }) => void;
     onCancel: () => void;
     isLoading?: boolean;
 }
@@ -34,6 +35,8 @@ export function TransactionConfirm({
     const [counterpartyName, setCounterpartyName] = useState(
         transaction.counterparty.name || ''
     );
+    const [category, setCategory] = useState('general');
+    const [isRecurring, setIsRecurring] = useState(false);
 
     const parsedAmount = parseFloat(amount) || 0;
     const parsedExpected = parseFloat(expectedAmount) || 0;
@@ -50,8 +53,8 @@ export function TransactionConfirm({
             },
         };
 
-        onConfirm(updatedTransaction, parsedExpected);
-    }, [transaction, parsedAmount, parsedExpected, counterpartyName, onConfirm]);
+        onConfirm(updatedTransaction, parsedExpected, { category, isRecurring });
+    }, [transaction, parsedAmount, parsedExpected, counterpartyName, category, isRecurring, onConfirm]);
 
     const formatDate = (date: Date) => {
         return new Intl.DateTimeFormat('en-KE', {
@@ -142,6 +145,38 @@ export function TransactionConfirm({
                             <span>{transaction.counterparty.phone}</span>
                         </div>
                     )}
+
+                    {/* Category Selector */}
+                    <div className="transaction-confirm__field">
+                        <label className="transaction-confirm__label">Category</label>
+                        <div className="category-selector">
+                            {CATEGORIES.map(cat => (
+                                <button
+                                    key={cat.id}
+                                    type="button"
+                                    className={`category-chip ${category === cat.id ? 'category-chip--active' : ''}`}
+                                    style={{ '--category-color': cat.color } as React.CSSProperties}
+                                    onClick={() => setCategory(cat.id)}
+                                >
+                                    <span className="category-chip__icon">{cat.icon}</span>
+                                    <span className="category-chip__label">{cat.label}</span>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Recurring Toggle */}
+                    <div className="transaction-confirm__field transaction-confirm__recurring">
+                        <label className="transaction-confirm__label">
+                            <input
+                                type="checkbox"
+                                checked={isRecurring}
+                                onChange={(e) => setIsRecurring(e.target.checked)}
+                                className="recurring-checkbox"
+                            />
+                            <span>This is a recurring payment</span>
+                        </label>
+                    </div>
 
                     {/* Partial Payment Info */}
                     {partialPayment.isPartial && (
