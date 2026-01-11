@@ -30,6 +30,7 @@ interface PersonGroup {
     transactions: Array<{ tx: Transaction; entry?: LedgerEntry }>;
     totalReceived: number;
     totalOwed: number;
+    primaryType: 'collection' | 'payment'; // For Overview mode
 }
 
 export function HomePage({ onRecordPayment }: HomePageProps) {
@@ -196,6 +197,7 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
     filteredTransactions.forEach(tx => {
         const name = tx.parsedData.counterparty.name || 'Unknown';
         const phone = tx.parsedData.counterparty.phone;
+        const isCollection = tx.parsedData.type === 'received';
         let group = personGroups.find(g => g.name === name);
 
         if (!group) {
@@ -205,6 +207,7 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                 transactions: [],
                 totalReceived: 0,
                 totalOwed: 0,
+                primaryType: isCollection ? 'collection' : 'payment',
             };
             personGroups.push(group);
         }
@@ -1101,31 +1104,40 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                                 !searchQuery ||
                                 person.name.toLowerCase().includes(searchQuery.toLowerCase())
                             )
-                            .map((person, idx) => (
-                                <div
-                                    key={idx}
-                                    className={`person-card ${appMode === 'payments' ? 'person-card--payments' : ''}`}
-                                    onClick={() => setSelectedPerson(person)}
-                                >
-                                    <div className="person-info">
-                                        <span className="person-name">{person.name}</span>
-                                        <span className="person-count">
-                                            {person.transactions.length} payment{person.transactions.length !== 1 ? 's' : ''}
-                                        </span>
-                                    </div>
-                                    <div className="person-totals">
-                                        <span className={`person-received ${appMode === 'payments' ? 'person-received--payments' : ''}`}>
-                                            Ksh {formatMoney(person.totalReceived)}
-                                        </span>
-                                        {person.totalOwed > 0 && (
-                                            <span className={`person-owed ${appMode === 'payments' ? 'person-owed--payments' : ''}`}>
-                                                {appMode === 'collections' ? 'Owes' : 'You Paid'}: Ksh {formatMoney(person.totalOwed)}
-                                            </span>
+                            .map((person, idx) => {
+                                const isCollection = person.primaryType === 'collection';
+                                return (
+                                    <div
+                                        key={idx}
+                                        className={`person-card ${appMode === 'payments' ? 'person-card--payments' : ''} ${appMode === 'overview' ? (isCollection ? 'person-card--collection' : 'person-card--payment') : ''}`}
+                                        onClick={() => setSelectedPerson(person)}
+                                    >
+                                        {/* Type indicator for Overview mode */}
+                                        {appMode === 'overview' && (
+                                            <div className={`person-type-icon ${isCollection ? 'person-type-icon--in' : 'person-type-icon--out'}`}>
+                                                {isCollection ? <ArrowDownLeft size={16} /> : <ArrowUpRight size={16} />}
+                                            </div>
                                         )}
+                                        <div className="person-info">
+                                            <span className="person-name">{person.name}</span>
+                                            <span className="person-count">
+                                                {person.transactions.length} {appMode === 'overview' ? (isCollection ? 'collection' : 'payment') : 'payment'}{person.transactions.length !== 1 ? 's' : ''}
+                                            </span>
+                                        </div>
+                                        <div className="person-totals">
+                                            <span className={`person-received ${appMode === 'payments' ? 'person-received--payments' : ''} ${appMode === 'overview' ? (isCollection ? '' : 'person-received--payments') : ''}`}>
+                                                {appMode === 'overview' && !isCollection ? '-' : ''}Ksh {formatMoney(person.totalReceived)}
+                                            </span>
+                                            {person.totalOwed > 0 && (
+                                                <span className={`person-owed ${appMode === 'payments' ? 'person-owed--payments' : ''}`}>
+                                                    {appMode === 'collections' ? 'Owes' : (appMode === 'payments' ? 'You Owe' : (isCollection ? 'Owes' : 'You Owe'))}: Ksh {formatMoney(person.totalOwed)}
+                                                </span>
+                                            )}
+                                        </div>
+                                        <ChevronRight size={18} className="person-chevron" />
                                     </div>
-                                    <ChevronRight size={18} className="person-chevron" />
-                                </div>
-                            ))}
+                                )
+                            })}
                     </div>
                 ) : (
                     /* Date View */
