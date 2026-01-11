@@ -47,6 +47,14 @@ export interface Transaction {
     syncStatus: SyncStatus;
     /** User who created this transaction */
     userId: UUID;
+    /** Whether this is a recurring payment/collection */
+    isRecurring?: boolean;
+    /** Frequency of recurring payment */
+    recurringFrequency?: 'weekly' | 'monthly' | 'yearly';
+    /** Name for recurring payment (e.g., "Rent", "Water Bill") */
+    recurringName?: string;
+    /** Category for this transaction */
+    category?: string;
 }
 
 /**
