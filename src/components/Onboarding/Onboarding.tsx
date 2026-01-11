@@ -4,7 +4,7 @@
  */
 
 import { useState } from 'react';
-import { X, ArrowRight, FileText, Users, TrendingUp } from 'lucide-react';
+import { X, ArrowRight, FileText, Users, TrendingUp, LayoutGrid } from 'lucide-react';
 import './Onboarding.css';
 
 interface OnboardingProps {
@@ -32,10 +32,16 @@ const slides: Slide[] = [
         tip: 'Tip: Tap on a person to see their full payment history',
     },
     {
+        icon: <LayoutGrid size={48} strokeWidth={1.5} />,
+        title: 'Overview Mode',
+        description: 'See your complete financial picture. Compare Collections and Payments in one unified view.',
+        tip: 'Tip: Switch to Overview with the toggle at the top',
+    },
+    {
         icon: <TrendingUp size={48} strokeWidth={1.5} />,
         title: 'Track Your Money',
-        description: 'Get insights on your collections with reports, charts, and CSV exports.',
-        tip: 'Tip: Use the Reports tab for monthly breakdowns',
+        description: 'Get insights with reports, charts, and exports. See trends and analyze your cash flow.',
+        tip: 'Tip: Export to CSV or PDF from the Reports page',
     },
 ];
 
