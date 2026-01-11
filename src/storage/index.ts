@@ -43,4 +43,5 @@ export {
     clearDataByMode,
     clearAllData,
     exportAllData,
+    bulkRecategorizeTransactions,
 } from './operations';

@@ -3,9 +3,10 @@
  */
 
 import { useState } from 'react';
-import { Sun, Moon, Trash2, Download, Shield, ChevronRight, HelpCircle } from 'lucide-react';
+import { Sun, Moon, Trash2, Download, Shield, ChevronRight, HelpCircle, Tags } from 'lucide-react';
 import { useOutdoorMode } from '../hooks';
-import { clearAllData, clearDataByMode, exportAllData } from '../storage';
+import { clearAllData, clearDataByMode, exportAllData, bulkRecategorizeTransactions } from '../storage';
+import { suggestCategory } from '../constants/autoCategorize';
 import './Settings.css';
 
 export function SettingsPage() {
@@ -63,6 +64,17 @@ export function SettingsPage() {
     const handleShowOnboarding = () => {
         localStorage.removeItem('mdaftari_onboarding_complete');
         window.location.reload();
+    };
+
+    const handleRecategorize = async () => {
+        try {
+            const result = await bulkRecategorizeTransactions(suggestCategory);
+            alert(`Auto-categorized ${result.updated} of ${result.total} transactions`);
+            window.location.reload();
+        } catch (err) {
+            console.error('Failed to re-categorize:', err);
+            alert('Failed to re-categorize transactions');
+        }
     };
 
     return (
@@ -124,6 +136,17 @@ export function SettingsPage() {
                             <div className="settings-item-content">
                                 <span className="settings-item-label">Export Data</span>
                                 <span className="settings-item-desc">Download all transactions as JSON</span>
+                            </div>
+                            <ChevronRight size={18} className="settings-item-arrow" />
+                        </button>
+
+                        <button className="settings-item" onClick={handleRecategorize}>
+                            <div className="settings-item-icon settings-item-icon--info">
+                                <Tags size={20} />
+                            </div>
+                            <div className="settings-item-content">
+                                <span className="settings-item-label">Auto-Categorize</span>
+                                <span className="settings-item-desc">Apply categories to existing transactions</span>
                             </div>
                             <ChevronRight size={18} className="settings-item-arrow" />
                         </button>

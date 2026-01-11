@@ -125,13 +125,15 @@ export async function getExistingReceiptNumbers(codes: string[]): Promise<Set<st
 }
 
 /**
- * Update a transaction's expected amount and notes
+ * Update a transaction's expected amount, notes, and category
  */
 export async function updateTransaction(
     id: UUID,
     updates: {
         expectedAmount?: number;
         notes?: string;
+        category?: string;
+        isRecurring?: boolean;
     }
 ): Promise<Transaction> {
     const db = await getDatabase();
@@ -145,6 +147,8 @@ export async function updateTransaction(
         ...transaction,
         expectedAmount: updates.expectedAmount ?? transaction.expectedAmount,
         notes: updates.notes ?? transaction.notes,
+        category: updates.category ?? transaction.category,
+        isRecurring: updates.isRecurring ?? transaction.isRecurring,
         syncStatus: 'pending',
     };
 
@@ -589,4 +593,36 @@ export async function exportAllData(): Promise<{
         workers: await db.getAll('workers'),
         ledgerEntries: await db.getAll('ledgerEntries'),
     };
+}
+
+/**
+ * Bulk re-categorize all transactions based on counterparty name
+ * Uses the suggestCategory function to auto-detect categories
+ * @param suggestCategoryFn - The category suggestion function
+ * @returns Number of transactions updated
+ */
+export async function bulkRecategorizeTransactions(
+    suggestCategoryFn: (name: string | undefined) => string
+): Promise<{ updated: number; total: number }> {
+    const db = await getDatabase();
+    const allTransactions = await db.getAll('transactions');
+
+    let updated = 0;
+
+    for (const tx of allTransactions) {
+        const counterpartyName = tx.parsedData?.counterparty?.name;
+        const suggestedCategory = suggestCategoryFn(counterpartyName);
+
+        // Only update if category is different and not already manually set
+        if (suggestedCategory !== 'general' && tx.category !== suggestedCategory) {
+            const updatedTx: Transaction = {
+                ...tx,
+                category: suggestedCategory,
+            };
+            await db.put('transactions', updatedTx);
+            updated++;
+        }
+    }
+
+    return { updated, total: allTransactions.length };
 }

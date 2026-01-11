@@ -15,6 +15,7 @@ import {
     type ParsedStatement
 } from '../../parser/mpesa-statement';
 import { saveTransaction, createLedgerEntry, getExistingReceiptNumbers, findWorkersByPhones, addWorker } from '../../storage';
+import { suggestCategory } from '../../constants/autoCategorize';
 import type { Worker } from '../../ledger/types';
 import type { ParsedTransaction } from '../../parser/types';
 import './StatementImport.css';
@@ -279,12 +280,16 @@ export function StatementImport({ onComplete, onBack, mode }: StatementImportPro
                     confidence: 0.8, // Imported from statement
                 };
 
-                // Save transaction
+                // Auto-categorize based on counterparty name
+                const autoCategory = suggestCategory(tx.counterparty);
+
+                // Save transaction with auto-category
                 const savedTx = await saveTransaction(
                     parsedData,
                     TEMP_USER_ID,
                     tx.expectedAmount,
-                    `Imported from M-Pesa statement (${mode === 'collections' ? 'Collection' : 'Payment'})`
+                    `Imported from M-Pesa statement (${mode === 'collections' ? 'Collection' : 'Payment'})`,
+                    { category: autoCategory }
                 );
 
                 // Create ledger entry
