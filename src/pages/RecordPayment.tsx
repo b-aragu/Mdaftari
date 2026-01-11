@@ -8,6 +8,7 @@ import { parseMessage, type ParseResult, type ParsedTransaction } from '../parse
 import { saveTransaction, createLedgerEntry } from '../storage';
 import { detectPartialPayment } from '../ledger';
 import { StatementImport } from '../components/StatementImport';
+import { CATEGORIES } from '../constants/categories';
 import './RecordPayment.css';
 
 const TEMP_USER_ID = 'local-user';
@@ -38,6 +39,8 @@ export function RecordPaymentPage({ onBack, onSuccess, mode }: RecordPaymentProp
 
     const [error, setError] = useState<string | null>(null);
     const [isSaving, setIsSaving] = useState(false);
+    const [category, setCategory] = useState('general');
+    const [isRecurring, setIsRecurring] = useState(false);
 
     const handlePaste = useCallback(async () => {
         try {
@@ -114,7 +117,7 @@ export function RecordPaymentPage({ onBack, onSuccess, mode }: RecordPaymentProp
                 };
             }
 
-            const savedTx = await saveTransaction(transaction, TEMP_USER_ID, parsedExpected, notes);
+            const savedTx = await saveTransaction(transaction, TEMP_USER_ID, parsedExpected, notes, { category, isRecurring });
             const partial = detectPartialPayment(parsedAmount, parsedExpected);
 
             await createLedgerEntry(
@@ -132,7 +135,7 @@ export function RecordPaymentPage({ onBack, onSuccess, mode }: RecordPaymentProp
         } finally {
             setIsSaving(false);
         }
-    }, [amount, expectedAmount, fromTo, transactionCode, notes, parseResult, onSuccess]);
+    }, [amount, expectedAmount, fromTo, transactionCode, notes, category, isRecurring, parseResult, onSuccess, mode]);
 
     const partial = step === 'confirm' && amount && expectedAmount
         ? detectPartialPayment(parseFloat(amount), parseFloat(expectedAmount))
@@ -335,6 +338,51 @@ export function RecordPaymentPage({ onBack, onSuccess, mode }: RecordPaymentProp
                                 onChange={(e) => setNotes(e.target.value)}
                                 placeholder="Optional"
                             />
+                        </div>
+
+                        {/* Category Selector */}
+                        <div className="confirm-row confirm-row--full">
+                            <span className="confirm-label">Category</span>
+                            <div className="category-chips">
+                                {CATEGORIES.slice(0, 6).map(cat => (
+                                    <button
+                                        key={cat.id}
+                                        type="button"
+                                        className={`category-chip ${category === cat.id ? 'category-chip--active' : ''}`}
+                                        style={{ '--cat-color': cat.color } as React.CSSProperties}
+                                        onClick={() => setCategory(cat.id)}
+                                    >
+                                        <span>{cat.icon}</span>
+                                        <span>{cat.label}</span>
+                                    </button>
+                                ))}
+                            </div>
+                            <div className="category-chips">
+                                {CATEGORIES.slice(6).map(cat => (
+                                    <button
+                                        key={cat.id}
+                                        type="button"
+                                        className={`category-chip ${category === cat.id ? 'category-chip--active' : ''}`}
+                                        style={{ '--cat-color': cat.color } as React.CSSProperties}
+                                        onClick={() => setCategory(cat.id)}
+                                    >
+                                        <span>{cat.icon}</span>
+                                        <span>{cat.label}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Recurring Toggle */}
+                        <div className="confirm-row">
+                            <label className="recurring-label">
+                                <input
+                                    type="checkbox"
+                                    checked={isRecurring}
+                                    onChange={(e) => setIsRecurring(e.target.checked)}
+                                />
+                                <span>This is a recurring {mode === 'collections' ? 'collection' : 'payment'}</span>
+                            </label>
                         </div>
                     </div>
 
