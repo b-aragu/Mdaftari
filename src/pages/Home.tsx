@@ -1073,18 +1073,22 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                         </div>
 
                         <h3 className="empty-title">
-                            {appMode === 'collections' ? 'No collections yet' : 'No payments yet'}
+                            {appMode === 'collections' ? 'No collections yet' :
+                                appMode === 'payments' ? 'No payments yet' :
+                                    'No transactions yet'}
                         </h3>
                         <p className="empty-description">
                             {appMode === 'collections'
                                 ? 'Start tracking your M-Pesa transactions to see who owes you money'
-                                : 'Start tracking your M-Pesa payments to see who you\'ve paid'
+                                : appMode === 'payments'
+                                    ? 'Start tracking your M-Pesa payments to see who you\'ve paid'
+                                    : 'Start tracking your M-Pesa transactions to see your complete financial picture'
                             }
                         </p>
 
                         <button className="empty-cta" onClick={onRecordPayment}>
                             <Plus size={20} strokeWidth={2.5} />
-                            Record Your First Payment
+                            Record Your First {appMode === 'collections' ? 'Collection' : appMode === 'payments' ? 'Payment' : 'Transaction'}
                         </button>
 
                         <div className="empty-tips">

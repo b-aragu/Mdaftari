@@ -904,7 +904,10 @@
 }
 
 .day-group {
-    border: var(--border-medium);
+    background: white;
+    border: 1px solid #e5e5e5;
+    border-radius: 8px;
+    overflow: hidden;
 }
 
 .day-header {
