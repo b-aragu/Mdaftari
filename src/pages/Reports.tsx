@@ -169,19 +169,25 @@ export function ReportsPage() {
     })();
 
     const handleExportCSV = () => {
-        // Generate proper CSV
-        const header = 'Date,Name,Phone,Type,Amount,Paid,Owed,Transaction Code\n';
-        const rows = transactions.map(tx => {
+        // Filter transactions based on current mode
+        const txToExport = appMode === 'overview'
+            ? transactions
+            : filteredTransactions;
+
+        // Generate proper CSV with Category column
+        const header = 'Date,Name,Phone,Category,Type,Amount,Paid,Owed,Transaction Code\n';
+        const rows = txToExport.map(tx => {
             const entry = ledgerEntries.find(e => e.transactionId === tx.id);
             const date = tx.parsedData.dateTime.toISOString().split('T')[0];
             const name = (tx.parsedData.counterparty.name || '').replace(/,/g, ' ');
             const phone = tx.parsedData.counterparty.phone || '';
+            const category = tx.parsedData.type === 'received' ? 'Collection' : 'Payment';
             const type = tx.parsedData.type;
             const amount = tx.parsedData.amount;
             const paid = entry?.amountPaid || amount;
             const owed = entry?.amountOwed || 0;
             const code = tx.parsedData.transactionCode;
-            return `${date},"${name}",${phone},${type},${amount},${paid},${owed},${code}`;
+            return `${date},"${name}",${phone},${category},${type},${amount},${paid},${owed},${code}`;
         }).join('\n');
 
         const csv = header + rows;
@@ -189,7 +195,8 @@ export function ReportsPage() {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `mdaftari-export-${new Date().toISOString().split('T')[0]}.csv`;
+        const modeLabel = appMode === 'overview' ? 'all' : appMode;
+        a.download = `mdaftari-${modeLabel}-${new Date().toISOString().split('T')[0]}.csv`;
         a.click();
         URL.revokeObjectURL(url);
     };
@@ -389,7 +396,59 @@ export function ReportsPage() {
                 {/* Overview Mode: Collections vs Payments Comparison */}
                 {appMode === 'overview' && (
                     <section className="comparison-section">
-                        <h2 className="section-title">Collections vs Payments</h2>
+                        <h2 className="section-title">Money Flow</h2>
+
+                        {/* Donut Chart */}
+                        <div className="donut-chart-container">
+                            <svg viewBox="0 0 120 120" className="donut-chart">
+                                {(() => {
+                                    const total = collectionsTotal + paymentsTotal;
+                                    if (total === 0) {
+                                        return <circle cx="60" cy="60" r="45" fill="none" stroke="#e5e5e5" strokeWidth="15" />;
+                                    }
+                                    const collectionsPercent = (collectionsTotal / total) * 100;
+                                    const paymentsPercent = (paymentsTotal / total) * 100;
+                                    const collectionsDash = (collectionsPercent / 100) * 283; // 2 * PI * 45
+                                    const paymentsDash = (paymentsPercent / 100) * 283;
+
+                                    return (
+                                        <>
+                                            {/* Payments arc (behind) */}
+                                            <circle
+                                                cx="60" cy="60" r="45"
+                                                fill="none"
+                                                stroke="#6366f1"
+                                                strokeWidth="15"
+                                                strokeDasharray={`${paymentsDash} 283`}
+                                                strokeDashoffset={-collectionsDash}
+                                                transform="rotate(-90 60 60)"
+                                            />
+                                            {/* Collections arc (front) */}
+                                            <circle
+                                                cx="60" cy="60" r="45"
+                                                fill="none"
+                                                stroke="#16a34a"
+                                                strokeWidth="15"
+                                                strokeDasharray={`${collectionsDash} 283`}
+                                                transform="rotate(-90 60 60)"
+                                            />
+                                        </>
+                                    );
+                                })()}
+                            </svg>
+                            <div className="donut-legend">
+                                <div className="donut-legend-item">
+                                    <span className="donut-dot donut-dot--in"></span>
+                                    <span>Collections</span>
+                                    <strong className="money-in">{collectionsTotal + paymentsTotal > 0 ? Math.round((collectionsTotal / (collectionsTotal + paymentsTotal)) * 100) : 0}%</strong>
+                                </div>
+                                <div className="donut-legend-item">
+                                    <span className="donut-dot donut-dot--out"></span>
+                                    <span>Payments</span>
+                                    <strong className="money-out">{collectionsTotal + paymentsTotal > 0 ? Math.round((paymentsTotal / (collectionsTotal + paymentsTotal)) * 100) : 0}%</strong>
+                                </div>
+                            </div>
+                        </div>
                         <div className="comparison-chart">
                             <div className="comparison-bar">
                                 <div className="comparison-bar-label">

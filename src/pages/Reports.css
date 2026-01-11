@@ -184,6 +184,61 @@
     font-weight: var(--weight-bold);
 }
 
+/* Donut Chart */
+.donut-chart-container {
+    display: flex;
+    align-items: center;
+    gap: var(--space-6);
+    margin-bottom: var(--space-4);
+    padding: var(--space-4);
+    background: #fafafa;
+    border-radius: 12px;
+}
+
+.donut-chart {
+    width: 100px;
+    height: 100px;
+    flex-shrink: 0;
+}
+
+.donut-legend {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    flex: 1;
+}
+
+.donut-legend-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.donut-legend-item span:nth-child(2) {
+    flex: 1;
+    font-size: var(--text-sm);
+}
+
+.donut-legend-item strong {
+    font-size: var(--text-base);
+    font-weight: var(--weight-bold);
+}
+
+.donut-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.donut-dot--in {
+    background: #16a34a;
+}
+
+.donut-dot--out {
+    background: #6366f1;
+}
+
 /* Date Range Filter */
 .date-filter {
     display: flex;
