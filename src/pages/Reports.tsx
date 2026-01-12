@@ -3,7 +3,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { Download, ArrowDownLeft, ArrowUpRight, X, Wallet, CreditCard, LayoutGrid } from 'lucide-react';
+import { Download, ArrowDownLeft, ArrowUpRight, X, Wallet, CreditCard, LayoutGrid, ChevronRight } from 'lucide-react';
 import { getTransactionsByUser, getLedgerEntriesByTransaction } from '../storage';
 import { getCategoryById } from '../constants/categories';
 import type { Transaction, LedgerEntry } from '../ledger/types';
@@ -27,6 +27,14 @@ export function ReportsPage() {
         total: number;
         count: number;
         people: string[];
+    } | null>(null);
+    const [selectedCategory, setSelectedCategory] = useState<{
+        id: string;
+        label: string;
+        icon: string;
+        color: string;
+        total: number;
+        count: number;
     } | null>(null);
 
     const currentMonth = new Intl.DateTimeFormat('en-KE', { month: 'long', year: 'numeric' }).format(new Date());
@@ -635,30 +643,40 @@ export function ReportsPage() {
                 {categoryBreakdown.length > 0 && (
                     <section className="category-breakdown-section">
                         <h2 className="section-title">Spending by Category</h2>
+                        <p className="section-subtitle">Tap a category to view transactions</p>
                         <div className="category-list">
                             {categoryBreakdown.map(cat => {
                                 const percentage = categoryTotal > 0 ? Math.round((cat.total / categoryTotal) * 100) : 0;
                                 return (
-                                    <div key={cat.id} className="category-row">
-                                        <div className="category-info">
-                                            <span className="category-icon">{cat.icon}</span>
-                                            <span className="category-name">{cat.label}</span>
-                                            <span className="category-count">{cat.count} tx</span>
-                                        </div>
-                                        <div className="category-stats">
-                                            <div className="category-bar-wrapper">
-                                                <div
-                                                    className="category-bar"
-                                                    style={{
-                                                        width: `${percentage}%`,
-                                                        background: cat.color
-                                                    }}
-                                                />
+                                    <button
+                                        key={cat.id}
+                                        className="category-card"
+                                        onClick={() => setSelectedCategory(cat)}
+                                        style={{ '--cat-color': cat.color } as React.CSSProperties}
+                                    >
+                                        <div className="category-card-left">
+                                            <div className="category-card-icon" style={{ background: `${cat.color}20`, color: cat.color }}>
+                                                {cat.icon}
                                             </div>
-                                            <span className="category-total">KES {formatMoney(cat.total)}</span>
-                                            <span className="category-percent">{percentage}%</span>
+                                            <div className="category-card-info">
+                                                <span className="category-card-name">{cat.label}</span>
+                                                <span className="category-card-count">{cat.count} transaction{cat.count !== 1 ? 's' : ''}</span>
+                                            </div>
                                         </div>
-                                    </div>
+                                        <div className="category-card-right">
+                                            <div className="category-card-amount">
+                                                <span className="category-card-total">KES {formatMoney(cat.total)}</span>
+                                                <div className="category-card-bar">
+                                                    <div
+                                                        className="category-card-bar-fill"
+                                                        style={{ width: `${percentage}%`, background: cat.color }}
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="category-card-percent">{percentage}%</div>
+                                            <ChevronRight size={18} className="category-card-chevron" />
+                                        </div>
+                                    </button>
                                 );
                             })}
                         </div>
@@ -724,6 +742,69 @@ export function ReportsPage() {
                                 </ul>
                             </div>
                         )}
+                    </div>
+                </div>
+            )}
+
+            {/* Category Detail Modal */}
+            {selectedCategory && (
+                <div className="modal-overlay" onClick={() => setSelectedCategory(null)}>
+                    <div className="modal-content category-modal" onClick={e => e.stopPropagation()}>
+                        <button className="modal-close" onClick={() => setSelectedCategory(null)}>
+                            <X size={20} />
+                        </button>
+                        <div className="category-modal-header" style={{ background: `${selectedCategory.color}15` }}>
+                            <div className="category-modal-icon" style={{ background: `${selectedCategory.color}25`, color: selectedCategory.color }}>
+                                {selectedCategory.icon}
+                            </div>
+                            <div className="category-modal-title-section">
+                                <h3 className="category-modal-title">{selectedCategory.label}</h3>
+                                <span className="category-modal-subtitle">{selectedCategory.count} transaction{selectedCategory.count !== 1 ? 's' : ''}</span>
+                            </div>
+                            <div className="category-modal-total">
+                                <span className="category-modal-amount">KES {formatMoney(selectedCategory.total)}</span>
+                            </div>
+                        </div>
+                        <div className="category-modal-transactions">
+                            <h4 className="category-modal-section-title">Transactions</h4>
+                            <ul className="category-tx-list">
+                                {filteredTransactions
+                                    .filter(tx => (tx.category || 'general') === selectedCategory.id)
+                                    .slice(0, 20)
+                                    .map(tx => {
+                                        const entry = filteredEntries.find(e => e.transactionId === tx.id);
+                                        const amount = entry?.amountPaid || tx.parsedData.amount;
+                                        const isIn = tx.parsedData.type === 'received';
+                                        return (
+                                            <li key={tx.id} className="category-tx-item">
+                                                <div className={`category-tx-icon ${isIn ? 'category-tx-icon--in' : 'category-tx-icon--out'}`}>
+                                                    {isIn ? <ArrowDownLeft size={14} /> : <ArrowUpRight size={14} />}
+                                                </div>
+                                                <div className="category-tx-details">
+                                                    <span className="category-tx-name">
+                                                        {tx.parsedData.counterparty.name || tx.parsedData.counterparty.phone || 'Transaction'}
+                                                    </span>
+                                                    <span className="category-tx-date">
+                                                        {new Intl.DateTimeFormat('en-KE', {
+                                                            day: 'numeric',
+                                                            month: 'short',
+                                                            year: 'numeric'
+                                                        }).format(tx.parsedData.dateTime)}
+                                                    </span>
+                                                </div>
+                                                <span className={`category-tx-amount ${isIn ? 'amount-positive' : 'amount-negative'}`}>
+                                                    {isIn ? '+' : '-'}KES {formatMoney(amount)}
+                                                </span>
+                                            </li>
+                                        );
+                                    })}
+                            </ul>
+                            {filteredTransactions.filter(tx => (tx.category || 'general') === selectedCategory.id).length > 20 && (
+                                <p className="category-tx-more">
+                                    Showing 20 of {filteredTransactions.filter(tx => (tx.category || 'general') === selectedCategory.id).length} transactions
+                                </p>
+                            )}
+                        </div>
                     </div>
                 </div>
             )}
