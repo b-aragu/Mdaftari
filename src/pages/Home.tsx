@@ -7,6 +7,7 @@ import { Plus, ArrowDownLeft, ArrowUpRight, Calendar, ChevronRight, Users, Arrow
 import { getTransactionsByUser, getLedgerEntriesByTransaction, updateTransaction, deleteTransaction } from '../storage';
 import { useCountUp } from '../hooks';
 import { SkeletonPersonCard } from '../components/ui';
+import { getCategoryById } from '../constants/categories';
 import type { Transaction, LedgerEntry } from '../ledger/types';
 import './Home.css';
 
@@ -369,6 +370,11 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                                             </span>
                                             <div className="tx-meta">
                                                 <code className="tx-code">{tx.parsedData.transactionCode}</code>
+                                                {tx.category && tx.category !== 'general' && (
+                                                    <span className="tx-category" title={getCategoryById(tx.category)?.label}>
+                                                        {getCategoryById(tx.category)?.icon}
+                                                    </span>
+                                                )}
                                                 <span className="tx-time">{formatTime(tx.parsedData.dateTime)}</span>
                                             </div>
                                         </div>
@@ -667,7 +673,14 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                                                         year: 'numeric',
                                                     }).format(tx.parsedData.dateTime)}
                                                 </span>
-                                                <code className="tx-code">{tx.parsedData.transactionCode}</code>
+                                                <div className="tx-meta">
+                                                    <code className="tx-code">{tx.parsedData.transactionCode}</code>
+                                                    {tx.category && tx.category !== 'general' && (
+                                                        <span className="tx-category" title={getCategoryById(tx.category)?.label}>
+                                                            {getCategoryById(tx.category)?.icon}
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </div>
                                             <div className="tx-amount-wrapper">
                                                 <span className={`tx-amount ${isIn ? 'money-in' : 'money-out'}`}>
@@ -1185,6 +1198,11 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                                                     </span>
                                                     <div className="tx-meta">
                                                         <code className="tx-code">{tx.parsedData.transactionCode}</code>
+                                                        {tx.category && tx.category !== 'general' && (
+                                                            <span className="tx-category" title={getCategoryById(tx.category)?.label}>
+                                                                {getCategoryById(tx.category)?.icon}
+                                                            </span>
+                                                        )}
                                                         <span className="tx-time">{formatTime(tx.parsedData.dateTime)}</span>
                                                     </div>
                                                 </div>

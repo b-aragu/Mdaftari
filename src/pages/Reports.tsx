@@ -5,6 +5,7 @@
 import { useState, useEffect } from 'react';
 import { Download, ArrowDownLeft, ArrowUpRight, X, Wallet, CreditCard, LayoutGrid } from 'lucide-react';
 import { getTransactionsByUser, getLedgerEntriesByTransaction } from '../storage';
+import { CATEGORIES, getCategoryById } from '../constants/categories';
 import type { Transaction, LedgerEntry } from '../ledger/types';
 import './Reports.css';
 
@@ -126,6 +127,33 @@ export function ReportsPage() {
         });
         return Object.values(people).sort((a, b) => b.paid - a.paid);
     })();
+
+    // Category breakdown
+    const categoryBreakdown = (() => {
+        const cats: { [id: string]: { id: string; label: string; icon: string; color: string; total: number; count: number } } = {};
+        filteredTransactions.forEach(tx => {
+            const catId = tx.category || 'general';
+            const catInfo = getCategoryById(catId);
+            if (!cats[catId]) {
+                cats[catId] = {
+                    id: catId,
+                    label: catInfo?.label || 'General',
+                    icon: catInfo?.icon || '📝',
+                    color: catInfo?.color || '#6b7280',
+                    total: 0,
+                    count: 0
+                };
+            }
+            const entry = filteredEntries.find(e => e.transactionId === tx.id);
+            cats[catId].total += entry?.amountPaid || tx.parsedData.amount;
+            cats[catId].count += 1;
+        });
+        return Object.values(cats)
+            .filter(c => c.count > 0)
+            .sort((a, b) => b.total - a.total);
+    })();
+
+    const categoryTotal = categoryBreakdown.reduce((sum, c) => sum + c.total, 0);
 
     const formatMoney = (amount: number) => amount.toLocaleString('en-KE');
     // Monthly trend data with enhanced data for interactivity
@@ -599,6 +627,40 @@ export function ReportsPage() {
                                     </span>
                                 </div>
                             ))}
+                        </div>
+                    </section>
+                )}
+
+                {/* Category Breakdown */}
+                {categoryBreakdown.length > 0 && (
+                    <section className="category-breakdown-section">
+                        <h2 className="section-title">Spending by Category</h2>
+                        <div className="category-list">
+                            {categoryBreakdown.map(cat => {
+                                const percentage = categoryTotal > 0 ? Math.round((cat.total / categoryTotal) * 100) : 0;
+                                return (
+                                    <div key={cat.id} className="category-row">
+                                        <div className="category-info">
+                                            <span className="category-icon">{cat.icon}</span>
+                                            <span className="category-name">{cat.label}</span>
+                                            <span className="category-count">{cat.count} tx</span>
+                                        </div>
+                                        <div className="category-stats">
+                                            <div className="category-bar-wrapper">
+                                                <div
+                                                    className="category-bar"
+                                                    style={{
+                                                        width: `${percentage}%`,
+                                                        background: cat.color
+                                                    }}
+                                                />
+                                            </div>
+                                            <span className="category-total">KES {formatMoney(cat.total)}</span>
+                                            <span className="category-percent">{percentage}%</span>
+                                        </div>
+                                    </div>
+                                );
+                            })}
                         </div>
                     </section>
                 )}
