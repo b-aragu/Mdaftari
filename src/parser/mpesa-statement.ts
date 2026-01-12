@@ -304,44 +304,6 @@ function finalizeTransaction(data: {
 }
 
 /**
- * Extract amounts from word array
- */
-function extractAmountsFromArray(words: string[]): { paidIn: number; paidOut: number; balance: number } {
-    const amounts: number[] = [];
-
-    for (const word of words) {
-        // Match numbers with optional commas and decimals
-        const cleanWord = word.replace(/[^\d,\.]/g, '');
-        if (/^\d{1,3}(,\d{3})*(\.\d{2})?$/.test(cleanWord) || /^\d+(\.\d{2})?$/.test(cleanWord)) {
-            const amount = parseFloat(cleanWord.replace(/,/g, ''));
-            if (!isNaN(amount) && amount > 0) {
-                amounts.push(amount);
-            }
-        }
-    }
-
-    // Last 3 amounts are typically: Paid In, Withdrawn, Balance
-    // Or last 2 might be: amount and balance
-    if (amounts.length >= 3) {
-        return {
-            paidIn: amounts[amounts.length - 3] || 0,
-            paidOut: amounts[amounts.length - 2] || 0,
-            balance: amounts[amounts.length - 1] || 0,
-        };
-    } else if (amounts.length === 2) {
-        return {
-            paidIn: amounts[0] || 0,
-            paidOut: 0,
-            balance: amounts[1] || 0,
-        };
-    } else if (amounts.length === 1) {
-        return { paidIn: 0, paidOut: 0, balance: amounts[0] || 0 };
-    }
-
-    return { paidIn: 0, paidOut: 0, balance: 0 };
-}
-
-/**
  * Extract transaction type and counterparty from details
  * Format: Extract name and phone number, display as "NAME PHONE"
  * Example: "Customer Payment to Small Business to - 2547******275 ALPHONCE MUSEE" 
@@ -432,50 +394,6 @@ function extractTransactionInfo(text: string): { type: StatementTransaction['typ
         counterparty,
         details: text.replace(/\s+/g, ' ').trim().substring(0, 150),
     };
-}
-
-/**
- * Extract details string
- */
-function extractDetails(text: string, type: string): string {
-    // Clean up the text
-    return text
-        .replace(/\s+/g, ' ')
-        .trim()
-        .substring(0, 150);
-}
-
-/**
- * Extract amounts from transaction line
- */
-function extractAmounts(text: string): { paidIn: number; paidOut: number; balance: number } {
-    const amounts: number[] = [];
-    const amountPattern = /(?:Ksh|KES)?\s*(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)/gi;
-
-    let match;
-    while ((match = amountPattern.exec(text)) !== null) {
-        const amount = parseFloat(match[1].replace(/,/g, ''));
-        if (!isNaN(amount) && amount > 0) {
-            amounts.push(amount);
-        }
-    }
-
-    // Heuristic: last amount is usually balance, others are paid in/out
-    const balance = amounts.length > 0 ? amounts[amounts.length - 1] : 0;
-
-    // Check if this is money in or out based on context
-    const lowerText = text.toLowerCase();
-    const isIncoming = lowerText.includes('received') ||
-        lowerText.includes('deposit') ||
-        lowerText.includes('paid in');
-
-    if (isIncoming && amounts.length >= 2) {
-        return { paidIn: amounts[0], paidOut: 0, balance };
-    } else if (amounts.length >= 2) {
-        return { paidIn: 0, paidOut: amounts[0], balance };
-    }
-
-    return { paidIn: 0, paidOut: 0, balance };
 }
 
 /**
