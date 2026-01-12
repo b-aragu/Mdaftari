@@ -5,7 +5,7 @@
 import { useState, useEffect } from 'react';
 import { Download, ArrowDownLeft, ArrowUpRight, X, Wallet, CreditCard, LayoutGrid } from 'lucide-react';
 import { getTransactionsByUser, getLedgerEntriesByTransaction } from '../storage';
-import { CATEGORIES, getCategoryById } from '../constants/categories';
+import { getCategoryById } from '../constants/categories';
 import type { Transaction, LedgerEntry } from '../ledger/types';
 import './Reports.css';
 

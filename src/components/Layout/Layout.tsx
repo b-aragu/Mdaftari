@@ -2,7 +2,7 @@
  * Main Layout Component
  */
 
-import React, { ReactNode } from 'react';
+import { ReactNode } from 'react';
 import { Navigation } from './Navigation';
 import './Layout.css';
 

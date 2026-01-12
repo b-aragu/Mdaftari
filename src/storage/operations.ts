@@ -504,13 +504,6 @@ export async function clearDataByMode(mode: 'collections' | 'payments'): Promise
     // Get all transactions
     const allTransactions = await db.getAll('transactions');
 
-    // Log types found
-    const typeBreakdown = allTransactions.reduce((acc, tx) => {
-        const type = tx.parsedData?.type || 'unknown';
-        acc[type] = (acc[type] || 0) + 1;
-        return acc;
-    }, {} as Record<string, number>);
-
     // Filter transactions by type
     const transactionsToDelete = allTransactions.filter(tx =>
         tx.parsedData?.type === typeToDelete

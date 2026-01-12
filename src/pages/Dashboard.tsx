@@ -4,12 +4,10 @@
  * Main page showing balance overview, workers, and transactions
  */
 
-import React, { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { MessageInput } from '../components/MessageInput';
 import { TransactionConfirm } from '../components/TransactionConfirm';
 import { LedgerView } from '../components/LedgerView';
-import { Button } from '../components/ui';
-import { Card, CardContent } from '../components/ui/Card';
 import { useOutdoorMode } from '../hooks';
 import {
     saveTransaction,
@@ -23,14 +21,6 @@ import type { Transaction, LedgerEntry } from '../ledger/types';
 import './Dashboard.css';
 
 const TEMP_USER_ID = 'local-user';
-
-// Demo data for empty state
-const DEMO_STATS = {
-    totalReceived: 0,
-    totalOwed: 0,
-    transactionCount: 0,
-    workerCount: 0,
-};
 
 export function Dashboard() {
     const { isOutdoorMode, toggleOutdoorMode } = useOutdoorMode();

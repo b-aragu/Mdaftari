@@ -2,22 +2,17 @@
  * Ledger View Component - Premium Finance Style
  */
 
-import React from 'react';
-import type { Transaction, LedgerEntry, Worker } from '../../ledger/types';
+import type { Transaction, LedgerEntry } from '../../ledger/types';
 import './LedgerView.css';
 
 export interface LedgerViewProps {
     transactions: Transaction[];
     entries: LedgerEntry[];
-    workers?: Worker[];
-    showWorkerColumn?: boolean;
 }
 
 export function LedgerView({
     transactions,
     entries,
-    workers = [],
-    showWorkerColumn = true
 }: LedgerViewProps) {
     const formatAmount = (value: number) => {
         return value.toLocaleString('en-KE', { minimumFractionDigits: 0 });

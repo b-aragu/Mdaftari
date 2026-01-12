@@ -95,8 +95,6 @@ function parseDate(dateStr: string, timeStr: string): Date {
  * Detect transaction type from message content
  */
 function detectTransactionType(message: string): TransactionType {
-    const lowerMessage = message.toLowerCase();
-
     if (PATTERNS.isReceived.test(message)) return 'received';
     if (PATTERNS.isPaybill.test(message)) return 'paybill';
     if (PATTERNS.isBuyGoods.test(message)) return 'buy_goods';

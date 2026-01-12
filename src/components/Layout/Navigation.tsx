@@ -2,7 +2,6 @@
  * Navigation Component
  */
 
-import React from 'react';
 import { Home, FileText, Settings, Sun, Moon } from 'lucide-react';
 import { useOutdoorMode } from '../../hooks';
 import './Navigation.css';

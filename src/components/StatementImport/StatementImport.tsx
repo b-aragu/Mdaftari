@@ -14,7 +14,7 @@ import {
     type StatementTransaction,
     type ParsedStatement
 } from '../../parser/mpesa-statement';
-import { saveTransaction, createLedgerEntry, getExistingReceiptNumbers, findWorkersByPhones, addWorker } from '../../storage';
+import { saveTransaction, createLedgerEntry, getExistingReceiptNumbers, findWorkersByPhones } from '../../storage';
 import { suggestCategory } from '../../constants/autoCategorize';
 import type { Worker } from '../../ledger/types';
 import type { ParsedTransaction } from '../../parser/types';
@@ -50,7 +50,6 @@ export function StatementImport({ onComplete, onBack, mode }: StatementImportPro
     // Import progress
     const [importProgress, setImportProgress] = useState(0);
     const [importedCount, setImportedCount] = useState(0);
-    const [importResults, setImportResults] = useState<{ person: string; count: number; total: number }[]>([]);
 
     // Password for encrypted PDFs
     const [needsPassword, setNeedsPassword] = useState(false);
