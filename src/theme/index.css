@@ -27,6 +27,8 @@ body {
 
 #root {
     min-height: 100vh;
+    padding-bottom: 80px;
+    /* Space for fixed bottom navigation */
 }
 
 /* Typography */
