@@ -276,8 +276,10 @@ export function StatementImport({ onComplete, onBack, mode }: StatementImportPro
             const tx = selected[i];
             if (!tx) continue;
 
-            // Determine amount based on mode
-            const amount = mode === 'collections' ? tx.paidIn : tx.paidOut;
+            // Determine amount and direction based on ACTUAL transaction data, not mode
+            const isIncoming = tx.paidIn > 0;
+            const amount = isIncoming ? tx.paidIn : tx.paidOut;
+
             if (amount <= 0) {
                 continue;
             }
@@ -288,7 +290,7 @@ export function StatementImport({ onComplete, onBack, mode }: StatementImportPro
                     amount: amount,
                     transactionCode: tx.receiptNo,
                     currency: 'KES',
-                    type: mode === 'collections' ? 'received' : 'sent',
+                    type: isIncoming ? 'received' : 'sent',
                     dateTime: tx.date,
                     counterparty: {
                         name: tx.counterparty,
@@ -308,7 +310,7 @@ export function StatementImport({ onComplete, onBack, mode }: StatementImportPro
                     parsedData,
                     TEMP_USER_ID,
                     tx.expectedAmount,
-                    `Imported from M-Pesa statement (${mode === 'collections' ? 'Collection' : 'Payment'})`,
+                    `Imported from M-Pesa statement (${isIncoming ? 'Collection' : 'Payment'})`,
                     { category: autoCategory }
                 );
 
