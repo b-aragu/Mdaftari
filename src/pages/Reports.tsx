@@ -644,9 +644,84 @@ export function ReportsPage() {
                     <section className="category-breakdown-section">
                         <h2 className="section-title">Spending by Category</h2>
                         <p className="section-subtitle">Tap a category to view transactions</p>
+
+                        {/* Donut Chart Visualization */}
+                        <div className="category-chart-container">
+                            <svg className="category-donut" viewBox="0 0 200 200">
+                                {(() => {
+                                    let currentAngle = -90;
+                                    const centerX = 100;
+                                    const centerY = 100;
+                                    const radius = 80;
+                                    const innerRadius = 55;
+
+                                    return categoryBreakdown.map((cat, idx) => {
+                                        const percentage = categoryTotal > 0 ? (cat.total / categoryTotal) * 100 : 0;
+                                        const angle = (percentage / 100) * 360;
+
+                                        // Calculate arc path
+                                        const startAngle = currentAngle;
+                                        const endAngle = currentAngle + angle;
+                                        currentAngle = endAngle;
+
+                                        const startRad = (startAngle * Math.PI) / 180;
+                                        const endRad = (endAngle * Math.PI) / 180;
+
+                                        const x1 = centerX + radius * Math.cos(startRad);
+                                        const y1 = centerY + radius * Math.sin(startRad);
+                                        const x2 = centerX + radius * Math.cos(endRad);
+                                        const y2 = centerY + radius * Math.sin(endRad);
+
+                                        const x3 = centerX + innerRadius * Math.cos(endRad);
+                                        const y3 = centerY + innerRadius * Math.sin(endRad);
+                                        const x4 = centerX + innerRadius * Math.cos(startRad);
+                                        const y4 = centerY + innerRadius * Math.sin(startRad);
+
+                                        const largeArc = angle > 180 ? 1 : 0;
+
+                                        const pathData = [
+                                            `M ${x1} ${y1}`,
+                                            `A ${radius} ${radius} 0 ${largeArc} 1 ${x2} ${y2}`,
+                                            `L ${x3} ${y3}`,
+                                            `A ${innerRadius} ${innerRadius} 0 ${largeArc} 0 ${x4} ${y4}`,
+                                            'Z'
+                                        ].join(' ');
+
+                                        return (
+                                            <path
+                                                key={cat.id}
+                                                d={pathData}
+                                                fill={cat.color}
+                                                className="category-donut-segment"
+                                                onClick={() => setSelectedCategory(cat)}
+                                            />
+                                        );
+                                    });
+                                })()}
+                                <text x="100" y="95" className="category-donut-total-label">Total</text>
+                                <text x="100" y="115" className="category-donut-total-value">
+                                    KES {formatMoney(categoryTotal)}
+                                </text>
+                            </svg>
+                            <div className="category-chart-legend">
+                                {categoryBreakdown.slice(0, 5).map(cat => {
+                                    const pct = categoryTotal > 0 ? (cat.total / categoryTotal) * 100 : 0;
+                                    const displayPct = pct < 1 && pct > 0 ? pct.toFixed(1) : Math.round(pct);
+                                    return (
+                                        <div key={cat.id} className="category-legend-item" onClick={() => setSelectedCategory(cat)}>
+                                            <span className="category-legend-dot" style={{ background: cat.color }} />
+                                            <span className="category-legend-name">{cat.label}</span>
+                                            <span className="category-legend-pct">{displayPct}%</span>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
                         <div className="category-list">
                             {categoryBreakdown.map(cat => {
-                                const percentage = categoryTotal > 0 ? Math.round((cat.total / categoryTotal) * 100) : 0;
+                                const rawPct = categoryTotal > 0 ? (cat.total / categoryTotal) * 100 : 0;
+                                const displayPct = rawPct < 1 && rawPct > 0 ? rawPct.toFixed(1) : Math.round(rawPct);
                                 return (
                                     <button
                                         key={cat.id}
@@ -669,11 +744,11 @@ export function ReportsPage() {
                                                 <div className="category-card-bar">
                                                     <div
                                                         className="category-card-bar-fill"
-                                                        style={{ width: `${percentage}%`, background: cat.color }}
+                                                        style={{ width: `${rawPct}%`, background: cat.color }}
                                                     />
                                                 </div>
                                             </div>
-                                            <div className="category-card-percent">{percentage}%</div>
+                                            <div className="category-card-percent">{displayPct}%</div>
                                             <ChevronRight size={18} className="category-card-chevron" />
                                         </div>
                                     </button>
