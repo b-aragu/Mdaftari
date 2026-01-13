@@ -36,6 +36,7 @@ export function ReportsPage() {
         total: number;
         count: number;
     } | null>(null);
+    const [showAllPeople, setShowAllPeople] = useState(false);
 
     const currentMonth = new Intl.DateTimeFormat('en-KE', { month: 'long', year: 'numeric' }).format(new Date());
 
@@ -618,6 +619,7 @@ export function ReportsPage() {
                 {personBreakdown.length > 0 && (
                     <section className="person-breakdown-section">
                         <h2 className="section-title">Per-Person Breakdown</h2>
+                        <p className="section-subtitle">{personBreakdown.length} people</p>
                         <div className="person-table">
                             <div className="person-table-header">
                                 <span>Name</span>
@@ -625,7 +627,7 @@ export function ReportsPage() {
                                 <span>Paid</span>
                                 <span>Owed</span>
                             </div>
-                            {personBreakdown.map((p, idx) => (
+                            {(showAllPeople ? personBreakdown : personBreakdown.slice(0, 10)).map((p, idx) => (
                                 <div key={idx} className="person-table-row">
                                     <span className="person-table-name">{p.name}</span>
                                     <span className="person-table-count">{p.count}</span>
@@ -636,6 +638,16 @@ export function ReportsPage() {
                                 </div>
                             ))}
                         </div>
+                        {personBreakdown.length > 10 && (
+                            <button
+                                className="expand-list-btn"
+                                onClick={() => setShowAllPeople(!showAllPeople)}
+                            >
+                                {showAllPeople
+                                    ? 'Show Less'
+                                    : `View All ${personBreakdown.length} People`}
+                            </button>
+                        )}
                     </section>
                 )}
 
