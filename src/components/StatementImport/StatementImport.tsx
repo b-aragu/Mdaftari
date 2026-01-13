@@ -397,7 +397,8 @@ export function StatementImport({ onComplete, onBack, mode }: StatementImportPro
         const groups: Record<string, { count: number; total: number }> = {};
 
         for (const tx of selected) {
-            const amount = mode === 'collections' ? tx.paidIn : tx.paidOut;
+            // Use actual direction: if paidIn > 0, it's incoming; otherwise it's outgoing
+            const amount = tx.paidIn > 0 ? tx.paidIn : tx.paidOut;
             if (!groups[tx.counterparty]) {
                 groups[tx.counterparty] = { count: 0, total: 0 };
             }
@@ -752,20 +753,23 @@ export function StatementImport({ onComplete, onBack, mode }: StatementImportPro
                                             </div>
                                         </div>
 
-                                        {tx.selected && !isDuplicate && (
-                                            <div className="tx-expected">
-                                                <label className="expected-label">
-                                                    {mode === 'collections' ? 'Expected:' : 'Owed to them:'}
-                                                </label>
-                                                <input
-                                                    type="number"
-                                                    className="expected-input"
-                                                    placeholder={mode === 'collections' ? 'Amount owed to you' : 'Amount you owe'}
-                                                    value={tx.expectedAmount || ''}
-                                                    onChange={(e) => updateExpectedAmount(tx.receiptNo, parseFloat(e.target.value) || 0)}
-                                                />
-                                            </div>
-                                        )}
+                                        {tx.selected && !isDuplicate && (() => {
+                                            const isIncoming = tx.paidIn > 0;
+                                            return (
+                                                <div className="tx-expected">
+                                                    <label className="expected-label">
+                                                        {isIncoming ? 'They owe you:' : 'You owe them:'}
+                                                    </label>
+                                                    <input
+                                                        type="number"
+                                                        className="expected-input"
+                                                        placeholder={isIncoming ? 'Amount owed to you' : 'Amount you owe'}
+                                                        value={tx.expectedAmount || ''}
+                                                        onChange={(e) => updateExpectedAmount(tx.receiptNo, parseFloat(e.target.value) || 0)}
+                                                    />
+                                                </div>
+                                            );
+                                        })()}
                                     </div>
                                 );
                             })
