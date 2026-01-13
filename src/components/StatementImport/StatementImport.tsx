@@ -727,11 +727,12 @@ export function StatementImport({ onComplete, onBack, mode }: StatementImportPro
                                             <div className="tx-main">
                                                 <span className="tx-counterparty">{tx.counterparty}</span>
                                                 {(() => {
-                                                    const amount = mode === 'collections' ? tx.paidIn : tx.paidOut;
-                                                    const isPositive = mode === 'collections';
+                                                    // Determine direction based on actual transaction data, not just mode
+                                                    const isIncoming = tx.paidIn > 0;
+                                                    const amount = isIncoming ? tx.paidIn : tx.paidOut;
                                                     return (
-                                                        <span className={`tx-amount ${isPositive ? 'amount-positive' : 'amount-negative'}`}>
-                                                            {isPositive ? '+' : '-'}KES {formatMoney(amount)}
+                                                        <span className={`tx-amount ${isIncoming ? 'amount-positive' : 'amount-negative'}`}>
+                                                            {isIncoming ? '+' : '-'}KES {formatMoney(amount)}
                                                         </span>
                                                     );
                                                 })()}
