@@ -188,6 +188,81 @@
     color: var(--color-text-secondary);
 }
 
+/* Smart Import Banner */
+.smart-import-banner {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+    background: linear-gradient(135deg, #e0f2fe, #f0fdf4);
+    border: 2px solid #22c55e;
+    border-radius: 12px;
+    margin-top: 8px;
+}
+
+.smart-banner-content {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.smart-banner-icon {
+    font-size: 24px;
+    flex-shrink: 0;
+}
+
+.smart-banner-text {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.smart-banner-text strong {
+    font-size: 14px;
+    color: #111;
+}
+
+.smart-banner-text span {
+    font-size: 13px;
+    color: #4b5563;
+}
+
+.smart-banner-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.smart-banner-btn {
+    flex: 1;
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.smart-banner-btn--primary {
+    background: #22c55e;
+    color: white;
+    border: none;
+}
+
+.smart-banner-btn--primary:hover {
+    background: #16a34a;
+}
+
+.smart-banner-btn--secondary {
+    background: white;
+    color: #4b5563;
+    border: 1px solid #d1d5db;
+}
+
+.smart-banner-btn--secondary:hover {
+    background: #f9fafb;
+    color: #111;
+}
+
 /* Filters */
 .filters {
     display: flex;

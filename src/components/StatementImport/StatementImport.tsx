@@ -62,6 +62,10 @@ export function StatementImport({ onComplete, onBack, mode }: StatementImportPro
     // Customer matching
     const [matchedWorkers, setMatchedWorkers] = useState<Map<string, Worker>>(new Map());
 
+    // Other direction transactions (for smart import prompt)
+    const [otherDirectionTxs, setOtherDirectionTxs] = useState<StatementTransaction[]>([]);
+    const [showOtherDirectionBanner, setShowOtherDirectionBanner] = useState(false);
+
     const parseFile = useCallback(async (file: File, pwd?: string) => {
         setIsLoading(true);
         setError(null);
@@ -102,6 +106,20 @@ export function StatementImport({ onComplete, onBack, mode }: StatementImportPro
                     mode === 'payments' ? t.paidOut > 0 :
                         (t.paidIn > 0 || t.paidOut > 0)  // Overview: all transactions
             );
+
+            // Check for opposite-direction transactions (smart import)
+            if (mode === 'collections') {
+                const paidOutTxs = txs.filter(t => t.paidOut > 0);
+                setOtherDirectionTxs(paidOutTxs);
+                setShowOtherDirectionBanner(paidOutTxs.length > 0);
+            } else if (mode === 'payments') {
+                const paidInTxs = txs.filter(t => t.paidIn > 0);
+                setOtherDirectionTxs(paidInTxs);
+                setShowOtherDirectionBanner(paidInTxs.length > 0);
+            } else {
+                setOtherDirectionTxs([]);
+                setShowOtherDirectionBanner(false);
+            }
 
             // Check for duplicate receipt codes in the parsed data
             const receiptCounts = relevantTxs.reduce((acc, tx) => {
@@ -488,6 +506,42 @@ export function StatementImport({ onComplete, onBack, mode }: StatementImportPro
                             {statement.customerName} • {statement.phoneNumber}
                         </p>
                     </div>
+
+                    {/* Smart Import Banner - Show when opposite direction transactions exist */}
+                    {showOtherDirectionBanner && otherDirectionTxs.length > 0 && (
+                        <div className="smart-import-banner">
+                            <div className="smart-banner-content">
+                                <span className="smart-banner-icon">💡</span>
+                                <div className="smart-banner-text">
+                                    <strong>
+                                        {otherDirectionTxs.length} {mode === 'collections' ? 'payment' : 'collection'}{otherDirectionTxs.length !== 1 ? 's' : ''} found
+                                    </strong>
+                                    <span>
+                                        This statement has {mode === 'collections' ? 'outgoing payments' : 'incoming money'} too.
+                                        Want to import them?
+                                    </span>
+                                </div>
+                            </div>
+                            <div className="smart-banner-actions">
+                                <button
+                                    className="smart-banner-btn smart-banner-btn--primary"
+                                    onClick={() => {
+                                        // Add the other direction transactions to the filtered list
+                                        setFilteredTransactions(prev => [...prev, ...otherDirectionTxs]);
+                                        setShowOtherDirectionBanner(false);
+                                    }}
+                                >
+                                    Add to Import
+                                </button>
+                                <button
+                                    className="smart-banner-btn smart-banner-btn--secondary"
+                                    onClick={() => setShowOtherDirectionBanner(false)}
+                                >
+                                    Skip
+                                </button>
+                            </div>
+                        </div>
+                    )}
 
                     {/* Filters */}
                     <div className="filters">
