@@ -1141,7 +1141,7 @@
 .empty-state--period {
     border: none;
     background: transparent;
-    padding: var(--space-6) var(--space-4) 100px;
+    padding: var(--space-4) var(--space-4) 140px;
 }
 
 .empty-period-hint {
