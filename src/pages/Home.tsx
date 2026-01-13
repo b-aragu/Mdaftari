@@ -1143,6 +1143,53 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                             </div>
                         </div>
                     </div>
+                ) : filteredTransactions.length === 0 ? (
+                    /* Period-specific empty state - when transactions exist but none match current period/mode */
+                    <div className="empty-state empty-state--period">
+                        <div className="empty-illustration">
+                            <div className="empty-icon-circle empty-icon-circle--muted">
+                                <Calendar size={32} strokeWidth={1.5} />
+                            </div>
+                        </div>
+                        <h3 className="empty-title">
+                            {appMode === 'collections'
+                                ? `No collections ${activePeriod === 'week' ? 'this week' : activePeriod === 'month' ? 'this month' : ''}`
+                                : appMode === 'payments'
+                                    ? `No payments ${activePeriod === 'week' ? 'this week' : activePeriod === 'month' ? 'this month' : ''}`
+                                    : `No transactions ${activePeriod === 'week' ? 'this week' : activePeriod === 'month' ? 'this month' : ''}`
+                            }
+                        </h3>
+                        <p className="empty-description">
+                            {appMode === 'collections'
+                                ? activePeriod === 'week'
+                                    ? "You haven't received any payments this week. Try changing the filter to see older collections."
+                                    : activePeriod === 'month'
+                                        ? "No collections recorded this month. Check 'All Time' to see your full history."
+                                        : "No collections found for this period."
+                                : appMode === 'payments'
+                                    ? activePeriod === 'week'
+                                        ? "No expenses recorded this week. Try 'This Month' or 'All Time' to see more."
+                                        : activePeriod === 'month'
+                                            ? "No payments made this month. Great for your budget!"
+                                            : "No payments found for this period."
+                                    : activePeriod === 'week'
+                                        ? "No financial activity this week. Try a different time period."
+                                        : activePeriod === 'month'
+                                            ? "No transactions this month. Check 'All Time' to see your history."
+                                            : "No transactions found."
+                            }
+                        </p>
+                        <div className="empty-period-hint">
+                            {activePeriod !== 'all' && (
+                                <button
+                                    className="empty-change-period-btn"
+                                    onClick={() => setActivePeriod('all')}
+                                >
+                                    View All Time
+                                </button>
+                            )}
+                        </div>
+                    </div>
                 ) : viewMode === 'person' ? (
                     /* Person View */
                     <div className="person-groups">
