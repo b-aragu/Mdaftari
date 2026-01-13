@@ -65,6 +65,7 @@ export function StatementImport({ onComplete, onBack, mode }: StatementImportPro
     // Other direction transactions (for smart import prompt)
     const [otherDirectionTxs, setOtherDirectionTxs] = useState<StatementTransaction[]>([]);
     const [showOtherDirectionBanner, setShowOtherDirectionBanner] = useState(false);
+    const [showAllSummary, setShowAllSummary] = useState(false);
 
     const parseFile = useCallback(async (file: File, pwd?: string) => {
         setIsLoading(true);
@@ -396,16 +397,22 @@ export function StatementImport({ onComplete, onBack, mode }: StatementImportPro
     // Group selected transactions by person for summary
     const groupedSelected = (() => {
         const selected = filteredTransactions.filter(t => t.selected);
-        const groups: Record<string, { count: number; total: number }> = {};
+        const groups: Record<string, { count: number; total: number; inCount: number; outCount: number }> = {};
 
         for (const tx of selected) {
             // Use actual direction: if paidIn > 0, it's incoming; otherwise it's outgoing
-            const amount = tx.paidIn > 0 ? tx.paidIn : tx.paidOut;
+            const isIncoming = tx.paidIn > 0;
+            const amount = isIncoming ? tx.paidIn : tx.paidOut;
             if (!groups[tx.counterparty]) {
-                groups[tx.counterparty] = { count: 0, total: 0 };
+                groups[tx.counterparty] = { count: 0, total: 0, inCount: 0, outCount: 0 };
             }
             groups[tx.counterparty].count++;
             groups[tx.counterparty].total += amount;
+            if (isIncoming) {
+                groups[tx.counterparty].inCount++;
+            } else {
+                groups[tx.counterparty].outCount++;
+            }
         }
 
         return Object.entries(groups)
@@ -781,27 +788,64 @@ export function StatementImport({ onComplete, onBack, mode }: StatementImportPro
                     {error && <p className="error-text">{error}</p>}
 
                     {/* Pre-Import Summary */}
-                    {groupedSelected.length > 0 && (
-                        <div className="import-summary">
-                            <h3>Import Summary</h3>
-                            <div className="summary-list">
-                                {groupedSelected.map(g => (
-                                    <div key={g.person} className="summary-item">
-                                        <span className="summary-person">{g.person}</span>
-                                        <span className="summary-details">
-                                            {g.count} {mode === 'collections' ? 'collection' : 'payment'}{g.count !== 1 ? 's' : ''} • KES {formatMoney(g.total)}
-                                        </span>
+                    {groupedSelected.length > 0 && (() => {
+                        const displayedItems = showAllSummary ? groupedSelected : groupedSelected.slice(0, 10);
+                        const totalIn = filteredTransactions.filter(t => t.selected && t.paidIn > 0).reduce((s, t) => s + t.paidIn, 0);
+                        const totalOut = filteredTransactions.filter(t => t.selected && t.paidOut > 0).reduce((s, t) => s + t.paidOut, 0);
+                        const inCount = filteredTransactions.filter(t => t.selected && t.paidIn > 0).length;
+                        const outCount = filteredTransactions.filter(t => t.selected && t.paidOut > 0).length;
+
+                        return (
+                            <div className="import-summary">
+                                <h3>Import Summary</h3>
+                                <div className="summary-list">
+                                    {displayedItems.map(g => {
+                                        // Determine label based on direction mix
+                                        let label = '';
+                                        if (g.inCount > 0 && g.outCount > 0) {
+                                            label = `${g.inCount} in, ${g.outCount} out`;
+                                        } else if (g.inCount > 0) {
+                                            label = `${g.inCount} collection${g.inCount !== 1 ? 's' : ''}`;
+                                        } else {
+                                            label = `${g.outCount} payment${g.outCount !== 1 ? 's' : ''}`;
+                                        }
+                                        return (
+                                            <div key={g.person} className="summary-item">
+                                                <span className="summary-person">{g.person}</span>
+                                                <span className="summary-details">
+                                                    {label} · KES {formatMoney(g.total)}
+                                                </span>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                                {groupedSelected.length > 10 && (
+                                    <button
+                                        className="expand-list-btn"
+                                        onClick={() => setShowAllSummary(!showAllSummary)}
+                                    >
+                                        {showAllSummary ? 'Show Less' : `View All ${groupedSelected.length} People`}
+                                    </button>
+                                )}
+                                <div className="summary-total">
+                                    <span>
+                                        {inCount > 0 && outCount > 0
+                                            ? 'Total'
+                                            : inCount > 0 ? 'Total Collections' : 'Total Payments'}
+                                    </span>
+                                    <span className="summary-amount">
+                                        KES {formatMoney(totalIn + totalOut)}
+                                    </span>
+                                </div>
+                                {inCount > 0 && outCount > 0 && (
+                                    <div className="summary-breakdown">
+                                        <span className="amount-positive">+{inCount} collections (KES {formatMoney(totalIn)})</span>
+                                        <span className="amount-negative">-{outCount} payments (KES {formatMoney(totalOut)})</span>
                                     </div>
-                                ))}
+                                )}
                             </div>
-                            <div className="summary-total">
-                                <span>Total {mode === 'collections' ? 'Collections' : 'Payments'}</span>
-                                <span className="summary-amount">
-                                    KES {formatMoney(filteredTransactions.filter(t => t.selected).reduce((s, t) => s + (mode === 'collections' ? t.paidIn : t.paidOut), 0))}
-                                </span>
-                            </div>
-                        </div>
-                    )}
+                        );
+                    })()}
 
                     {/* Actions */}
                     <div className="review-actions">
