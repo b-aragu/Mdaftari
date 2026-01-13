@@ -1092,25 +1092,55 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                         </h3>
                         <p className="empty-description">
                             {appMode === 'collections'
-                                ? 'Start tracking your M-Pesa transactions to see who owes you money'
+                                ? 'Import your M-Pesa statement to see who owes you money'
                                 : appMode === 'payments'
-                                    ? 'Start tracking your M-Pesa payments to see who you\'ve paid'
-                                    : 'Start tracking your M-Pesa transactions to see your complete financial picture'
+                                    ? 'Import your M-Pesa statement to track your expenses'
+                                    : 'Import your M-Pesa statement to see your complete financial picture'
                             }
                         </p>
 
-                        <button className="empty-cta" onClick={onRecordPayment}>
-                            <Plus size={20} strokeWidth={2.5} />
-                            Record Your First {appMode === 'collections' ? 'Collection' : appMode === 'payments' ? 'Payment' : 'Transaction'}
-                        </button>
+                        <div className="empty-actions">
+                            <button className="empty-cta empty-cta--primary" onClick={onRecordPayment}>
+                                <Plus size={18} strokeWidth={2.5} />
+                                Add Transaction
+                            </button>
+                        </div>
 
-                        <div className="empty-tips">
-                            <h4>💡 Getting Started</h4>
-                            <ul>
-                                <li>📱 Paste an M-Pesa confirmation message</li>
-                                <li>📄 Or upload a PDF statement</li>
-                                <li>👥 Track multiple people at once</li>
-                            </ul>
+                        <div className="empty-divider">
+                            <span>or</span>
+                        </div>
+
+                        <div className="empty-import-hint">
+                            <div className="import-hint-icon">📄</div>
+                            <div className="import-hint-text">
+                                <strong>Import M-Pesa Statement</strong>
+                                <span>Upload your PDF statement to import all transactions at once</span>
+                            </div>
+                        </div>
+
+                        {/* Feature Slides */}
+                        <div className="empty-features">
+                            <div className="feature-slide">
+                                <div className="feature-slide-icon">📱</div>
+                                <div className="feature-slide-content">
+                                    <h4>Paste Message</h4>
+                                    <p>Copy any M-Pesa confirmation and paste it here</p>
+                                </div>
+                            </div>
+                            <div className="feature-slide">
+                                <div className="feature-slide-icon">📊</div>
+                                <div className="feature-slide-content">
+                                    <h4>Auto-Categorize</h4>
+                                    <p>Transactions are automatically sorted by type</p>
+                                </div>
+                            </div>
+                            <div className="feature-slide">
+                                <div className="feature-slide-icon">👥</div>
+                                <div className="feature-slide-content">
+                                    <h4>Track People</h4>
+                                    <p>See who owes you and who you've paid</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 ) : viewMode === 'person' ? (

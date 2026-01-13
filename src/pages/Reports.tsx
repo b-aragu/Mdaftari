@@ -430,8 +430,33 @@ export function ReportsPage() {
                     </div>
                 </div>
 
+                {/* Empty State for Reports */}
+                {!isLoading && filteredTransactions.length === 0 && (
+                    <section className="reports-empty-state">
+                        <div className="reports-empty-icon">📊</div>
+                        <h3 className="reports-empty-title">
+                            {appMode === 'collections' ? 'No collections to report' :
+                                appMode === 'payments' ? 'No payments to report' :
+                                    'No transactions to report'}
+                        </h3>
+                        <p className="reports-empty-desc">
+                            Import your M-Pesa statement or record transactions to see reports here
+                        </p>
+                        <div className="reports-empty-suggestions">
+                            <div className="empty-suggestion">
+                                <span className="empty-suggestion-icon">📄</span>
+                                <span className="empty-suggestion-text">Import PDF Statement</span>
+                            </div>
+                            <div className="empty-suggestion">
+                                <span className="empty-suggestion-icon">📱</span>
+                                <span className="empty-suggestion-text">Paste M-Pesa Message</span>
+                            </div>
+                        </div>
+                    </section>
+                )}
+
                 {/* Overview Mode: Collections vs Payments Comparison */}
-                {appMode === 'overview' && (
+                {appMode === 'overview' && filteredTransactions.length > 0 && (
                     <section className="comparison-section">
                         <h2 className="section-title">Money Flow</h2>
 
