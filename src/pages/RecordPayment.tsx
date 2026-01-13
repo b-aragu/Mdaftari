@@ -16,7 +16,7 @@ const TEMP_USER_ID = 'local-user';
 interface RecordPaymentProps {
     onBack: () => void;
     onSuccess: () => void;
-    mode: 'collections' | 'payments';
+    mode: 'collections' | 'payments' | 'overview';
 }
 
 type InputMethod = 'paste' | 'manual' | 'import';

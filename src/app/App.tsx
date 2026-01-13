@@ -18,9 +18,11 @@ function AppContent() {
     const [activeTab, setActiveTab] = useState<Tab>('home');
     const [view, setView] = useState<View>('main');
     const [showOnboarding, setShowOnboarding] = useState(false);
-    const [appMode, setAppMode] = useState<'collections' | 'payments'>(() => {
+    const [appMode, setAppMode] = useState<'collections' | 'payments' | 'overview'>(() => {
         const saved = localStorage.getItem('mdaftari_app_mode');
-        return (saved === 'payments') ? 'payments' : 'collections';
+        if (saved === 'payments') return 'payments';
+        if (saved === 'overview') return 'overview';
+        return 'collections';
     });
     const { isOutdoorMode } = useOutdoorMode();
     const { showToast } = useToast();
@@ -37,7 +39,9 @@ function AppContent() {
     useEffect(() => {
         const handleStorageChange = () => {
             const saved = localStorage.getItem('mdaftari_app_mode');
-            setAppMode((saved === 'payments') ? 'payments' : 'collections');
+            if (saved === 'payments') setAppMode('payments');
+            else if (saved === 'overview') setAppMode('overview');
+            else setAppMode('collections');
         };
         window.addEventListener('storage', handleStorageChange);
         return () => window.removeEventListener('storage', handleStorageChange);
@@ -56,7 +60,9 @@ function AppContent() {
     const handleRecordPayment = () => {
         // Re-read mode from localStorage in case it changed
         const saved = localStorage.getItem('mdaftari_app_mode');
-        setAppMode((saved === 'payments') ? 'payments' : 'collections');
+        if (saved === 'payments') setAppMode('payments');
+        else if (saved === 'overview') setAppMode('overview');
+        else setAppMode('collections');
         setView('record');
     };
 
@@ -67,7 +73,9 @@ function AppContent() {
     const handleSuccess = () => {
         setView('main');
         setActiveTab('home');
-        showToast(appMode === 'collections' ? 'Collection recorded!' : 'Payment recorded!', 'success');
+        const msg = appMode === 'collections' ? 'Collection recorded!' :
+            appMode === 'payments' ? 'Payment recorded!' : 'Transaction recorded!';
+        showToast(msg, 'success');
     };
 
     if (view === 'record') {

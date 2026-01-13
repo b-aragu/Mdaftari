@@ -25,7 +25,7 @@ const TEMP_USER_ID = 'local-user';
 interface StatementImportProps {
     onComplete: () => void;
     onBack: () => void;
-    mode: 'collections' | 'payments';
+    mode: 'collections' | 'payments' | 'overview';
 }
 
 type ImportStep = 'upload' | 'review' | 'confirm' | 'success';
@@ -95,9 +95,12 @@ export function StatementImport({ onComplete, onBack, mode }: StatementImportPro
 
             setTransactions(txs);
 
-            // Filter transactions by mode: Collections = paidIn > 0, Payments = paidOut > 0
+            // Filter transactions by mode:
+            // Collections = paidIn > 0, Payments = paidOut > 0, Overview = both
             const relevantTxs = txs.filter(t =>
-                mode === 'collections' ? t.paidIn > 0 : t.paidOut > 0
+                mode === 'collections' ? t.paidIn > 0 :
+                    mode === 'payments' ? t.paidOut > 0 :
+                        (t.paidIn > 0 || t.paidOut > 0)  // Overview: all transactions
             );
 
             // Check for duplicate receipt codes in the parsed data
