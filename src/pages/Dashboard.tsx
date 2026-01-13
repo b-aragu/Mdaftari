@@ -8,7 +8,6 @@ import { useState, useCallback, useEffect } from 'react';
 import { MessageInput } from '../components/MessageInput';
 import { TransactionConfirm } from '../components/TransactionConfirm';
 import { LedgerView } from '../components/LedgerView';
-import { useOutdoorMode } from '../hooks';
 import {
     saveTransaction,
     createLedgerEntry,
@@ -23,8 +22,6 @@ import './Dashboard.css';
 const TEMP_USER_ID = 'local-user';
 
 export function Dashboard() {
-    const { isOutdoorMode, toggleOutdoorMode } = useOutdoorMode();
-
     const [parseResult, setParseResult] = useState<ParseResult | null>(null);
     const [isConfirming, setIsConfirming] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
@@ -124,14 +121,6 @@ export function Dashboard() {
                             <span className="dashboard-header__logo">📘</span>
                             <span className="dashboard-header__name">Mdaftari</span>
                         </div>
-                        <button
-                            className={`outdoor-toggle ${isOutdoorMode ? 'outdoor-toggle--active' : ''}`}
-                            onClick={toggleOutdoorMode}
-                            aria-pressed={isOutdoorMode}
-                            title={isOutdoorMode ? 'Switch to Indoor Mode' : 'Switch to Outdoor Mode'}
-                        >
-                            {isOutdoorMode ? '☀️' : '🌙'}
-                        </button>
                     </div>
 
                     {/* Balance Overview Card */}

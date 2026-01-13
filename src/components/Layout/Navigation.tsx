@@ -2,8 +2,7 @@
  * Navigation Component
  */
 
-import { Home, FileText, Settings, Sun, Moon } from 'lucide-react';
-import { useOutdoorMode } from '../../hooks';
+import { Home, FileText, Settings } from 'lucide-react';
 import './Navigation.css';
 
 type Tab = 'home' | 'reports' | 'settings';
@@ -14,8 +13,6 @@ interface NavigationProps {
 }
 
 export function Navigation({ activeTab = 'home', onTabChange }: NavigationProps) {
-    const { isOutdoorMode, toggleOutdoorMode } = useOutdoorMode();
-
     const tabs = [
         { id: 'home' as Tab, label: 'Home', icon: Home },
         { id: 'reports' as Tab, label: 'Reports', icon: FileText },
@@ -36,14 +33,6 @@ export function Navigation({ activeTab = 'home', onTabChange }: NavigationProps)
                         <span className="nav-label">{label}</span>
                     </button>
                 ))}
-                <button
-                    className="nav-item"
-                    onClick={toggleOutdoorMode}
-                    aria-label={isOutdoorMode ? 'Switch to indoor mode' : 'Switch to outdoor mode'}
-                >
-                    {isOutdoorMode ? <Moon size={20} /> : <Sun size={20} />}
-                    <span className="nav-label">Mode</span>
-                </button>
             </nav>
 
             {/* Desktop: Sidebar */}
@@ -65,16 +54,6 @@ export function Navigation({ activeTab = 'home', onTabChange }: NavigationProps)
                         </button>
                     ))}
                 </nav>
-
-                <div className="nav-sidebar-footer">
-                    <button
-                        className="nav-sidebar-mode"
-                        onClick={toggleOutdoorMode}
-                    >
-                        {isOutdoorMode ? <Moon size={18} /> : <Sun size={18} />}
-                        <span>{isOutdoorMode ? 'Indoor Mode' : 'Outdoor Mode'}</span>
-                    </button>
-                </div>
             </aside>
         </>
     );
