@@ -6,7 +6,6 @@ import { useState, useEffect } from 'react';
 import { Navigation } from '../components/Layout';
 import { HomePage, RecordPaymentPage, ReportsPage, SettingsPage } from '../pages';
 import { Onboarding } from '../components/Onboarding';
-import { useOutdoorMode } from '../hooks';
 import { ToastProvider, useToast } from '../context';
 
 const ONBOARDING_KEY = 'mdaftari_onboarding_complete';
@@ -24,7 +23,6 @@ function AppContent() {
         if (saved === 'overview') return 'overview';
         return 'collections';
     });
-    const { isOutdoorMode } = useOutdoorMode();
     const { showToast } = useToast();
 
     // Check if user has completed onboarding
@@ -46,11 +44,6 @@ function AppContent() {
         window.addEventListener('storage', handleStorageChange);
         return () => window.removeEventListener('storage', handleStorageChange);
     }, []);
-
-    // Apply outdoor mode to document
-    useEffect(() => {
-        document.documentElement.setAttribute('data-outdoor', String(isOutdoorMode));
-    }, [isOutdoorMode]);
 
     const handleOnboardingComplete = () => {
         localStorage.setItem(ONBOARDING_KEY, 'true');

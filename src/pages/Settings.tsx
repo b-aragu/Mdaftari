@@ -3,14 +3,12 @@
  */
 
 import { useState } from 'react';
-import { Sun, Moon, Trash2, Download, Shield, ChevronRight, HelpCircle, Tags } from 'lucide-react';
-import { useOutdoorMode } from '../hooks';
+import { Trash2, Download, Shield, ChevronRight, HelpCircle, Tags } from 'lucide-react';
 import { clearAllData, clearDataByMode, exportAllData, bulkRecategorizeTransactions } from '../storage';
 import { suggestCategory } from '../constants/autoCategorize';
 import './Settings.css';
 
 export function SettingsPage() {
-    const { isOutdoorMode, toggleOutdoorMode } = useOutdoorMode();
     const [showConfirmDelete, setShowConfirmDelete] = useState(false);
     const [showConfirmCollections, setShowConfirmCollections] = useState(false);
     const [showConfirmPayments, setShowConfirmPayments] = useState(false);
@@ -84,27 +82,6 @@ export function SettingsPage() {
             </header>
 
             <div className="settings-content">
-                {/* Display Section */}
-                <section className="settings-section">
-                    <h2 className="settings-section-title">Display</h2>
-
-                    <div className="settings-list">
-                        <button className="settings-item" onClick={toggleOutdoorMode}>
-                            <div className="settings-item-icon">
-                                {isOutdoorMode ? <Sun size={20} /> : <Moon size={20} />}
-                            </div>
-                            <div className="settings-item-content">
-                                <span className="settings-item-label">Outdoor Mode</span>
-                                <span className="settings-item-desc">
-                                    High contrast for bright environments
-                                </span>
-                            </div>
-                            <div className={`settings-toggle ${isOutdoorMode ? 'settings-toggle--on' : ''}`}>
-                                <div className="settings-toggle-knob" />
-                            </div>
-                        </button>
-                    </div>
-                </section>
 
                 {/* Help Section */}
                 <section className="settings-section">
