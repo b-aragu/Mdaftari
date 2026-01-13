@@ -436,9 +436,17 @@ export function StatementImport({ onComplete, onBack, mode }: StatementImportPro
                     <div className="upload-icon">
                         <FileText size={48} />
                     </div>
-                    <h2>Import {mode === 'collections' ? 'Collections' : 'Payments'}</h2>
+                    <h2>
+                        {mode === 'collections' ? 'Import Collections' :
+                            mode === 'payments' ? 'Import Payments' :
+                                'Import All Transactions'}
+                    </h2>
                     <p className="upload-desc">
-                        Upload your M-Pesa PDF statement to import {mode === 'collections' ? '"Paid In" (received)' : '"Withdrawn" (paid out)'} transactions
+                        {mode === 'collections'
+                            ? 'Upload your M-Pesa PDF statement to import "Paid In" (received) transactions'
+                            : mode === 'payments'
+                                ? 'Upload your M-Pesa PDF statement to import "Withdrawn" (paid out) transactions'
+                                : 'Upload your M-Pesa PDF statement to import all transactions (received and paid out)'}
                     </p>
 
                     {!needsPassword ? (
