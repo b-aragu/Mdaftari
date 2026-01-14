@@ -397,7 +397,7 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                                                 {isIn ? '+' : '-'}Ksh {formatMoney(amount)}
                                             </span>
                                             {entry && entry.amountOwed > 0 && (
-                                                <span className="tx-owed">Owes: {formatMoney(entry.amountOwed)}</span>
+                                                <span className="tx-owed">{isIn ? 'Owes' : 'You Owe'}: {formatMoney(entry.amountOwed)}</span>
                                             )}
                                         </div>
                                         <ChevronRight size={16} className="tx-chevron" />
@@ -722,7 +722,7 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                                                     {isIn ? '+' : '-'}Ksh {formatMoney(amount)}
                                                 </span>
                                                 {entry && entry.amountOwed > 0 && (
-                                                    <span className="tx-owed">Owes: {formatMoney(entry.amountOwed)}</span>
+                                                    <span className="tx-owed">{isIn ? 'Owes' : 'You Owe'}: {formatMoney(entry.amountOwed)}</span>
                                                 )}
                                             </div>
                                             <ChevronRight size={16} className="tx-chevron" />
@@ -1341,7 +1341,7 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                                                         {isIn ? '+' : '-'}Ksh {formatMoney(amount)}
                                                     </span>
                                                     {entry && entry.amountOwed > 0 && (
-                                                        <span className="tx-owed">Owes: {formatMoney(entry.amountOwed)}</span>
+                                                        <span className="tx-owed">{isIn ? 'Owes' : 'You Owe'}: {formatMoney(entry.amountOwed)}</span>
                                                     )}
                                                 </div>
 
