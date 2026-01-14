@@ -31,8 +31,6 @@ interface PersonGroup {
     transactions: Array<{ tx: Transaction; entry?: LedgerEntry }>;
     totalReceived: number;
     totalOwed: number;
-    totalPaidOut: number; // What you've paid TO this person
-    netBalance: number; // Positive = they owe you, Negative = you owe them
     primaryType: 'collection' | 'payment'; // For Overview mode
 }
 
@@ -196,7 +194,6 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
     });
 
     // Group transactions by person (using filtered transactions)
-    // For each person, track what they owe you vs what you owe them
     const personGroups: PersonGroup[] = [];
     filteredTransactions.forEach(tx => {
         const name = tx.parsedData.counterparty.name || 'Unknown';
@@ -211,8 +208,6 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                 transactions: [],
                 totalReceived: 0,
                 totalOwed: 0,
-                totalPaidOut: 0,
-                netBalance: 0,
                 primaryType: isCollection ? 'collection' : 'payment',
             };
             personGroups.push(group);
@@ -220,28 +215,12 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
 
         const entry = ledgerEntries.find(e => e.transactionId === tx.id);
         group.transactions.push({ tx, entry });
-
-        if (isCollection) {
-            // They paid you (collection) - reduces what they owe
-            group.totalReceived += entry?.amountPaid || tx.parsedData.amount;
-            group.totalOwed += entry?.amountOwed || 0;
-        } else {
-            // You paid them (payment) - increases what you owe them
-            group.totalPaidOut += entry?.amountPaid || tx.parsedData.amount;
-        }
+        group.totalReceived += entry?.amountPaid || tx.parsedData.amount;
+        group.totalOwed += entry?.amountOwed || 0;
     });
 
-    // Calculate net balance for each person
-    // Net = (what they owe you) - (what you paid them, which you might reclaim)
-    // Positive = they owe you, Negative = you owe them
-    personGroups.forEach(group => {
-        // In Collections mode: totalOwed is what they still owe you
-        // In Payments mode: totalPaidOut is what you've given them
-        group.netBalance = group.totalOwed - group.totalPaidOut;
-    });
-
-    // Sort by absolute net balance (highest first)
-    personGroups.sort((a, b) => Math.abs(b.netBalance) - Math.abs(a.netBalance));
+    // Sort by total owed (highest first)
+    personGroups.sort((a, b) => b.totalOwed - a.totalOwed);
 
     // Count people who owe money (correct calculation from personGroups)
     const peopleWhoOwe = personGroups.filter(p => p.totalOwed > 0).length;
@@ -580,66 +559,28 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                 </header>
 
                 <div className="person-page-content">
-                    {/* Hero */}
+                    {/* Hero with Avatar */}
                     <div className="person-hero">
+                        <div className="person-avatar">
+                            {selectedPerson.name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()}
+                        </div>
                         <h1 className="person-hero-name">{selectedPerson.name}</h1>
                         {selectedPerson.phone && (
                             <p className="person-hero-phone">{selectedPerson.phone}</p>
                         )}
-                        {/* Net Balance Badge */}
-                        <div className={`person-hero-balance ${selectedPerson.netBalance > 0 ? 'person-hero-balance--positive' : selectedPerson.netBalance < 0 ? 'person-hero-balance--negative' : 'person-hero-balance--settled'}`}>
-                            {selectedPerson.netBalance > 0
-                                ? `Owes you Ksh ${formatMoney(selectedPerson.netBalance)}`
-                                : selectedPerson.netBalance < 0
-                                    ? `You owe Ksh ${formatMoney(Math.abs(selectedPerson.netBalance))}`
-                                    : 'Settled'
-                            }
+                        <div className="person-hero-meta">
+                            <span>{selectedPerson.transactions.length} transaction{selectedPerson.transactions.length !== 1 ? 's' : ''}</span>
                         </div>
-                    </div>
-
-                    {/* Quick Actions */}
-                    <div className="person-quick-actions">
-                        <button
-                            className="quick-action-btn quick-action-btn--collection"
-                            onClick={() => {
-                                // Store selected person for pre-fill
-                                localStorage.setItem('mdaftari_prefill_person', JSON.stringify({
-                                    name: selectedPerson.name,
-                                    phone: selectedPerson.phone
-                                }));
-                                setSelectedPerson(null);
-                                onRecordPayment();
-                            }}
-                        >
-                            <ArrowDownLeft size={18} />
-                            <span>Record Collection</span>
-                        </button>
-                        <button
-                            className="quick-action-btn quick-action-btn--payment"
-                            onClick={() => {
-                                localStorage.setItem('mdaftari_prefill_person', JSON.stringify({
-                                    name: selectedPerson.name,
-                                    phone: selectedPerson.phone
-                                }));
-                                // Also set mode to payments
-                                localStorage.setItem('mdaftari_app_mode', 'payments');
-                                setSelectedPerson(null);
-                                onRecordPayment();
-                            }}
-                        >
-                            <ArrowUpRight size={18} />
-                            <span>Record Payment</span>
-                        </button>
                     </div>
 
                     {/* Summary Cards */}
                     <div className="person-summary-cards">
                         <div className="person-stat-card person-stat-card--received">
-                            <span className="stat-label">Total Received</span>
+                            <span className="stat-label">{appMode === 'collections' ? 'Total Received' : 'Total Paid'}</span>
                             <span className="stat-value">Ksh {formatMoney(selectedPerson.totalReceived)}</span>
                         </div>
                         <div className="person-stat-card person-stat-card--owed">
-                            <span className="stat-label">Still Owes</span>
+                            <span className="stat-label">{appMode === 'collections' ? 'Still Owed' : 'Outstanding'}</span>
                             <span className="stat-value">Ksh {formatMoney(selectedPerson.totalOwed)}</span>
                         </div>
                     </div>
@@ -1280,25 +1221,16 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                                         <div className="person-info">
                                             <span className="person-name">{person.name}</span>
                                             <span className="person-count">
-                                                {person.transactions.length} transaction{person.transactions.length !== 1 ? 's' : ''}
+                                                {person.transactions.length} {appMode === 'overview' ? (isCollection ? 'collection' : 'payment') : 'payment'}{person.transactions.length !== 1 ? 's' : ''}
                                             </span>
                                         </div>
                                         <div className="person-totals">
-                                            {/* Net Balance Display */}
-                                            {person.netBalance !== 0 ? (
-                                                <span className={`person-net-balance ${person.netBalance > 0 ? 'person-net-balance--positive' : 'person-net-balance--negative'}`}>
-                                                    {person.netBalance > 0 ? 'Owes you' : 'You owe'}
-                                                    <strong> Ksh {formatMoney(Math.abs(person.netBalance))}</strong>
-                                                </span>
-                                            ) : (
-                                                <span className="person-net-balance person-net-balance--settled">
-                                                    Settled
-                                                </span>
-                                            )}
-                                            {/* Secondary info */}
-                                            {person.totalReceived > 0 && (
-                                                <span className="person-received-secondary">
-                                                    Received: Ksh {formatMoney(person.totalReceived)}
+                                            <span className={`person-received ${appMode === 'payments' ? 'person-received--payments' : ''} ${appMode === 'overview' ? (isCollection ? '' : 'person-received--payments') : ''}`}>
+                                                {appMode === 'overview' && !isCollection ? '-' : ''}Ksh {formatMoney(person.totalReceived)}
+                                            </span>
+                                            {person.totalOwed > 0 && (
+                                                <span className={`person-owed ${appMode === 'payments' ? 'person-owed--payments' : ''}`}>
+                                                    {appMode === 'collections' ? 'Owes' : (appMode === 'payments' ? 'You Owe' : (isCollection ? 'Owes' : 'You Owe'))}: Ksh {formatMoney(person.totalOwed)}
                                                 </span>
                                             )}
                                         </div>
