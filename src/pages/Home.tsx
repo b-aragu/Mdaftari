@@ -29,8 +29,10 @@ interface PersonGroup {
     name: string;
     phone?: string;
     transactions: Array<{ tx: Transaction; entry?: LedgerEntry }>;
-    totalReceived: number;
-    totalOwed: number;
+    totalReceived: number; // For display (Collections mode uses this)
+    totalOwed: number; // Outstanding debt
+    totalCollected: number; // Money received from them (collections)
+    totalPaid: number; // Money paid to them (payments)
     primaryType: 'collection' | 'payment'; // For Overview mode
 }
 
@@ -208,14 +210,26 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                 transactions: [],
                 totalReceived: 0,
                 totalOwed: 0,
+                totalCollected: 0,
+                totalPaid: 0,
                 primaryType: isCollection ? 'collection' : 'payment',
             };
             personGroups.push(group);
         }
 
         const entry = ledgerEntries.find(e => e.transactionId === tx.id);
+        const amount = entry?.amountPaid || tx.parsedData.amount;
         group.transactions.push({ tx, entry });
-        group.totalReceived += entry?.amountPaid || tx.parsedData.amount;
+
+        // Track collections and payments separately
+        if (isCollection) {
+            group.totalCollected += amount;
+        } else {
+            group.totalPaid += amount;
+        }
+
+        // totalReceived is used for display in single-mode views
+        group.totalReceived += amount;
         group.totalOwed += entry?.amountOwed || 0;
     });
 
@@ -575,14 +589,29 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
 
                     {/* Summary Cards */}
                     <div className="person-summary-cards">
-                        <div className="person-stat-card person-stat-card--received">
-                            <span className="stat-label">{appMode === 'collections' ? 'Total Received' : 'Total Paid'}</span>
-                            <span className="stat-value">Ksh {formatMoney(selectedPerson.totalReceived)}</span>
-                        </div>
-                        <div className="person-stat-card person-stat-card--owed">
-                            <span className="stat-label">{appMode === 'collections' ? 'Still Owed' : 'Outstanding'}</span>
-                            <span className="stat-value">Ksh {formatMoney(selectedPerson.totalOwed)}</span>
-                        </div>
+                        {appMode === 'overview' ? (
+                            <>
+                                <div className="person-stat-card person-stat-card--received">
+                                    <span className="stat-label">Collected</span>
+                                    <span className="stat-value">Ksh {formatMoney(selectedPerson.totalCollected)}</span>
+                                </div>
+                                <div className="person-stat-card person-stat-card--owed">
+                                    <span className="stat-label">Paid Out</span>
+                                    <span className="stat-value">Ksh {formatMoney(selectedPerson.totalPaid)}</span>
+                                </div>
+                            </>
+                        ) : (
+                            <>
+                                <div className="person-stat-card person-stat-card--received">
+                                    <span className="stat-label">{appMode === 'collections' ? 'Total Received' : 'Total Paid'}</span>
+                                    <span className="stat-value">Ksh {formatMoney(selectedPerson.totalReceived)}</span>
+                                </div>
+                                <div className="person-stat-card person-stat-card--owed">
+                                    <span className="stat-label">{appMode === 'collections' ? 'Still Owed' : 'Outstanding'}</span>
+                                    <span className="stat-value">Ksh {formatMoney(selectedPerson.totalOwed)}</span>
+                                </div>
+                            </>
+                        )}
                     </div>
 
                     {/* Payment Timeline - Line Chart */}
@@ -1221,13 +1250,30 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                                         <div className="person-info">
                                             <span className="person-name">{person.name}</span>
                                             <span className="person-count">
-                                                {person.transactions.length} {appMode === 'overview' ? (isCollection ? 'collection' : 'payment') : 'payment'}{person.transactions.length !== 1 ? 's' : ''}
+                                                {person.transactions.length} {appMode === 'overview'
+                                                    ? (person.totalCollected > 0 && person.totalPaid > 0
+                                                        ? 'transaction'
+                                                        : (isCollection ? 'collection' : 'payment'))
+                                                    : 'payment'}{person.transactions.length !== 1 ? 's' : ''}
                                             </span>
                                         </div>
                                         <div className="person-totals">
-                                            <span className={`person-received ${appMode === 'payments' ? 'person-received--payments' : ''} ${appMode === 'overview' ? (isCollection ? '' : 'person-received--payments') : ''}`}>
-                                                {appMode === 'overview' && !isCollection ? '-' : ''}Ksh {formatMoney(person.totalReceived)}
-                                            </span>
+                                            {appMode === 'overview' ? (
+                                                // Overview: Show net amount
+                                                (() => {
+                                                    const netAmount = person.totalCollected - person.totalPaid;
+                                                    const isPositive = netAmount >= 0;
+                                                    return (
+                                                        <span className={`person-received ${isPositive ? '' : 'person-received--payments'}`}>
+                                                            {isPositive ? '+' : ''}Ksh {formatMoney(Math.abs(netAmount))}
+                                                        </span>
+                                                    );
+                                                })()
+                                            ) : (
+                                                <span className={`person-received ${appMode === 'payments' ? 'person-received--payments' : ''}`}>
+                                                    {appMode === 'payments' ? '-' : ''}Ksh {formatMoney(person.totalReceived)}
+                                                </span>
+                                            )}
                                             {person.totalOwed > 0 && (
                                                 <span className={`person-owed ${appMode === 'payments' ? 'person-owed--payments' : ''}`}>
                                                     {appMode === 'collections' ? 'Owes' : (appMode === 'payments' ? 'You Owe' : (isCollection ? 'Owes' : 'You Owe'))}: Ksh {formatMoney(person.totalOwed)}
