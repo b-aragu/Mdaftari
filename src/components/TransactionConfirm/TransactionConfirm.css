@@ -162,29 +162,6 @@
     cursor: pointer;
 }
 
-/* Outdoor Mode */
-[data-outdoor-mode="true"] .transaction-confirm__warning {
-    background: #FFEB3B;
-    border-width: 2px;
-    border-color: #000000;
-    color: #000000;
-}
-
-[data-outdoor-mode="true"] .transaction-confirm__code {
-    background: #000000;
-    color: #FFFFFF;
-}
-
-[data-outdoor-mode="true"] .transaction-confirm__partial {
-    background: #FFFFFF;
-    border-width: 4px;
-    border-color: #000000;
-}
-
-[data-outdoor-mode="true"] .transaction-confirm__partial-header {
-    color: #000000;
-}
-
 /* Responsive */
 @media (max-width: 480px) {
     .transaction-confirm__partial-details {

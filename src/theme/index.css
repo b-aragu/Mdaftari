@@ -169,19 +169,3 @@ h6 {
 }
 
 /* Outdoor Mode Enhancements */
-[data-outdoor="true"] body {
-    font-weight: var(--weight-medium);
-}
-
-[data-outdoor="true"] .card {
-    border: var(--border-thick);
-}
-
-[data-outdoor="true"] .input {
-    border: var(--border-thick);
-}
-
-[data-outdoor="true"] .btn-primary,
-[data-outdoor="true"] .btn-secondary {
-    border: var(--border-thick);
-}

@@ -67,8 +67,3 @@
     gap: var(--space-2);
 }
 
-/* Outdoor Mode */
-[data-outdoor="true"] .skeleton-card,
-[data-outdoor="true"] .skeleton-person-card {
-    border: var(--border-thick);
-}

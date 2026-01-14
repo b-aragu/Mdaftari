@@ -294,33 +294,6 @@
     flex: 1;
 }
 
-/* Outdoor Mode */
-[data-outdoor="true"] .record-header {
-    border-bottom: var(--border-thick);
-}
-
-[data-outdoor="true"] .method-toggle {
-    border: var(--border-thick);
-}
-
-[data-outdoor="true"] .field-input,
-[data-outdoor="true"] .field-textarea {
-    border: var(--border-thick);
-}
-
-[data-outdoor="true"] .primary-btn,
-[data-outdoor="true"] .secondary-btn {
-    border: var(--border-thick);
-}
-
-[data-outdoor="true"] .confirm-card {
-    border: var(--border-thick);
-}
-
-[data-outdoor="true"] .partial-alert {
-    border: var(--border-thick);
-}
-
 /* Category Chips */
 .confirm-row--full {
     flex-direction: column;

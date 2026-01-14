@@ -614,22 +614,6 @@
     color: var(--color-text-secondary);
 }
 
-/* Outdoor Mode */
-[data-outdoor="true"] .reports-header {
-    border-bottom: var(--border-thick);
-}
-
-[data-outdoor="true"] .summary-card {
-    border: var(--border-thick);
-}
-
-[data-outdoor="true"] .stats-card {
-    border: var(--border-thick);
-}
-
-[data-outdoor="true"] .export-btn {
-    border: var(--border-thick);
-}
 
 /* Section Subtitle */
 .section-subtitle {
@@ -843,15 +827,6 @@
 .modal-people-more {
     color: var(--color-text-secondary);
     font-style: italic;
-}
-
-/* Outdoor Mode for new elements */
-[data-outdoor="true"] .insight-item {
-    border: var(--border-thick);
-}
-
-[data-outdoor="true"] .modal-content {
-    border: var(--border-thick);
 }
 
 /* ==========================================

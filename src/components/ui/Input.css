@@ -85,16 +85,3 @@
     cursor: not-allowed;
 }
 
-/* Outdoor Mode */
-[data-outdoor-mode="true"] .input__field {
-    border: var(--border-width-outdoor) solid #000000;
-    border-radius: 0;
-}
-
-[data-outdoor-mode="true"] .input__field:focus {
-    box-shadow: var(--shadow-hard);
-}
-
-[data-outdoor-mode="true"] .input__error {
-    font-weight: var(--font-weight-bold);
-}

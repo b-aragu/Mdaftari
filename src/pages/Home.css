@@ -1360,46 +1360,6 @@
     }
 }
 
-/* Outdoor Mode */
-[data-outdoor="true"] .summary-card {
-    border: var(--border-thick);
-}
-
-[data-outdoor="true"] .period-selector {
-    border: var(--border-thick);
-}
-
-[data-outdoor="true"] .record-btn {
-    border: var(--border-thick);
-}
-
-[data-outdoor="true"] .day-group {
-    border: var(--border-thick);
-}
-
-[data-outdoor="true"] .day-header {
-    border-bottom: var(--border-medium);
-}
-
-[data-outdoor="true"] .transaction-item {
-    border-bottom: var(--border-medium);
-}
-
-[data-outdoor="true"] .net-balance-hero {
-    border-bottom: var(--border-thick);
-}
-
-[data-outdoor="true"] .hero-amount {
-    font-size: 2.5rem;
-}
-
-[data-outdoor="true"] .empty-state {
-    border: var(--border-thick);
-}
-
-[data-outdoor="true"] .person-card {
-    border: var(--border-thick);
-}
 
 /* Clickable Transaction Item */
 .transaction-item--clickable {

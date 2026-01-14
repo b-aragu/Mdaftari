@@ -761,24 +761,3 @@
     flex-shrink: 0;
 }
 
-/* Outdoor Mode */
-[data-outdoor="true"] .upload-btn {
-    border: var(--border-thick);
-}
-
-[data-outdoor="true"] .filter-select {
-    border: var(--border-thick);
-}
-
-[data-outdoor="true"] .transaction-list {
-    border: var(--border-thick);
-}
-
-[data-outdoor="true"] .tx-checkbox {
-    border: var(--border-thick);
-}
-
-[data-outdoor="true"] .primary-btn,
-[data-outdoor="true"] .secondary-btn {
-    border: var(--border-thick);
-}

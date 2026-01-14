@@ -168,16 +168,3 @@
         display: flex;
     }
 }
-
-/* Outdoor Mode */
-[data-outdoor="true"] .nav-mobile {
-    border-top: var(--border-thick);
-}
-
-[data-outdoor="true"] .nav-sidebar {
-    border-right: var(--border-thick);
-}
-
-[data-outdoor="true"] .nav-sidebar-item--active {
-    border: var(--border-medium);
-}
