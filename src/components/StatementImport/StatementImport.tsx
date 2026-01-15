@@ -356,38 +356,6 @@ export function StatementImport({ onComplete, onBack, mode }: StatementImportPro
     const uniquePeople = statement ? getUniqueCounterparties(transactions) : [];
     const selectedCount = filteredTransactions.filter(t => t.selected).length;
 
-    // Calculate transaction count per person (for quick-select chips)
-    const personCounts = (() => {
-        const modeFiltered = transactions.filter(t =>
-            mode === 'collections' ? t.paidIn > 0 : t.paidOut > 0
-        );
-        const counts: Record<string, { count: number; total: number }> = {};
-        modeFiltered.forEach(t => {
-            const name = t.counterparty;
-            if (!counts[name]) {
-                counts[name] = { count: 0, total: 0 };
-            }
-            counts[name].count++;
-            counts[name].total += mode === 'collections' ? t.paidIn : t.paidOut;
-        });
-        return counts;
-    })();
-
-    // Check if any filters are active
-    const hasActiveFilters = selectedPerson !== 'all' || searchText.trim() !== '' ||
-        minAmount !== '' || maxAmount !== '' || startDate !== '' || endDate !== '';
-
-    // Clear all filters
-    const clearAllFilters = () => {
-        setSelectedPerson('all');
-        setSearchText('');
-        setMinAmount('');
-        setMaxAmount('');
-        setStartDate('');
-        setEndDate('');
-        setTimeout(applyFilters, 0);
-    };
-
     // Compute date range bounds based on filtered person's transactions
     const dateRangeBounds = (() => {
         // Filter by person first (before other filters) to get their date range
@@ -593,56 +561,9 @@ export function StatementImport({ onComplete, onBack, mode }: StatementImportPro
                         </div>
                     )}
 
-                    {/* Person Quick-Select Section */}
-                    {uniquePeople.length > 0 && (
-                        <div className="person-quick-select">
-                            <div className="quick-select-header">
-                                <span className="quick-select-title">
-                                    <Users size={16} />
-                                    Quick Filter by Person
-                                </span>
-                                {hasActiveFilters && (
-                                    <button
-                                        className="clear-filters-btn"
-                                        onClick={clearAllFilters}
-                                    >
-                                        <X size={14} />
-                                        Clear Filters
-                                    </button>
-                                )}
-                            </div>
-                            <div className="person-chips">
-                                <button
-                                    className={`person-chip ${selectedPerson === 'all' ? 'person-chip--active' : ''}`}
-                                    onClick={() => handlePersonChange('all')}
-                                >
-                                    All
-                                    <span className="chip-count">{Object.keys(personCounts).length}</span>
-                                </button>
-                                {uniquePeople.slice(0, 10).map(person => {
-                                    const stats = personCounts[person];
-                                    if (!stats) return null;
-                                    return (
-                                        <button
-                                            key={person}
-                                            className={`person-chip ${selectedPerson === person ? 'person-chip--active' : ''}`}
-                                            onClick={() => handlePersonChange(person)}
-                                        >
-                                            {person.length > 15 ? person.substring(0, 15) + '...' : person}
-                                            <span className="chip-count">{stats.count}</span>
-                                        </button>
-                                    );
-                                })}
-                                {uniquePeople.length > 10 && (
-                                    <span className="more-people">+{uniquePeople.length - 10} more</span>
-                                )}
-                            </div>
-                        </div>
-                    )}
-
                     {/* Filters */}
                     <div className="filters">
-                        {/* Search Input */}
+                        {/* Search Input - Full Width */}
                         <div className="filter-group filter-group--full">
                             <label className="filter-label">
                                 <Search size={16} />
@@ -660,101 +581,107 @@ export function StatementImport({ onComplete, onBack, mode }: StatementImportPro
                             />
                         </div>
 
-                        <div className="filter-group">
-                            <label className="filter-label">
-                                <Users size={16} />
-                                Person
-                            </label>
-                            <select
-                                value={selectedPerson}
-                                onChange={(e) => handlePersonChange(e.target.value)}
-                                className="filter-select"
-                            >
-                                <option value="all">All People</option>
-                                {uniquePeople.map(person => (
-                                    <option key={person} value={person}>{person}</option>
-                                ))}
-                            </select>
-                        </div>
+                        {/* Person & Type Row */}
+                        <div className="filter-row">
+                            <div className="filter-group">
+                                <label className="filter-label">
+                                    <Users size={16} />
+                                    Person
+                                </label>
+                                <select
+                                    value={selectedPerson}
+                                    onChange={(e) => handlePersonChange(e.target.value)}
+                                    className="filter-select"
+                                >
+                                    <option value="all">All People</option>
+                                    {uniquePeople.map(person => (
+                                        <option key={person} value={person}>{person}</option>
+                                    ))}
+                                </select>
+                            </div>
 
-                        <div className="filter-group">
-                            <label className="filter-label">
-                                <Filter size={16} />
-                                Type
-                            </label>
-                            <select
-                                value={selectedType}
-                                onChange={(e) => handleTypeChange(e.target.value)}
-                                className="filter-select"
-                            >
-                                <option value="all">All Types</option>
-                                <option value="received">Received</option>
-                                <option value="sent">Sent</option>
-                                <option value="paybill">PayBill</option>
-                                <option value="buygoods">Buy Goods</option>
-                            </select>
-                        </div>
-
-                        {/* Amount Range */}
-                        <div className="filter-group">
-                            <label className="filter-label">
-                                Amount Range
-                            </label>
-                            <div className="filter-range">
-                                <input
-                                    type="number"
-                                    className="filter-input filter-input--small"
-                                    placeholder="Min"
-                                    value={minAmount}
-                                    onChange={(e) => {
-                                        setMinAmount(e.target.value);
-                                        setTimeout(applyFilters, 0);
-                                    }}
-                                />
-                                <span className="filter-range-separator">-</span>
-                                <input
-                                    type="number"
-                                    className="filter-input filter-input--small"
-                                    placeholder="Max"
-                                    value={maxAmount}
-                                    onChange={(e) => {
-                                        setMaxAmount(e.target.value);
-                                        setTimeout(applyFilters, 0);
-                                    }}
-                                />
+                            <div className="filter-group">
+                                <label className="filter-label">
+                                    <Filter size={16} />
+                                    Type
+                                </label>
+                                <select
+                                    value={selectedType}
+                                    onChange={(e) => handleTypeChange(e.target.value)}
+                                    className="filter-select"
+                                >
+                                    <option value="all">All Types</option>
+                                    <option value="received">Received</option>
+                                    <option value="sent">Sent</option>
+                                    <option value="paybill">PayBill</option>
+                                    <option value="buygoods">Buy Goods</option>
+                                </select>
                             </div>
                         </div>
 
-                        {/* Date Range */}
-                        <div className="filter-group">
-                            <label className="filter-label">
-                                <Calendar size={16} />
-                                Date Range
-                            </label>
-                            <div className="filter-range">
-                                <input
-                                    type="date"
-                                    className="filter-input filter-input--small"
-                                    value={startDate}
-                                    min={dateRangeBounds.minDate}
-                                    max={dateRangeBounds.maxDate}
-                                    onChange={(e) => {
-                                        setStartDate(e.target.value);
-                                        setTimeout(applyFilters, 0);
-                                    }}
-                                />
-                                <span className="filter-range-separator">-</span>
-                                <input
-                                    type="date"
-                                    className="filter-input filter-input--small"
-                                    value={endDate}
-                                    min={dateRangeBounds.minDate}
-                                    max={dateRangeBounds.maxDate}
-                                    onChange={(e) => {
-                                        setEndDate(e.target.value);
-                                        setTimeout(applyFilters, 0);
-                                    }}
-                                />
+                        {/* Amount & Date Range Row */}
+                        <div className="filter-row">
+                            {/* Amount Range */}
+                            <div className="filter-group">
+                                <label className="filter-label">
+                                    Amount Range
+                                </label>
+                                <div className="filter-range">
+                                    <input
+                                        type="number"
+                                        className="filter-input filter-input--small"
+                                        placeholder="Min"
+                                        value={minAmount}
+                                        onChange={(e) => {
+                                            setMinAmount(e.target.value);
+                                            setTimeout(applyFilters, 0);
+                                        }}
+                                    />
+                                    <span className="filter-range-separator">-</span>
+                                    <input
+                                        type="number"
+                                        className="filter-input filter-input--small"
+                                        placeholder="Max"
+                                        value={maxAmount}
+                                        onChange={(e) => {
+                                            setMaxAmount(e.target.value);
+                                            setTimeout(applyFilters, 0);
+                                        }}
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Date Range */}
+                            <div className="filter-group">
+                                <label className="filter-label">
+                                    <Calendar size={16} />
+                                    Date Range
+                                </label>
+                                <div className="filter-range">
+                                    <input
+                                        type="date"
+                                        className="filter-input filter-input--small"
+                                        value={startDate}
+                                        min={dateRangeBounds.minDate}
+                                        max={dateRangeBounds.maxDate}
+                                        onChange={(e) => {
+                                            setStartDate(e.target.value);
+                                            setTimeout(applyFilters, 0);
+                                        }}
+                                    />
+                                    <span className="filter-range-separator">-</span>
+                                    <input
+                                        type="date"
+                                        className="filter-input filter-input--small"
+                                        value={endDate}
+                                        min={dateRangeBounds.minDate}
+                                        max={dateRangeBounds.maxDate}
+                                        onChange={(e) => {
+                                            setEndDate(e.target.value);
+                                            setTimeout(applyFilters, 0);
+                                        }}
+                                    />
+                                </div>
                             </div>
                         </div>
                     </div>
