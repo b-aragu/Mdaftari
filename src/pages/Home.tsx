@@ -1003,33 +1003,48 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                                 {overviewNetBalance >= 0 ? 'You are ahead' : 'You are behind'}
                             </span>
                         </>
-                    ) : netBalance > 0 ? (
-                        <>
-                            <span className="hero-label">
-                                {appMode === 'collections' ? "You're owed" : "You paid"}
-                            </span>
-                            <span className={`hero-amount ${appMode === 'collections' ? 'hero-amount--owed' : 'hero-amount--paid'}`}>
-                                Ksh {formatMoney(animatedNetBalance)}
-                            </span>
-                            {peopleWhoOwe > 0 && (
-                                <span className="hero-context">
-                                    {appMode === 'collections'
-                                        ? `from ${peopleWhoOwe} ${peopleWhoOwe === 1 ? 'person' : 'people'}`
-                                        : `to ${peopleWhoOwe} ${peopleWhoOwe === 1 ? 'person' : 'people'}`
-                                    }
+                    ) : appMode === 'collections' ? (
+                        // Collections mode: Show debt owed
+                        netBalance > 0 ? (
+                            <>
+                                <span className="hero-label">You're owed</span>
+                                <span className="hero-amount hero-amount--owed">
+                                    Ksh {formatMoney(animatedNetBalance)}
                                 </span>
-                            )}
-                        </>
+                                {peopleWhoOwe > 0 && (
+                                    <span className="hero-context">
+                                        from {peopleWhoOwe} {peopleWhoOwe === 1 ? 'person' : 'people'}
+                                    </span>
+                                )}
+                            </>
+                        ) : (
+                            <>
+                                <span className="hero-label">All paid up</span>
+                                <span className="hero-amount hero-amount--clear">✓</span>
+                                <span className="hero-context">No outstanding debts</span>
+                            </>
+                        )
                     ) : (
-                        <>
-                            <span className="hero-label">
-                                {appMode === 'collections' ? "All paid up" : "All settled"}
-                            </span>
-                            <span className="hero-amount hero-amount--clear">✓</span>
-                            <span className="hero-context">
-                                {appMode === 'collections' ? "No outstanding debts" : "No outstanding payments"}
-                            </span>
-                        </>
+                        // Payments mode: Show total paid out
+                        totalIn > 0 ? (
+                            <>
+                                <span className="hero-label">You paid</span>
+                                <span className="hero-amount hero-amount--paid">
+                                    Ksh {formatMoney(animatedTotalIn)}
+                                </span>
+                                {peopleWhoOwe > 0 && (
+                                    <span className="hero-context">
+                                        to {peopleWhoOwe} {peopleWhoOwe === 1 ? 'person' : 'people'}
+                                    </span>
+                                )}
+                            </>
+                        ) : (
+                            <>
+                                <span className="hero-label">All settled</span>
+                                <span className="hero-amount hero-amount--clear">✓</span>
+                                <span className="hero-context">No payments recorded</span>
+                            </>
+                        )
                     )}
                 </section>
             )}
