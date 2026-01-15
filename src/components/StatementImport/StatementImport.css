@@ -760,3 +760,108 @@
     color: var(--color-warning);
     flex-shrink: 0;
 }
+
+/* Person Quick-Select Section */
+.person-quick-select {
+    background: var(--color-surface-elevated);
+    border-radius: var(--radius-lg);
+    padding: var(--space-3);
+    margin-bottom: var(--space-3);
+    border: 1px solid var(--color-border-light);
+}
+
+.quick-select-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-2);
+}
+
+.quick-select-title {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: 11px;
+    font-weight: var(--weight-semibold);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-text-muted);
+}
+
+.clear-filters-btn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    border: none;
+    background: #fee2e2;
+    color: #dc2626;
+    font-size: 11px;
+    font-weight: var(--weight-semibold);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.clear-filters-btn:hover {
+    background: #fecaca;
+}
+
+.person-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+}
+
+.person-chip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border: 1px solid var(--color-border-light);
+    background: var(--color-surface);
+    color: var(--color-text-secondary);
+    font-size: 12px;
+    font-weight: var(--weight-medium);
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    white-space: nowrap;
+}
+
+.person-chip:hover {
+    background: var(--color-background);
+    border-color: var(--color-primary);
+}
+
+.person-chip--active {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    color: white;
+}
+
+.chip-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 9px;
+    font-size: 10px;
+    font-weight: var(--weight-bold);
+}
+
+.person-chip--active .chip-count {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.more-people {
+    display: flex;
+    align-items: center;
+    padding: 6px 12px;
+    font-size: 12px;
+    color: var(--color-text-muted);
+    font-style: italic;
+}

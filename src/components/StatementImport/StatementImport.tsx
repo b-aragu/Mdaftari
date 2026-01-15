@@ -356,6 +356,38 @@ export function StatementImport({ onComplete, onBack, mode }: StatementImportPro
     const uniquePeople = statement ? getUniqueCounterparties(transactions) : [];
     const selectedCount = filteredTransactions.filter(t => t.selected).length;
 
+    // Calculate transaction count per person (for quick-select chips)
+    const personCounts = (() => {
+        const modeFiltered = transactions.filter(t =>
+            mode === 'collections' ? t.paidIn > 0 : t.paidOut > 0
+        );
+        const counts: Record<string, { count: number; total: number }> = {};
+        modeFiltered.forEach(t => {
+            const name = t.counterparty;
+            if (!counts[name]) {
+                counts[name] = { count: 0, total: 0 };
+            }
+            counts[name].count++;
+            counts[name].total += mode === 'collections' ? t.paidIn : t.paidOut;
+        });
+        return counts;
+    })();
+
+    // Check if any filters are active
+    const hasActiveFilters = selectedPerson !== 'all' || searchText.trim() !== '' ||
+        minAmount !== '' || maxAmount !== '' || startDate !== '' || endDate !== '';
+
+    // Clear all filters
+    const clearAllFilters = () => {
+        setSelectedPerson('all');
+        setSearchText('');
+        setMinAmount('');
+        setMaxAmount('');
+        setStartDate('');
+        setEndDate('');
+        setTimeout(applyFilters, 0);
+    };
+
     // Compute date range bounds based on filtered person's transactions
     const dateRangeBounds = (() => {
         // Filter by person first (before other filters) to get their date range
@@ -557,6 +589,53 @@ export function StatementImport({ onComplete, onBack, mode }: StatementImportPro
                                 >
                                     Skip
                                 </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Person Quick-Select Section */}
+                    {uniquePeople.length > 0 && (
+                        <div className="person-quick-select">
+                            <div className="quick-select-header">
+                                <span className="quick-select-title">
+                                    <Users size={16} />
+                                    Quick Filter by Person
+                                </span>
+                                {hasActiveFilters && (
+                                    <button
+                                        className="clear-filters-btn"
+                                        onClick={clearAllFilters}
+                                    >
+                                        <X size={14} />
+                                        Clear Filters
+                                    </button>
+                                )}
+                            </div>
+                            <div className="person-chips">
+                                <button
+                                    className={`person-chip ${selectedPerson === 'all' ? 'person-chip--active' : ''}`}
+                                    onClick={() => handlePersonChange('all')}
+                                >
+                                    All
+                                    <span className="chip-count">{Object.keys(personCounts).length}</span>
+                                </button>
+                                {uniquePeople.slice(0, 10).map(person => {
+                                    const stats = personCounts[person];
+                                    if (!stats) return null;
+                                    return (
+                                        <button
+                                            key={person}
+                                            className={`person-chip ${selectedPerson === person ? 'person-chip--active' : ''}`}
+                                            onClick={() => handlePersonChange(person)}
+                                        >
+                                            {person.length > 15 ? person.substring(0, 15) + '...' : person}
+                                            <span className="chip-count">{stats.count}</span>
+                                        </button>
+                                    );
+                                })}
+                                {uniquePeople.length > 10 && (
+                                    <span className="more-people">+{uniquePeople.length - 10} more</span>
+                                )}
                             </div>
                         </div>
                     )}
