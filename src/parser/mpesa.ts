@@ -64,7 +64,10 @@ function parseAmount(amountStr: string): number {
  * Handles formats like "31/7/13" or "25/12/2023"
  */
 function parseDate(dateStr: string, timeStr: string): Date {
-    const [day, month, year] = dateStr.split('/').map(Number);
+    const parts = dateStr.split('/').map(Number);
+    const day = parts[0] ?? 1;
+    const month = parts[1] ?? 1;
+    const year = parts[2] ?? 2024;
 
     // Handle 2-digit years
     const fullYear = year < 100 ? (year > 50 ? 1900 + year : 2000 + year) : year;
@@ -88,7 +91,7 @@ function parseDate(dateStr: string, timeStr: string): Date {
         }
     }
 
-    return new Date(fullYear, (month ?? 1) - 1, day ?? 1, hours, minutes);
+    return new Date(fullYear, month - 1, day, hours, minutes);
 }
 
 /**

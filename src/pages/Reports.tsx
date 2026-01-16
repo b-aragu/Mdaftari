@@ -692,7 +692,7 @@ export function ReportsPage() {
                                     const radius = 80;
                                     const innerRadius = 55;
 
-                                    return categoryBreakdown.map((cat, idx) => {
+                                    return categoryBreakdown.map((cat, _idx) => {
                                         const percentage = categoryTotal > 0 ? (cat.total / categoryTotal) * 100 : 0;
                                         const angle = (percentage / 100) * 360;
 

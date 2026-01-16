@@ -173,7 +173,7 @@ export function RecordPaymentPage({ onBack, onSuccess, mode }: RecordPaymentProp
                             Manual
                         </button>
                         <button
-                            className={`method-btn ${inputMethod === 'import' ? 'method-btn--active' : ''}`}
+                            className="method-btn"
                             onClick={() => setInputMethod('import')}
                         >
                             <FileText size={18} />

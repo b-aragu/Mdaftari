@@ -179,9 +179,11 @@ function parseStatementText(text: string): ParsedStatement {
 
             // Start new transaction
             const restOfLine = txMatch[3] || '';
+            const receiptNo = txMatch[1] || '';
+            const dateStr = txMatch[2] || '';
             currentTransaction = {
-                receiptNo: txMatch[1],
-                date: new Date(txMatch[2].replace(' ', 'T')),
+                receiptNo,
+                date: new Date(dateStr.replace(' ', 'T')),
                 detailParts: restOfLine ? [restOfLine] : [],
                 amounts: [],
             };
@@ -189,7 +191,7 @@ function parseStatementText(text: string): ParsedStatement {
             // Check if there are amounts at the end of this line
             const words = restOfLine.split(/\s+/);
             for (const word of words) {
-                if (amountPattern.test(word)) {
+                if (amountPattern.test(word) && currentTransaction) {
                     const amount = parseFloat(word.replace(/,/g, ''));
                     if (!isNaN(amount)) {
                         currentTransaction.amounts.push(amount);
@@ -272,8 +274,8 @@ function finalizeTransaction(data: {
     let balance = 0;
 
     if (data.amounts.length >= 2) {
-        const amount = data.amounts[0];
-        balance = data.amounts[data.amounts.length - 1];
+        const amount = data.amounts[0] ?? 0;
+        balance = data.amounts[data.amounts.length - 1] ?? 0;
 
         if (amount > 0) {
             paidIn = amount;
@@ -281,7 +283,7 @@ function finalizeTransaction(data: {
             paidOut = Math.abs(amount);
         }
     } else if (data.amounts.length === 1) {
-        balance = data.amounts[0];
+        balance = data.amounts[0] ?? 0;
     }
 
     // Return all transactions - UI will filter by mode (collections = paidIn, payments = paidOut)
@@ -407,9 +409,9 @@ function parseDate(dateStr: string): Date {
 
     const match = dateStr.match(/(\d{1,2})\s+(\w{3})\s+(\d{4})/i);
     if (match) {
-        const day = parseInt(match[1]);
-        const month = months[match[2].toLowerCase()] ?? 0;
-        const year = parseInt(match[3]);
+        const day = parseInt(match[1] ?? '1', 10);
+        const month = months[(match[2] ?? 'jan').toLowerCase()] ?? 0;
+        const year = parseInt(match[3] ?? '2024', 10);
         return new Date(year, month, day);
     }
 

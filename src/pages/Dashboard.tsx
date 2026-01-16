@@ -230,7 +230,6 @@ export function Dashboard() {
                         <LedgerView
                             transactions={transactions}
                             entries={ledgerEntries}
-                            showWorkerColumn={false}
                         />
                     </div>
                 )}

@@ -406,12 +406,14 @@ export function StatementImport({ onComplete, onBack, mode }: StatementImportPro
             if (!groups[tx.counterparty]) {
                 groups[tx.counterparty] = { count: 0, total: 0, inCount: 0, outCount: 0 };
             }
-            groups[tx.counterparty].count++;
-            groups[tx.counterparty].total += amount;
+            const group = groups[tx.counterparty];
+            if (!group) continue;
+            group.count++;
+            group.total += amount;
             if (isIncoming) {
-                groups[tx.counterparty].inCount++;
+                group.inCount++;
             } else {
-                groups[tx.counterparty].outCount++;
+                group.outCount++;
             }
         }
 
