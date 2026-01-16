@@ -1180,6 +1180,15 @@
     margin-top: 2px;
 }
 
+.tx-fee {
+    display: block;
+    font-size: var(--text-xs);
+    color: #d97706;
+    /* Amber/orange for fees */
+    font-style: italic;
+    margin-top: 2px;
+}
+
 .tx-chevron {
     color: var(--color-text-primary);
     flex-shrink: 0;

@@ -399,6 +399,9 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                                             {entry && entry.amountOwed > 0 && (
                                                 <span className="tx-owed">{isIn ? 'Owes' : 'You Owe'}: {formatMoney(entry.amountOwed)}</span>
                                             )}
+                                            {tx.parsedData.transactionCost && tx.parsedData.transactionCost > 0 && (
+                                                <span className="tx-fee">Fee: Ksh {formatMoney(tx.parsedData.transactionCost)}</span>
+                                            )}
                                         </div>
                                         <ChevronRight size={16} className="tx-chevron" />
                                     </li>
@@ -792,6 +795,9 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                                                 </span>
                                                 {entry && entry.amountOwed > 0 && (
                                                     <span className="tx-owed">{isIn ? 'Owes' : 'You Owe'}: {formatMoney(entry.amountOwed)}</span>
+                                                )}
+                                                {tx.parsedData.transactionCost && tx.parsedData.transactionCost > 0 && (
+                                                    <span className="tx-fee">Fee: Ksh {formatMoney(tx.parsedData.transactionCost)}</span>
                                                 )}
                                             </div>
                                             <ChevronRight size={16} className="tx-chevron" />
@@ -1426,6 +1432,9 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                                                     </span>
                                                     {entry && entry.amountOwed > 0 && (
                                                         <span className="tx-owed">{isIn ? 'Owes' : 'You Owe'}: {formatMoney(entry.amountOwed)}</span>
+                                                    )}
+                                                    {tx.parsedData.transactionCost && tx.parsedData.transactionCost > 0 && (
+                                                        <span className="tx-fee">Fee: Ksh {formatMoney(tx.parsedData.transactionCost)}</span>
                                                     )}
                                                 </div>
 
