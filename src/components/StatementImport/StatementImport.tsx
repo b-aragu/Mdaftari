@@ -66,6 +66,7 @@ export function StatementImport({ onComplete, onBack, mode }: StatementImportPro
     const [otherDirectionTxs, setOtherDirectionTxs] = useState<StatementTransaction[]>([]);
     const [showOtherDirectionBanner, setShowOtherDirectionBanner] = useState(false);
     const [showAllSummary, setShowAllSummary] = useState(false);
+    const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
     const parseFile = useCallback(async (file: File, pwd?: string) => {
         setIsLoading(true);
@@ -189,7 +190,12 @@ export function StatementImport({ onComplete, onBack, mode }: StatementImportPro
             filtered = filterByCounterparty(filtered, selectedPerson);
         }
 
-        if (selectedType !== 'all') {
+        // Direction filter (incoming = paidIn > 0, outgoing = paidOut > 0)
+        if (selectedType === 'incoming') {
+            filtered = filtered.filter(t => t.paidIn > 0);
+        } else if (selectedType === 'outgoing') {
+            filtered = filtered.filter(t => t.paidOut > 0);
+        } else if (selectedType !== 'all') {
             filtered = filterByType(filtered, selectedType as StatementTransaction['type']);
         }
 
@@ -547,8 +553,12 @@ export function StatementImport({ onComplete, onBack, mode }: StatementImportPro
                                     className="smart-banner-btn smart-banner-btn--primary"
                                     onClick={() => {
                                         // Add the other direction transactions to the filtered list
+                                        const count = otherDirectionTxs.length;
                                         setFilteredTransactions(prev => [...prev, ...otherDirectionTxs]);
                                         setShowOtherDirectionBanner(false);
+                                        // Show success notification
+                                        setSuccessMessage(`✓ ${count} ${mode === 'collections' ? 'payment' : 'collection'}${count !== 1 ? 's' : ''} added to the list`);
+                                        setTimeout(() => setSuccessMessage(null), 3000);
                                     }}
                                 >
                                     Add to Import
@@ -560,6 +570,13 @@ export function StatementImport({ onComplete, onBack, mode }: StatementImportPro
                                     Skip
                                 </button>
                             </div>
+                        </div>
+                    )}
+
+                    {/* Success Toast */}
+                    {successMessage && (
+                        <div className="success-toast">
+                            {successMessage}
                         </div>
                     )}
 
@@ -613,6 +630,8 @@ export function StatementImport({ onComplete, onBack, mode }: StatementImportPro
                                     className="filter-select"
                                 >
                                     <option value="all">All Types</option>
+                                    <option value="incoming">💚 Incoming (Money In)</option>
+                                    <option value="outgoing">🔴 Outgoing (Money Out)</option>
                                     <option value="received">Received</option>
                                     <option value="sent">Sent</option>
                                     <option value="paybill">PayBill</option>
