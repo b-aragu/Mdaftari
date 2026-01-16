@@ -21,7 +21,7 @@ export function ReportsPage() {
         if (saved === 'overview') return 'overview';
         return 'collections';
     });
-    const [dateRange, setDateRange] = useState<'week' | 'month' | 'all'>('month');
+    const [dateRange, setDateRange] = useState<'week' | 'month' | 'all'>('all');
     const [selectedMonth, setSelectedMonth] = useState<{
         label: string;
         total: number;
@@ -185,8 +185,8 @@ export function ReportsPage() {
             months[key] = { label, total: 0, count: 0, people: new Set() };
         }
 
-        // Sum transactions by month
-        transactions.forEach(tx => {
+        // Sum transactions by month - use filtered transactions for mode-specific data
+        filteredTransactions.forEach(tx => {
             const date = tx.parsedData.dateTime;
             const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
             if (months[key]) {

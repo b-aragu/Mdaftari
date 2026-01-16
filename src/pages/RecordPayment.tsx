@@ -300,7 +300,9 @@ export function RecordPaymentPage({ onBack, onSuccess, mode }: RecordPaymentProp
                         </div>
 
                         <div className="confirm-row">
-                            <span className="confirm-label">Expected Amount</span>
+                            <span className="confirm-label">
+                                {mode === 'collections' ? 'Expected Amount' : 'Total Owed'}
+                            </span>
                             <input
                                 type="number"
                                 className="confirm-input"
