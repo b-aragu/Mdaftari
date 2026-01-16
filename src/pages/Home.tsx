@@ -626,11 +626,14 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
 
                         // Create smooth bezier curve path
                         const createSmoothPath = (pts: typeof points) => {
-                            if (pts.length < 2) return `M ${pts[0]?.x || 0} ${pts[0]?.y || 0}`;
-                            let path = `M ${pts[0].x} ${pts[0].y}`;
+                            if (pts.length < 2) return `M ${pts[0]?.x ?? 0} ${pts[0]?.y ?? 0}`;
+                            const first = pts[0];
+                            if (!first) return 'M 0 0';
+                            let path = `M ${first.x} ${first.y}`;
                             for (let i = 0; i < pts.length - 1; i++) {
                                 const current = pts[i];
                                 const next = pts[i + 1];
+                                if (!current || !next) continue;
                                 const midX = (current.x + next.x) / 2;
                                 path += ` C ${midX} ${current.y}, ${midX} ${next.y}, ${next.x} ${next.y}`;
                             }
@@ -638,8 +641,10 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                         };
 
                         const smoothPath = createSmoothPath(points);
-                        const areaPath = points.length > 0
-                            ? `${smoothPath} L ${points[points.length - 1].x} 90 L ${points[0].x} 90 Z`
+                        const lastPoint = points[points.length - 1];
+                        const firstPoint = points[0];
+                        const areaPath = points.length > 0 && lastPoint && firstPoint
+                            ? `${smoothPath} L ${lastPoint.x} 90 L ${firstPoint.x} 90 Z`
                             : '';
 
                         // Y-axis labels (3 values)
@@ -656,7 +661,7 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                                         {/* Horizontal grid lines with Y-axis labels */}
                                         {[0, 0.5, 1].map((pct, i) => {
                                             const y = 85 - pct * 65;
-                                            const value = yAxisValues[i];
+                                            const value = yAxisValues[i] ?? 0;
                                             return (
                                                 <g key={i}>
                                                     <line
