@@ -46,7 +46,7 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
         if (saved === 'overview') return 'overview';
         return 'collections';
     });
-    const [activePeriod, setActivePeriod] = useState<'week' | 'month' | 'all'>('week');
+    const [activePeriod, setActivePeriod] = useState<'week' | 'month' | 'all'>('all');
     const [viewMode, setViewMode] = useState<'date' | 'person'>('person');
     const [selectedPerson, setSelectedPerson] = useState<PersonGroup | null>(null);
     const [selectedTransaction, setSelectedTransaction] = useState<{
@@ -463,7 +463,7 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                                     <h4 className="tx-modal-section-title">💰 Payment Breakdown</h4>
                                     <div className="tx-modal-section-content">
                                         <div className="tx-modal-row">
-                                            <span className="tx-modal-label">Expected Amount</span>
+                                            <span className="tx-modal-label">{appMode === 'payments' ? 'Total Owed' : 'Expected Amount'}</span>
                                             <span className="tx-modal-value">
                                                 Ksh {formatMoney(selectedTransaction.entry.amountPaid + selectedTransaction.entry.amountOwed)}
                                             </span>
@@ -504,7 +504,7 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                                         <h4 className="tx-modal-section-title">✏️ Edit Transaction</h4>
                                         <div className="tx-modal-section-content">
                                             <div className="tx-modal-field">
-                                                <label>Expected Amount (Ksh)</label>
+                                                <label>{appMode === 'payments' ? 'Total Owed (Ksh)' : 'Expected Amount (Ksh)'}</label>
                                                 <input
                                                     type="number"
                                                     value={editExpectedAmount}
@@ -864,7 +864,7 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                                     <h4 className="tx-modal-section-title">💰 Payment Breakdown</h4>
                                     <div className="tx-modal-section-content">
                                         <div className="tx-modal-row">
-                                            <span className="tx-modal-label">Expected Amount</span>
+                                            <span className="tx-modal-label">{appMode === 'payments' ? 'Total Owed' : 'Expected Amount'}</span>
                                             <span className="tx-modal-value">
                                                 Ksh {formatMoney(selectedTransaction.entry.amountPaid + selectedTransaction.entry.amountOwed)}
                                             </span>
@@ -906,7 +906,7 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                                         <h4 className="tx-modal-section-title">✏️ Edit Transaction</h4>
                                         <div className="tx-modal-section-content">
                                             <div className="tx-modal-field">
-                                                <label>Expected Amount (Ksh)</label>
+                                                <label>{appMode === 'payments' ? 'Total Owed (Ksh)' : 'Expected Amount (Ksh)'}</label>
                                                 <input
                                                     type="number"
                                                     value={editExpectedAmount}
