@@ -34,6 +34,7 @@ interface PersonGroup {
     totalCollected: number; // Money received from them (collections)
     totalPaid: number; // Money paid to them (payments)
     primaryType: 'collection' | 'payment'; // For Overview mode
+    lastTransactionDate?: Date; // Most recent transaction
 }
 
 export function HomePage({ onRecordPayment }: HomePageProps) {
@@ -213,6 +214,7 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                 totalCollected: 0,
                 totalPaid: 0,
                 primaryType: isCollection ? 'collection' : 'payment',
+                lastTransactionDate: tx.parsedData.dateTime,
             };
             personGroups.push(group);
         }
@@ -231,6 +233,11 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
         // totalReceived is used for display in single-mode views
         group.totalReceived += amount;
         group.totalOwed += entry?.amountOwed || 0;
+
+        // Update last transaction date if this is more recent
+        if (!group.lastTransactionDate || tx.parsedData.dateTime > group.lastTransactionDate) {
+            group.lastTransactionDate = tx.parsedData.dateTime;
+        }
     });
 
     // Sort by total owed (highest first)
@@ -1196,6 +1203,38 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                     </div>
                 </div>
 
+                {/* Summary Stats Bar */}
+                {!isLoading && filteredTransactions.length > 0 && (
+                    <div className="summary-stats-bar">
+                        <div className="summary-stat">
+                            <span className="summary-stat-value">{filteredTransactions.length}</span>
+                            <span className="summary-stat-label">Transactions</span>
+                        </div>
+                        <div className="summary-stat">
+                            <span className="summary-stat-value">
+                                {formatMoney(
+                                    filteredTransactions.reduce((sum, tx) => {
+                                        const entry = ledgerEntries.find(e => e.transactionId === tx.id);
+                                        return sum + (entry?.amountPaid || tx.parsedData.amount);
+                                    }, 0)
+                                )}
+                            </span>
+                            <span className="summary-stat-label">{appMode === 'payments' ? 'Paid Out' : 'Collected'}</span>
+                        </div>
+                        <div className="summary-stat">
+                            <span className="summary-stat-value summary-stat-value--highlight">
+                                {formatMoney(
+                                    personGroups.reduce((sum, p) => sum + p.totalOwed, 0)
+                                )}
+                            </span>
+                            <span className="summary-stat-label">{appMode === 'payments' ? 'You Owe' : 'Outstanding'}</span>
+                        </div>
+                        <div className="summary-stat">
+                            <span className="summary-stat-value">{personGroups.length}</span>
+                            <span className="summary-stat-label">People</span>
+                        </div>
+                    </div>
+                )}
                 {isLoading ? (
                     <div className="skeleton-loading-state">
                         <SkeletonPersonCard />
@@ -1346,6 +1385,11 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                                                         : (isCollection ? 'collection' : 'payment'))
                                                     : 'payment'}{person.transactions.length !== 1 ? 's' : ''}
                                             </span>
+                                            {person.lastTransactionDate && (
+                                                <span className="person-last-date">
+                                                    Last: {new Intl.DateTimeFormat('en-KE', { day: 'numeric', month: 'short' }).format(person.lastTransactionDate)}
+                                                </span>
+                                            )}
                                         </div>
                                         <div className="person-totals">
                                             {appMode === 'overview' ? (
@@ -1384,7 +1428,10 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                                     className="day-header day-header--clickable"
                                     onClick={() => setSelectedDay(group)}
                                 >
-                                    <span className="day-label">{group.dateLabel}</span>
+                                    <div className="day-label-group">
+                                        <span className="day-label">{group.dateLabel}</span>
+                                        <span className="day-count">{group.transactions.length} transaction{group.transactions.length !== 1 ? 's' : ''}</span>
+                                    </div>
                                     <div className="day-totals">
                                         {group.totalIn > 0 && (
                                             <span className="day-total day-total--in">+{formatMoney(group.totalIn)}</span>
