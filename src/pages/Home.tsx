@@ -662,7 +662,7 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
 
                         return (
                             <section className="monthly-breakdown">
-                                <h3 className="section-label">Payment Timeline</h3>
+                                <h3 className="section-label">{appMode === 'collections' ? 'Collection Timeline' : 'Payment Timeline'}</h3>
                                 <div className="person-line-chart-container">
                                     <svg viewBox="0 0 300 120" className="person-line-chart" preserveAspectRatio="xMidYMid meet">
                                         {/* Background */}
@@ -762,7 +762,7 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                     {/* Transaction History */}
                     <section className="person-transactions">
                         <h3 className="section-label">
-                            {selectedPerson.transactions.length} Transaction{selectedPerson.transactions.length !== 1 ? 's' : ''}
+                            {selectedPerson.transactions.length} {appMode === 'collections' ? 'Collection' : 'Transaction'}{selectedPerson.transactions.length !== 1 ? 's' : ''}
                         </h3>
                         <ul className="transaction-list">
                             {selectedPerson.transactions
