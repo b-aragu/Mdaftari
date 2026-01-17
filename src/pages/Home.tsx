@@ -828,8 +828,9 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                                         historyItems.push({ tx: item, balanceAfter: runningBalance });
                                     });
 
-                                    // Display in reverse order (newest first) but show only last 5
-                                    return historyItems.slice(-5).reverse().map(({ tx: item, balanceAfter }, idx) => {
+                                    // Display oldest first (chronological) so balance decreases as you read down
+                                    const displayItems = historyItems.slice(0, 5);
+                                    return displayItems.map(({ tx: item, balanceAfter }, idx) => {
                                         const amount = item.entry?.amountPaid || item.tx.parsedData.amount;
                                         const dateStr = new Intl.DateTimeFormat('en-KE', {
                                             day: 'numeric', month: 'short', year: 'numeric'
@@ -839,7 +840,7 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                                             <div key={item.tx.id} className="debt-timeline-item">
                                                 <div className="debt-timeline-marker">
                                                     <div className={`debt-marker ${balanceAfter <= 0 ? 'debt-marker--complete' : ''}`} />
-                                                    {idx < historyItems.slice(-5).length - 1 && <div className="debt-timeline-line" />}
+                                                    {idx < displayItems.length - 1 && <div className="debt-timeline-line" />}
                                                 </div>
                                                 <div className="debt-timeline-content">
                                                     <span className="debt-date">{dateStr}</span>
