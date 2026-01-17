@@ -597,6 +597,39 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                         </div>
                     </div>
 
+                    {/* Relationship Summary Banner */}
+                    {selectedPerson.totalOwed > 0 && (
+                        <div className={`relationship-banner ${appMode === 'payments' ? 'relationship-banner--payments' : ''}`}>
+                            <div className="relationship-text">
+                                {appMode === 'collections' ? (
+                                    <span><strong>{selectedPerson.name}</strong> owes you <strong>Ksh {formatMoney(selectedPerson.totalOwed)}</strong></span>
+                                ) : appMode === 'payments' ? (
+                                    <span>You owe <strong>{selectedPerson.name}</strong> <strong>Ksh {formatMoney(selectedPerson.totalOwed)}</strong></span>
+                                ) : (
+                                    <span>Outstanding balance: <strong>Ksh {formatMoney(selectedPerson.totalOwed)}</strong></span>
+                                )}
+                            </div>
+                            {/* Progress Bar */}
+                            {selectedPerson.totalReceived > 0 && (() => {
+                                const total = selectedPerson.totalReceived + selectedPerson.totalOwed;
+                                const percent = Math.round((selectedPerson.totalReceived / total) * 100);
+                                return (
+                                    <div className="progress-section">
+                                        <div className="progress-bar-container">
+                                            <div
+                                                className={`progress-bar-fill ${appMode === 'payments' ? 'progress-bar-fill--payments' : ''}`}
+                                                style={{ width: `${percent}%` }}
+                                            />
+                                        </div>
+                                        <span className="progress-label">
+                                            {percent}% {appMode === 'collections' ? 'collected' : 'paid'}
+                                        </span>
+                                    </div>
+                                );
+                            })()}
+                        </div>
+                    )}
+
                     {/* Summary Cards */}
                     <div className="person-summary-cards">
                         {appMode === 'overview' ? (
@@ -604,21 +637,33 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                                 <div className="person-stat-card person-stat-card--received">
                                     <span className="stat-label">Collected</span>
                                     <span className="stat-value">Ksh {formatMoney(selectedPerson.totalCollected)}</span>
+                                    <span className="stat-subtitle">Money received from {selectedPerson.name.split(' ')[0]}</span>
                                 </div>
                                 <div className="person-stat-card person-stat-card--owed">
                                     <span className="stat-label">Paid Out</span>
                                     <span className="stat-value">Ksh {formatMoney(selectedPerson.totalPaid)}</span>
+                                    <span className="stat-subtitle">Payments made to {selectedPerson.name.split(' ')[0]}</span>
                                 </div>
                             </>
                         ) : (
                             <>
                                 <div className="person-stat-card person-stat-card--received">
-                                    <span className="stat-label">{appMode === 'collections' ? 'Total Received' : 'Total Paid'}</span>
+                                    <span className="stat-label">{appMode === 'collections' ? 'Total Collected' : 'Total Paid'}</span>
                                     <span className="stat-value">Ksh {formatMoney(selectedPerson.totalReceived)}</span>
+                                    <span className="stat-subtitle">
+                                        {appMode === 'collections'
+                                            ? `Received from ${selectedPerson.name.split(' ')[0]}`
+                                            : `Paid to ${selectedPerson.name.split(' ')[0]}`}
+                                    </span>
                                 </div>
                                 <div className="person-stat-card person-stat-card--owed">
-                                    <span className="stat-label">{appMode === 'collections' ? 'Still Owed' : 'Outstanding'}</span>
+                                    <span className="stat-label">{appMode === 'collections' ? 'They Owe You' : 'You Owe'}</span>
                                     <span className="stat-value">Ksh {formatMoney(selectedPerson.totalOwed)}</span>
+                                    <span className="stat-subtitle">
+                                        {appMode === 'collections'
+                                            ? 'Outstanding balance to collect'
+                                            : 'Remaining balance to pay'}
+                                    </span>
                                 </div>
                             </>
                         )}
@@ -758,6 +803,67 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                             </section>
                         );
                     })()}
+
+                    {/* Debt History Timeline */}
+                    {selectedPerson.transactions.length > 0 && selectedPerson.totalOwed >= 0 && (
+                        <section className="debt-history-section">
+                            <h3 className="section-label">
+                                {appMode === 'collections' ? 'Collection History' : 'Payment History'}
+                            </h3>
+                            <p className="section-hint">
+                                Track how {appMode === 'collections' ? 'collections' : 'payments'} have changed the balance over time
+                            </p>
+                            <div className="debt-timeline">
+                                {(() => {
+                                    // Calculate running balance for each transaction (oldest to newest)
+                                    const sortedTxs = [...selectedPerson.transactions]
+                                        .sort((a, b) => a.tx.parsedData.dateTime.getTime() - b.tx.parsedData.dateTime.getTime());
+
+                                    let runningBalance = selectedPerson.totalReceived + selectedPerson.totalOwed; // Start with total expected
+                                    const historyItems: { tx: typeof sortedTxs[0]; balanceAfter: number }[] = [];
+
+                                    sortedTxs.forEach(item => {
+                                        const amount = item.entry?.amountPaid || item.tx.parsedData.amount;
+                                        runningBalance -= amount;
+                                        historyItems.push({ tx: item, balanceAfter: runningBalance });
+                                    });
+
+                                    // Display in reverse order (newest first) but show only last 5
+                                    return historyItems.slice(-5).reverse().map(({ tx: item, balanceAfter }, idx) => {
+                                        const amount = item.entry?.amountPaid || item.tx.parsedData.amount;
+                                        const dateStr = new Intl.DateTimeFormat('en-KE', {
+                                            day: 'numeric', month: 'short', year: 'numeric'
+                                        }).format(item.tx.parsedData.dateTime);
+
+                                        return (
+                                            <div key={item.tx.id} className="debt-timeline-item">
+                                                <div className="debt-timeline-marker">
+                                                    <div className={`debt-marker ${balanceAfter <= 0 ? 'debt-marker--complete' : ''}`} />
+                                                    {idx < historyItems.slice(-5).length - 1 && <div className="debt-timeline-line" />}
+                                                </div>
+                                                <div className="debt-timeline-content">
+                                                    <span className="debt-date">{dateStr}</span>
+                                                    <div className="debt-details">
+                                                        <span className={`debt-amount ${appMode === 'payments' ? 'debt-amount--payment' : ''}`}>
+                                                            {appMode === 'collections' ? '+' : '-'}Ksh {formatMoney(amount)}
+                                                        </span>
+                                                        <span className="debt-arrow">→</span>
+                                                        <span className="debt-balance">
+                                                            {balanceAfter <= 0 ? (
+                                                                <span className="debt-cleared">✓ Cleared</span>
+                                                            ) : (
+                                                                <span>Ksh {formatMoney(balanceAfter)} remaining</span>
+                                                            )}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    });
+                                })()}
+                            </div>
+                        </section>
+                    )}
 
                     {/* Transaction History */}
                     <section className="person-transactions">
