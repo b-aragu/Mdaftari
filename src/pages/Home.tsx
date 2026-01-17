@@ -60,6 +60,7 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
     const [editNotes, setEditNotes] = useState('');
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+    const [historySortOrder, setHistorySortOrder] = useState<'oldest' | 'newest'>('oldest');
 
     const loadData = useCallback(async () => {
         try {
@@ -807,17 +808,28 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                     {/* Debt History Timeline */}
                     {selectedPerson.transactions.length > 0 && selectedPerson.totalOwed >= 0 && (
                         <section className="debt-history-section">
-                            <h3 className="section-label">
-                                {appMode === 'collections' ? 'Collection History' : 'Payment History'}
-                            </h3>
+                            <div className="section-header-row">
+                                <h3 className="section-label">
+                                    {appMode === 'collections' ? 'Collection History' : 'Payment History'}
+                                </h3>
+                                <button
+                                    className="sort-toggle-btn"
+                                    onClick={() => setHistorySortOrder(prev => prev === 'oldest' ? 'newest' : 'oldest')}
+                                    title={historySortOrder === 'oldest' ? 'Showing oldest first' : 'Showing newest first'}
+                                >
+                                    {historySortOrder === 'oldest' ? '↑ Oldest' : '↓ Newest'}
+                                </button>
+                            </div>
                             <p className="section-hint">
                                 Track how {appMode === 'collections' ? 'collections' : 'payments'} have changed the balance over time
                             </p>
                             <div className="debt-timeline">
                                 {(() => {
-                                    // Calculate running balance for each transaction (oldest to newest)
+                                    // Sort transactions based on sort order
                                     const sortedTxs = [...selectedPerson.transactions]
-                                        .sort((a, b) => a.tx.parsedData.dateTime.getTime() - b.tx.parsedData.dateTime.getTime());
+                                        .sort((a, b) => historySortOrder === 'oldest'
+                                            ? a.tx.parsedData.dateTime.getTime() - b.tx.parsedData.dateTime.getTime()
+                                            : b.tx.parsedData.dateTime.getTime() - a.tx.parsedData.dateTime.getTime());
 
 
                                     const historyItems: { tx: typeof sortedTxs[0]; amountPaid: number; amountOwed: number; expectedAmount: number; isComplete: boolean }[] = [];
@@ -871,12 +883,24 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
 
                     {/* Transaction History */}
                     <section className="person-transactions">
-                        <h3 className="section-label">
-                            {selectedPerson.transactions.length} {appMode === 'collections' ? 'Collection' : 'Transaction'}{selectedPerson.transactions.length !== 1 ? 's' : ''}
-                        </h3>
+                        <div className="section-header-row">
+                            <h3 className="section-label">
+                                {selectedPerson.transactions.length} {appMode === 'collections' ? 'Collection' : 'Transaction'}{selectedPerson.transactions.length !== 1 ? 's' : ''}
+                            </h3>
+                            <button
+                                className="sort-toggle-btn"
+                                onClick={() => setHistorySortOrder(prev => prev === 'oldest' ? 'newest' : 'oldest')}
+                                title={historySortOrder === 'oldest' ? 'Showing oldest first' : 'Showing newest first'}
+                            >
+                                {historySortOrder === 'oldest' ? '↑ Oldest' : '↓ Newest'}
+                            </button>
+                        </div>
                         <ul className="transaction-list">
                             {selectedPerson.transactions
-                                .sort((a, b) => b.tx.parsedData.dateTime.getTime() - a.tx.parsedData.dateTime.getTime())
+                                .slice() // Create copy to avoid mutating
+                                .sort((a, b) => historySortOrder === 'oldest'
+                                    ? a.tx.parsedData.dateTime.getTime() - b.tx.parsedData.dateTime.getTime()
+                                    : b.tx.parsedData.dateTime.getTime() - a.tx.parsedData.dateTime.getTime())
                                 .map(({ tx, entry }) => {
                                     const isIn = tx.parsedData.type === 'received';
                                     const amount = entry?.amountPaid || tx.parsedData.amount;
