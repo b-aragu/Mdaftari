@@ -819,19 +819,19 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                                     const sortedTxs = [...selectedPerson.transactions]
                                         .sort((a, b) => a.tx.parsedData.dateTime.getTime() - b.tx.parsedData.dateTime.getTime());
 
-                                    let runningBalance = selectedPerson.totalReceived + selectedPerson.totalOwed; // Start with total expected
-                                    const historyItems: { tx: typeof sortedTxs[0]; balanceAfter: number }[] = [];
+
+                                    const historyItems: { tx: typeof sortedTxs[0]; amountPaid: number; amountOwed: number; expectedAmount: number; isComplete: boolean }[] = [];
 
                                     sortedTxs.forEach(item => {
-                                        const amount = item.entry?.amountPaid || item.tx.parsedData.amount;
-                                        runningBalance -= amount;
-                                        historyItems.push({ tx: item, balanceAfter: runningBalance });
+                                        const amountPaid = item.entry?.amountPaid || item.tx.parsedData.amount;
+                                        const amountOwed = item.entry?.amountOwed || 0;
+                                        const expectedAmount = amountPaid + amountOwed;
+                                        historyItems.push({ tx: item, amountPaid, amountOwed, expectedAmount, isComplete: amountOwed === 0 });
                                     });
 
                                     // Display oldest first (chronological) so balance decreases as you read down
                                     const displayItems = historyItems.slice(0, 5);
-                                    return displayItems.map(({ tx: item, balanceAfter }, idx) => {
-                                        const amount = item.entry?.amountPaid || item.tx.parsedData.amount;
+                                    return displayItems.map(({ tx: item, amountPaid, amountOwed, expectedAmount, isComplete }, idx) => {
                                         const dateStr = new Intl.DateTimeFormat('en-KE', {
                                             day: 'numeric', month: 'short', year: 'numeric'
                                         }).format(item.tx.parsedData.dateTime);
@@ -839,21 +839,24 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                                         return (
                                             <div key={item.tx.id} className="debt-timeline-item">
                                                 <div className="debt-timeline-marker">
-                                                    <div className={`debt-marker ${balanceAfter <= 0 ? 'debt-marker--complete' : ''}`} />
+                                                    <div className={`debt-marker ${isComplete ? 'debt-marker--complete' : ''}`} />
                                                     {idx < displayItems.length - 1 && <div className="debt-timeline-line" />}
                                                 </div>
                                                 <div className="debt-timeline-content">
                                                     <span className="debt-date">{dateStr}</span>
+                                                    <div className="debt-expected">
+                                                        {appMode === 'collections' ? 'Expected' : 'Owed'}: Ksh {formatMoney(expectedAmount)}
+                                                    </div>
                                                     <div className="debt-details">
                                                         <span className={`debt-amount ${appMode === 'payments' ? 'debt-amount--payment' : ''}`}>
-                                                            {appMode === 'collections' ? '+' : '-'}Ksh {formatMoney(amount)}
+                                                            {appMode === 'collections' ? '+' : '-'}Ksh {formatMoney(amountPaid)} {appMode === 'collections' ? 'received' : 'paid'}
                                                         </span>
                                                         <span className="debt-arrow">→</span>
                                                         <span className="debt-balance">
-                                                            {balanceAfter <= 0 ? (
-                                                                <span className="debt-cleared">✓ Cleared</span>
+                                                            {isComplete ? (
+                                                                <span className="debt-cleared">✓ Complete</span>
                                                             ) : (
-                                                                <span>Ksh {formatMoney(balanceAfter)} remaining</span>
+                                                                <span className="debt-remaining">Ksh {formatMoney(amountOwed)} {appMode === 'collections' ? 'still owed' : 'still to pay'}</span>
                                                             )}
                                                         </span>
                                                     </div>

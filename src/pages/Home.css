@@ -1054,6 +1054,17 @@
     display: block;
 }
 
+.debt-expected {
+    font-size: var(--text-xs);
+    color: var(--color-text-secondary);
+    margin-bottom: 6px;
+}
+
+.debt-remaining {
+    color: var(--color-debt);
+    font-weight: var(--weight-medium);
+}
+
 .debt-details {
     display: flex;
     align-items: center;
