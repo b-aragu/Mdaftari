@@ -151,21 +151,44 @@ export function isSamePerson(
     const extractedPhone1 = phone1 || extractPhoneFromName(name1);
     const extractedPhone2 = phone2 || extractPhoneFromName(name2);
 
-    // 1. Phone match (most reliable) - using extracted or provided phones
-    if (extractedPhone1 && extractedPhone2) {
-        const p1 = normalizePhone(extractedPhone1);
-        const p2 = normalizePhone(extractedPhone2);
-        if (p1 && p2 && p1 === p2) return true;
+    const norm1 = normalizeName(name1);
+    const norm2 = normalizeName(name2);
+
+    // Debug logging
+    if (name1.toLowerCase().includes('brian') || name2.toLowerCase().includes('brian')) {
+        console.log('[isSamePerson] Comparing:', {
+            name1, name2,
+            norm1, norm2,
+            phone1, phone2,
+            extractedPhone1, extractedPhone2,
+            namesMatch: norm1 === norm2
+        });
     }
 
-    // 2. Exact name match (case-insensitive, phone stripped)
+    // 1. Exact name match (case-insensitive, phone stripped) - most reliable
     // This makes "BRIAN MBUGUA" === "BRIAN MBUGUA 254729901555"
-    if (normalizeName(name1) === normalizeName(name2)) return true;
+    if (norm1 === norm2) return true;
 
-    // 3. Check merge mappings
+    // 2. Check merge mappings
     const canonical1 = getCanonicalName(name1);
     const canonical2 = getCanonicalName(name2);
     if (normalizeName(canonical1) === normalizeName(canonical2)) return true;
+
+    // 3. Phone match - but ONLY if names are similar (share first name)
+    // This prevents "BRIAN" and "MICHAEL" with same phone from being merged
+    if (extractedPhone1 && extractedPhone2) {
+        const p1 = normalizePhone(extractedPhone1);
+        const p2 = normalizePhone(extractedPhone2);
+        if (p1 && p2 && p1 === p2) {
+            // Phones match - check if first names also match
+            const firstName1 = norm1.split(' ')[0] || '';
+            const firstName2 = norm2.split(' ')[0] || '';
+            if (firstName1 && firstName2 && firstName1 === firstName2) {
+                return true; // Same phone AND same first name
+            }
+            // Same phone but different names - NOT the same person (e.g. family members sharing phone)
+        }
+    }
 
     return false;
 }
