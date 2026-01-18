@@ -126,13 +126,13 @@ export function LandingPage() {
                     </div>
                 </div>
 
-                <div
-                    className="hero__visual"
-                    onClick={() => openImageModal('/pitch-materials/screenshots/mobile_overview.png', 'Mdaftari Mobile Dashboard')}
-                    role="button"
-                    tabIndex={0}
-                >
-                    <div className="phone-mockup">
+                <div className="hero__visual">
+                    <div
+                        className="phone-mockup"
+                        onClick={() => openImageModal('/pitch-materials/screenshots/mobile_overview.png', 'Mdaftari Mobile Dashboard')}
+                        role="button"
+                        tabIndex={0}
+                    >
                         <div className="phone-frame">
                             <img
                                 src="/pitch-materials/screenshots/mobile_overview.png"

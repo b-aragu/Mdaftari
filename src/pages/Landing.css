@@ -16,12 +16,12 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.9);
+    background: rgba(0, 0, 0, 0.95);
     z-index: 1000;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 20px;
+    padding: 16px;
     animation: fadeIn 0.2s ease;
 }
 
@@ -37,32 +37,34 @@
 
 .modal-content {
     position: relative;
-    max-width: 90vw;
-    max-height: 90vh;
+    width: 95vw;
+    height: 95vh;
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
 }
 
 .modal-close {
-    position: absolute;
-    top: -50px;
-    right: 0;
-    width: 44px;
-    height: 44px;
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    width: 48px;
+    height: 48px;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.15);
     border: none;
     border-radius: 50%;
     color: white;
     cursor: pointer;
     transition: background var(--transition-fast);
+    z-index: 1001;
 }
 
 .modal-close:hover {
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.3);
 }
 
 .modal-title {
@@ -74,16 +76,21 @@
 }
 
 .modal-image {
-    max-width: 100%;
-    max-height: 80vh;
-    border-radius: var(--radius-lg);
+    max-width: 95vw;
+    max-height: 90vh;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    border-radius: var(--radius-md);
     box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
 }
 
 .modal-video {
-    max-width: 100%;
-    max-height: 80vh;
-    border-radius: var(--radius-lg);
+    max-width: 95vw;
+    max-height: 90vh;
+    width: auto;
+    height: auto;
+    border-radius: var(--radius-md);
     box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
 }
 
@@ -792,16 +799,17 @@
 }
 
 /* Phone Mockup Clickable */
-.hero__visual {
+.phone-mockup {
+    position: relative;
     cursor: pointer;
     transition: transform var(--transition-base);
 }
 
-.hero__visual:hover {
+.phone-mockup:hover {
     transform: scale(1.02);
 }
 
-.hero__visual:hover .phone-hint {
+.phone-mockup:hover .phone-hint {
     opacity: 1;
 }
 
