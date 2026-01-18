@@ -52,3 +52,6 @@ firebase-debug.log
 # Misc
 *.pem
 .cache/
+
+# AI Assistant workflows (personal config)
+.agent/
