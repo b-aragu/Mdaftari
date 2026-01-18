@@ -154,17 +154,6 @@ export function isSamePerson(
     const norm1 = normalizeName(name1);
     const norm2 = normalizeName(name2);
 
-    // Debug logging
-    if (name1.toLowerCase().includes('brian') || name2.toLowerCase().includes('brian')) {
-        console.log('[isSamePerson] Comparing:', {
-            name1, name2,
-            norm1, norm2,
-            phone1, phone2,
-            extractedPhone1, extractedPhone2,
-            namesMatch: norm1 === norm2
-        });
-    }
-
     // 1. Exact name match (case-insensitive, phone stripped) - most reliable
     // This makes "BRIAN MBUGUA" === "BRIAN MBUGUA 254729901555"
     if (norm1 === norm2) return true;

@@ -207,23 +207,13 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
     // Group transactions by person (using filtered transactions)
     // Uses smart matching: same phone, case-insensitive name, or merge mappings
     const personGroups: PersonGroup[] = [];
-    filteredTransactions.forEach((tx, index) => {
+    filteredTransactions.forEach(tx => {
         const rawName = tx.parsedData.counterparty.name || 'Unknown';
         const phone = tx.parsedData.counterparty.phone;
         const isCollection = tx.parsedData.type === 'received';
 
         // Use canonical name (resolves merges) for display
         const name = getCanonicalName(rawName);
-
-        // Debug: trace processing
-        if (rawName.toLowerCase().includes('brian')) {
-            console.log(`[personGroups] Processing tx #${index}:`, {
-                rawName,
-                name,
-                phone,
-                existingGroups: personGroups.map(g => g.name)
-            });
-        }
 
         // Find existing group using smart matching
         let group = personGroups.find(g =>
@@ -243,16 +233,6 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                 lastTransactionDate: tx.parsedData.dateTime,
             };
             personGroups.push(group);
-
-            // Debug: group created
-            if (rawName.toLowerCase().includes('brian')) {
-                console.log(`[personGroups] Created new group for:`, name);
-            }
-        } else {
-            // Debug: found match
-            if (rawName.toLowerCase().includes('brian')) {
-                console.log(`[personGroups] Found matching group:`, group.name);
-            }
         }
 
         const entry = ledgerEntries.find(e => e.transactionId === tx.id);
@@ -1588,10 +1568,14 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                         <div className="summary-stat">
                             <span className="summary-stat-value">
                                 {formatMoney(
-                                    filteredTransactions.reduce((sum, tx) => {
-                                        const entry = ledgerEntries.find(e => e.transactionId === tx.id);
-                                        return sum + (entry?.amountPaid || tx.parsedData.amount);
-                                    }, 0)
+                                    filteredTransactions
+                                        .filter(tx => appMode === 'payments'
+                                            ? tx.parsedData.type !== 'received'
+                                            : tx.parsedData.type === 'received')
+                                        .reduce((sum, tx) => {
+                                            const entry = ledgerEntries.find(e => e.transactionId === tx.id);
+                                            return sum + (entry?.amountPaid || tx.parsedData.amount);
+                                        }, 0)
                                 )}
                             </span>
                             <span className="summary-stat-label">{appMode === 'payments' ? 'Paid Out' : 'Collected'}</span>
