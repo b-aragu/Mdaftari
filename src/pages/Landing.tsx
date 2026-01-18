@@ -4,7 +4,7 @@
  */
 
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Shield, Wifi, Zap, Users, BarChart3, Smartphone } from 'lucide-react';
+import { ArrowRight, Shield, Wifi, Zap, Users, BarChart3, Smartphone, Play, Monitor, Phone } from 'lucide-react';
 import './Landing.css';
 
 export function LandingPage() {
@@ -49,8 +49,9 @@ export function LandingPage() {
                             Start Tracking Free
                             <ArrowRight size={20} />
                         </button>
-                        <a href="#features" className="cta-secondary">
-                            See how it works
+                        <a href="#demo" className="cta-secondary">
+                            <Play size={16} />
+                            Watch Demo
                         </a>
                     </div>
 
@@ -70,14 +71,17 @@ export function LandingPage() {
                     </div>
                 </div>
 
-                <div className="hero__visual">
+                <div className="hero__visual" onClick={handleOpenApp} role="button" tabIndex={0}>
                     <div className="phone-mockup">
                         <div className="phone-frame">
                             <img
-                                src="/pitch-materials/screenshots/01_overview_dashboard.png"
-                                alt="Mdaftari Dashboard"
+                                src="/pitch-materials/screenshots/mobile_overview.png"
+                                alt="Mdaftari Mobile Dashboard - Click to open app"
                                 className="phone-screen"
                             />
+                        </div>
+                        <div className="phone-hint">
+                            <span>Click to try it →</span>
                         </div>
                     </div>
                 </div>
@@ -158,22 +162,99 @@ export function LandingPage() {
                 </div>
             </section>
 
-            {/* App Preview Section */}
-            <section className="preview-section">
+            {/* Demo Video Section */}
+            <section id="demo" className="demo-section">
                 <div className="section-container">
                     <h2 className="section-label">See It In Action</h2>
-                    <h3 className="section-title">Your Money, At a Glance</h3>
+                    <h3 className="section-title">Watch How It Works</h3>
 
-                    <div className="preview-showcase">
-                        <div className="preview-main">
-                            <img
-                                src="/pitch-materials/screenshots/01_overview_dashboard.png"
-                                alt="Mdaftari Overview Mode showing complete financial picture"
-                                className="preview-image"
-                            />
+                    <div className="demo-grid">
+                        <div className="demo-card">
+                            <div className="demo-video-wrapper">
+                                <video
+                                    src="/pitch-materials/recordings/01_overview_dashboard_demo.webp"
+                                    autoPlay
+                                    loop
+                                    muted
+                                    playsInline
+                                    className="demo-video"
+                                />
+                            </div>
+                            <h4>Dashboard Overview</h4>
+                            <p>See your complete financial picture at a glance</p>
                         </div>
 
-                        <div className="preview-details">
+                        <div className="demo-card">
+                            <div className="demo-video-wrapper">
+                                <video
+                                    src="/pitch-materials/recordings/02_mode_switching_demo.webp"
+                                    autoPlay
+                                    loop
+                                    muted
+                                    playsInline
+                                    className="demo-video"
+                                />
+                            </div>
+                            <h4>Switch Modes</h4>
+                            <p>Collections, Payments, or Overview — one tap</p>
+                        </div>
+
+                        <div className="demo-card">
+                            <div className="demo-video-wrapper">
+                                <video
+                                    src="/pitch-materials/recordings/03_record_payment_flow.webp"
+                                    autoPlay
+                                    loop
+                                    muted
+                                    playsInline
+                                    className="demo-video"
+                                />
+                            </div>
+                            <h4>Record Transaction</h4>
+                            <p>Paste M-Pesa message, confirm, done!</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            {/* App Preview Section - Desktop View */}
+            <section className="preview-section">
+                <div className="section-container">
+                    <h2 className="section-label">Works Everywhere</h2>
+                    <h3 className="section-title">Mobile & Desktop Ready</h3>
+
+                    <div className="preview-tabs">
+                        <div className="preview-tab preview-tab--active">
+                            <Phone size={18} />
+                            <span>Mobile</span>
+                        </div>
+                        <div className="preview-tab">
+                            <Monitor size={18} />
+                            <span>Desktop</span>
+                        </div>
+                    </div>
+
+                    <div className="preview-showcase" onClick={handleOpenApp} role="button" tabIndex={0}>
+                        <div className="preview-desktop">
+                            <div className="browser-frame">
+                                <div className="browser-controls">
+                                    <span className="browser-dot"></span>
+                                    <span className="browser-dot"></span>
+                                    <span className="browser-dot"></span>
+                                </div>
+                                <img
+                                    src="/pitch-materials/screenshots/desktop_overview.png"
+                                    alt="Mdaftari Desktop View - Click to open app"
+                                    className="preview-image"
+                                />
+                            </div>
+                            <div className="preview-click-hint">
+                                <ArrowRight size={16} />
+                                <span>Click anywhere to try it</span>
+                            </div>
+                        </div>
+
+                        <div className="preview-features">
                             <div className="preview-feature">
                                 <span className="preview-number">01</span>
                                 <div>
@@ -242,32 +323,40 @@ export function LandingPage() {
                             <div className="trust-icon">
                                 <Wifi size={24} />
                             </div>
-                            <h4>Works Offline</h4>
-                            <p>No internet? No problem. All data stored locally on your device.</p>
+                            <div>
+                                <h4>Works Offline</h4>
+                                <p>No internet? No problem. All data stored locally on your device.</p>
+                            </div>
                         </div>
 
                         <div className="trust-card">
                             <div className="trust-icon">
                                 <Shield size={24} />
                             </div>
-                            <h4>100% Private</h4>
-                            <p>Your financial data never leaves your phone. We can't see it.</p>
+                            <div>
+                                <h4>100% Private</h4>
+                                <p>Your financial data never leaves your phone. We can't see it.</p>
+                            </div>
                         </div>
 
                         <div className="trust-card">
                             <div className="trust-icon">
                                 <Zap size={24} />
                             </div>
-                            <h4>Free Forever</h4>
-                            <p>No subscriptions, no hidden fees. Just start using it.</p>
+                            <div>
+                                <h4>Free Forever</h4>
+                                <p>No subscriptions, no hidden fees. Just start using it.</p>
+                            </div>
                         </div>
 
                         <div className="trust-card">
                             <div className="trust-icon">
                                 <Users size={24} />
                             </div>
-                            <h4>No Account Needed</h4>
-                            <p>Open the app and start tracking. No signup required.</p>
+                            <div>
+                                <h4>No Account Needed</h4>
+                                <p>Open the app and start tracking. No signup required.</p>
+                            </div>
                         </div>
                     </div>
                 </div>

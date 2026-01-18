@@ -621,6 +621,216 @@
     margin: 0;
 }
 
+/* CTA Secondary with Icon */
+.cta-secondary {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--color-accent);
+    font-size: 0.9375rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all var(--transition-fast);
+}
+
+.cta-secondary:hover {
+    color: var(--color-primary);
+    gap: 12px;
+}
+
+/* Phone Mockup Clickable */
+.hero__visual {
+    cursor: pointer;
+    transition: transform var(--transition-base);
+}
+
+.hero__visual:hover {
+    transform: scale(1.02);
+}
+
+.hero__visual:hover .phone-hint {
+    opacity: 1;
+}
+
+.phone-hint {
+    position: absolute;
+    bottom: -40px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    background: var(--color-primary);
+    color: white;
+    border-radius: var(--radius-full);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    opacity: 0;
+    transition: opacity var(--transition-fast);
+    white-space: nowrap;
+}
+
+/* Demo Video Section */
+.demo-section {
+    padding: 80px 0;
+    background: var(--color-primary);
+}
+
+.demo-section .section-label {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.demo-section .section-title {
+    color: white;
+}
+
+.demo-grid {
+    display: grid;
+    gap: 24px;
+}
+
+.demo-card {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-xl);
+    padding: 16px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.demo-video-wrapper {
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    margin-bottom: 16px;
+    aspect-ratio: 16 / 10;
+    background: #0F172A;
+}
+
+.demo-video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.demo-card h4 {
+    font-size: 1rem;
+    font-weight: 700;
+    color: white;
+    margin: 0 0 4px;
+}
+
+.demo-card p {
+    font-size: 0.8125rem;
+    color: rgba(255, 255, 255, 0.7);
+    margin: 0;
+}
+
+/* Preview Tabs */
+.preview-tabs {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 32px;
+}
+
+.preview-tab {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 20px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border-light);
+    border-radius: var(--radius-full);
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.preview-tab--active {
+    background: var(--color-primary);
+    color: white;
+    border-color: var(--color-primary);
+}
+
+/* Browser Frame Mockup */
+.preview-desktop {
+    text-align: center;
+    flex: 1.5;
+}
+
+.browser-frame {
+    background: #1E293B;
+    border-radius: 12px;
+    padding: 8px;
+    box-shadow: var(--shadow-xl);
+}
+
+.browser-controls {
+    display: flex;
+    gap: 6px;
+    padding: 8px 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.browser-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #EF4444;
+}
+
+.browser-dot:nth-child(2) {
+    background: #F59E0B;
+}
+
+.browser-dot:nth-child(3) {
+    background: #10B981;
+}
+
+.browser-frame .preview-image {
+    width: 100%;
+    max-width: 100%;
+    border-radius: 0 0 8px 8px;
+}
+
+/* Clickable Preview */
+.preview-showcase {
+    cursor: pointer;
+    transition: transform var(--transition-base);
+}
+
+.preview-showcase:hover {
+    transform: scale(1.01);
+}
+
+.preview-showcase:hover .preview-click-hint {
+    opacity: 1;
+}
+
+.preview-click-hint {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 16px;
+    padding: 12px 24px;
+    background: var(--color-success);
+    color: white;
+    border-radius: var(--radius-full);
+    font-size: 0.875rem;
+    font-weight: 600;
+    opacity: 0.7;
+    transition: opacity var(--transition-fast);
+}
+
+.preview-features {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
 /* Desktop Styles */
 @media (min-width: 768px) {
     .hero {
@@ -671,20 +881,21 @@
         grid-template-columns: repeat(3, 1fr);
     }
 
+    .demo-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
     .preview-showcase {
         flex-direction: row;
         align-items: center;
+        gap: 48px;
     }
 
-    .preview-main {
-        flex: 1.2;
+    .preview-desktop {
+        flex: 1.5;
     }
 
-    .preview-image {
-        max-width: 500px;
-    }
-
-    .preview-details {
+    .preview-features {
         flex: 1;
     }
 
