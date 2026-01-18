@@ -1618,6 +1618,130 @@
     border-top: 1px dashed rgba(0, 0, 0, 0.06);
 }
 
+/* Accumulation Chart Styles */
+.accumulation-chart {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    gap: var(--space-3);
+    height: 140px;
+    padding: var(--space-3) 0;
+    overflow-x: auto;
+}
+
+.accumulation-bar-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    min-width: 50px;
+}
+
+.accumulation-bar-container {
+    width: 36px;
+    height: 100px;
+    background: rgba(0, 0, 0, 0.03);
+    border-radius: var(--radius-md);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    overflow: visible;
+}
+
+.accumulation-fill {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(180deg, rgba(16, 185, 129, 0.15) 0%, rgba(16, 185, 129, 0.05) 100%);
+    border-radius: var(--radius-md);
+    transition: height 0.3s ease;
+}
+
+.accumulation-bar {
+    background: linear-gradient(180deg, #10b981 0%, #059669 100%);
+    border-radius: var(--radius-sm);
+    width: 24px;
+    margin: 0 auto 4px;
+    position: relative;
+    z-index: 1;
+    transition: height 0.3s ease;
+    box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
+}
+
+.accumulation-bar--payment {
+    background: linear-gradient(180deg, #ef4444 0%, #dc2626 100%);
+    box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
+}
+
+.accumulation-amount {
+    position: absolute;
+    top: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 9px;
+    font-weight: var(--weight-bold);
+    color: #10b981;
+    white-space: nowrap;
+}
+
+.accumulation-bar--payment+.accumulation-amount,
+.accumulation-bar-container:has(.accumulation-bar--payment) .accumulation-amount {
+    color: #ef4444;
+}
+
+.accumulation-cumulative {
+    font-size: 10px;
+    font-weight: var(--weight-semibold);
+    color: var(--color-text-secondary);
+    background: rgba(16, 185, 129, 0.1);
+    padding: 2px 6px;
+    border-radius: var(--radius-sm);
+    white-space: nowrap;
+}
+
+.accumulation-date {
+    font-size: 9px;
+    font-weight: var(--weight-medium);
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+}
+
+.accumulation-legend {
+    display: flex;
+    justify-content: center;
+    gap: var(--space-4);
+    padding-top: var(--space-3);
+    margin-top: var(--space-3);
+    border-top: 1px dashed rgba(0, 0, 0, 0.06);
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 10px;
+    font-weight: var(--weight-medium);
+    color: var(--color-text-secondary);
+}
+
+.legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: var(--radius-sm);
+    background: linear-gradient(180deg, #10b981 0%, #059669 100%);
+}
+
+.legend-dot--payment {
+    background: linear-gradient(180deg, #ef4444 0%, #dc2626 100%);
+}
+
+.legend-dot--cumulative {
+    background: linear-gradient(180deg, rgba(16, 185, 129, 0.15) 0%, rgba(16, 185, 129, 0.05) 100%);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
 .person-line-chart-label {
     font-size: 10px;
     font-weight: var(--weight-semibold);
