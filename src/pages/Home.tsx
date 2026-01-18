@@ -980,66 +980,127 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                             </p>
                             <div className="debt-timeline">
                                 {(() => {
-                                    // Sort transactions based on sort order (with secondary sort by amount for same timestamps)
-                                    const sortedTxs = [...selectedPerson.transactions]
+                                    // Always sort chronologically (oldest first) for running total calculation
+                                    const chronoSortedTxs = [...selectedPerson.transactions]
                                         .sort((a, b) => {
                                             const timeA = a.tx.parsedData.dateTime.getTime();
                                             const timeB = b.tx.parsedData.dateTime.getTime();
                                             const amountA = a.entry?.amountPaid || a.tx.parsedData.amount;
                                             const amountB = b.entry?.amountPaid || b.tx.parsedData.amount;
-
-                                            if (historySortOrder === 'oldest') {
-                                                return timeA !== timeB ? timeA - timeB : amountA - amountB;
-                                            } else {
-                                                return timeB !== timeA ? timeB - timeA : amountB - amountA;
-                                            }
+                                            return timeA !== timeB ? timeA - timeB : amountA - amountB;
                                         });
 
+                                    // Calculate running totals (accumulated amounts over time)
+                                    let runningTotalPaid = 0;
+                                    let runningTotalOwed = 0;
+                                    const historyItems: {
+                                        tx: typeof chronoSortedTxs[0];
+                                        amountPaid: number;
+                                        amountOwed: number;
+                                        expectedAmount: number;
+                                        isComplete: boolean;
+                                        cumulativePaid: number;
+                                        cumulativeOwed: number;
+                                    }[] = [];
 
-                                    const historyItems: { tx: typeof sortedTxs[0]; amountPaid: number; amountOwed: number; expectedAmount: number; isComplete: boolean }[] = [];
-
-                                    sortedTxs.forEach(item => {
+                                    chronoSortedTxs.forEach(item => {
                                         const amountPaid = item.entry?.amountPaid || item.tx.parsedData.amount;
                                         const amountOwed = item.entry?.amountOwed || 0;
                                         const expectedAmount = amountPaid + amountOwed;
-                                        historyItems.push({ tx: item, amountPaid, amountOwed, expectedAmount, isComplete: amountOwed === 0 });
+
+                                        runningTotalPaid += amountPaid;
+                                        runningTotalOwed += amountOwed;
+
+                                        historyItems.push({
+                                            tx: item,
+                                            amountPaid,
+                                            amountOwed,
+                                            expectedAmount,
+                                            isComplete: amountOwed === 0,
+                                            cumulativePaid: runningTotalPaid,
+                                            cumulativeOwed: runningTotalOwed
+                                        });
                                     });
 
-                                    // Display oldest first (chronological) so balance decreases as you read down
-                                    const displayItems = historyItems.slice(0, 5);
-                                    return displayItems.map(({ tx: item, amountPaid, amountOwed, expectedAmount, isComplete }, idx) => {
-                                        const dateStr = new Intl.DateTimeFormat('en-KE', {
-                                            day: 'numeric', month: 'short', year: 'numeric'
-                                        }).format(item.tx.parsedData.dateTime);
+                                    // Apply display sort order
+                                    const displayItems = historySortOrder === 'oldest'
+                                        ? historyItems.slice(0, 5)
+                                        : [...historyItems].reverse().slice(0, 5);
 
-                                        return (
-                                            <div key={item.tx.id} className="debt-timeline-item">
-                                                <div className="debt-timeline-marker">
-                                                    <div className={`debt-marker ${isComplete ? 'debt-marker--complete' : ''}`} />
-                                                    {idx < displayItems.length - 1 && <div className="debt-timeline-line" />}
+                                    // Get grand totals for summary
+                                    const grandTotalPaid = runningTotalPaid;
+                                    const grandTotalOwed = runningTotalOwed;
+
+                                    return (
+                                        <>
+                                            {/* Running Total Summary */}
+                                            <div className="debt-running-total">
+                                                <div className="running-total-card">
+                                                    <span className="running-total-label">
+                                                        {appMode === 'collections' ? 'Total Collected' : 'Total Paid'}
+                                                    </span>
+                                                    <span className="running-total-value running-total-value--paid">
+                                                        Ksh {formatMoney(grandTotalPaid)}
+                                                    </span>
                                                 </div>
-                                                <div className="debt-timeline-content">
-                                                    <span className="debt-date">{dateStr}</span>
-                                                    <div className="debt-expected">
-                                                        {appMode === 'collections' ? 'Expected' : 'Owed'}: Ksh {formatMoney(expectedAmount)}
-                                                    </div>
-                                                    <div className="debt-details">
-                                                        <span className={`debt-amount ${appMode === 'payments' ? 'debt-amount--payment' : ''}`}>
-                                                            {appMode === 'collections' ? '+' : '-'}Ksh {formatMoney(amountPaid)} {appMode === 'collections' ? 'received' : 'paid'}
-                                                        </span>
-                                                        <span className="debt-arrow">→</span>
-                                                        <span className="debt-balance">
-                                                            {isComplete ? (
-                                                                <span className="debt-cleared">✓ Complete</span>
-                                                            ) : (
-                                                                <span className="debt-remaining">Ksh {formatMoney(amountOwed)} {appMode === 'collections' ? 'still owed' : 'still to pay'}</span>
-                                                            )}
-                                                        </span>
-                                                    </div>
+                                                <div className="running-total-card">
+                                                    <span className="running-total-label">
+                                                        {appMode === 'collections' ? 'Total Still Owed' : 'Total Still To Pay'}
+                                                    </span>
+                                                    <span className="running-total-value running-total-value--owed">
+                                                        Ksh {formatMoney(grandTotalOwed)}
+                                                    </span>
                                                 </div>
                                             </div>
-                                        );
-                                    });
+
+                                            {/* Timeline Items */}
+                                            {displayItems.map(({ tx: item, amountPaid, amountOwed, expectedAmount, isComplete, cumulativePaid, cumulativeOwed }, idx) => {
+                                                const dateStr = new Intl.DateTimeFormat('en-KE', {
+                                                    day: 'numeric', month: 'short', year: 'numeric'
+                                                }).format(item.tx.parsedData.dateTime);
+
+                                                return (
+                                                    <div key={item.tx.id} className="debt-timeline-item">
+                                                        <div className="debt-timeline-marker">
+                                                            <div className={`debt-marker ${isComplete ? 'debt-marker--complete' : ''}`} />
+                                                            {idx < displayItems.length - 1 && <div className="debt-timeline-line" />}
+                                                        </div>
+                                                        <div className="debt-timeline-content">
+                                                            <span className="debt-date">{dateStr}</span>
+                                                            <div className="debt-expected">
+                                                                {appMode === 'collections' ? 'Expected' : 'Owed'}: Ksh {formatMoney(expectedAmount)}
+                                                            </div>
+                                                            <div className="debt-details">
+                                                                <span className={`debt-amount ${appMode === 'payments' ? 'debt-amount--payment' : ''}`}>
+                                                                    {appMode === 'collections' ? '+' : '-'}Ksh {formatMoney(amountPaid)} {appMode === 'collections' ? 'received' : 'paid'}
+                                                                </span>
+                                                                <span className="debt-arrow">→</span>
+                                                                <span className="debt-balance">
+                                                                    {isComplete ? (
+                                                                        <span className="debt-cleared">✓ Complete</span>
+                                                                    ) : (
+                                                                        <span className="debt-remaining">Ksh {formatMoney(amountOwed)} {appMode === 'collections' ? 'still owed' : 'still to pay'}</span>
+                                                                    )}
+                                                                </span>
+                                                            </div>
+                                                            {/* Cumulative Balance */}
+                                                            <div className="debt-cumulative">
+                                                                <span className="cumulative-label">Running Balance:</span>
+                                                                <span className="cumulative-paid">
+                                                                    {appMode === 'collections' ? 'Collected' : 'Paid'}: Ksh {formatMoney(cumulativePaid)}
+                                                                </span>
+                                                                {cumulativeOwed > 0 && (
+                                                                    <span className="cumulative-owed">
+                                                                        {appMode === 'collections' ? 'Owed' : 'To Pay'}: Ksh {formatMoney(cumulativeOwed)}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </>
+                                    );
                                 })()}
                             </div>
                         </section>
