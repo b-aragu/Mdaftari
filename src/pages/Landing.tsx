@@ -5,7 +5,7 @@
 
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Shield, Wifi, Zap, Users, BarChart3, Smartphone, Play, Monitor, Phone } from 'lucide-react';
+import { ArrowRight, Shield, Wifi, Zap, Users, BarChart3, Smartphone, Play, Monitor, Phone, X } from 'lucide-react';
 import './Landing.css';
 
 // GitHub raw URLs for demo videos
@@ -16,16 +16,61 @@ const DEMO_VIDEOS = {
     recordPayment: 'https://github.com/b-aragu/Mdaftari/raw/main/pitch-materials/recordings/recordpayment.webm',
 };
 
+type ModalContent = {
+    type: 'image' | 'video';
+    src: string;
+    title: string;
+} | null;
+
 export function LandingPage() {
     const navigate = useNavigate();
     const [activePreview, setActivePreview] = useState<'mobile' | 'desktop'>('mobile');
+    const [modalContent, setModalContent] = useState<ModalContent>(null);
 
     const handleOpenApp = () => {
         navigate('/app');
     };
 
+    const openImageModal = (src: string, title: string) => {
+        setModalContent({ type: 'image', src, title });
+    };
+
+    const openVideoModal = (src: string, title: string) => {
+        setModalContent({ type: 'video', src, title });
+    };
+
+    const closeModal = () => {
+        setModalContent(null);
+    };
+
     return (
         <div className="landing">
+            {/* Modal for fullscreen view */}
+            {modalContent && (
+                <div className="modal-overlay" onClick={closeModal}>
+                    <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                        <button className="modal-close" onClick={closeModal}>
+                            <X size={24} />
+                        </button>
+                        <h3 className="modal-title">{modalContent.title}</h3>
+                        {modalContent.type === 'image' ? (
+                            <img
+                                src={modalContent.src}
+                                alt={modalContent.title}
+                                className="modal-image"
+                            />
+                        ) : (
+                            <video
+                                src={modalContent.src}
+                                controls
+                                autoPlay
+                                className="modal-video"
+                            />
+                        )}
+                    </div>
+                </div>
+            )}
+
             {/* Navigation */}
             <nav className="landing-nav">
                 <div className="landing-nav__logo">
@@ -81,17 +126,22 @@ export function LandingPage() {
                     </div>
                 </div>
 
-                <div className="hero__visual" onClick={handleOpenApp} role="button" tabIndex={0}>
+                <div
+                    className="hero__visual"
+                    onClick={() => openImageModal('/pitch-materials/screenshots/mobile_overview.png', 'Mdaftari Mobile Dashboard')}
+                    role="button"
+                    tabIndex={0}
+                >
                     <div className="phone-mockup">
                         <div className="phone-frame">
                             <img
                                 src="/pitch-materials/screenshots/mobile_overview.png"
-                                alt="Mdaftari Mobile Dashboard - Click to open app"
+                                alt="Mdaftari Mobile Dashboard - Click to view full size"
                                 className="phone-screen"
                             />
                         </div>
                         <div className="phone-hint">
-                            <span>Click to try it →</span>
+                            <span>Click to view full size</span>
                         </div>
                     </div>
                 </div>
@@ -179,61 +229,77 @@ export function LandingPage() {
                     <h3 className="section-title">Watch How It Works</h3>
 
                     <div className="demo-grid">
-                        <div className="demo-card">
+                        <div
+                            className="demo-card"
+                            onClick={() => openVideoModal(DEMO_VIDEOS.overview, 'Overview Mode')}
+                        >
                             <div className="demo-video-wrapper">
-                                <video
-                                    src={DEMO_VIDEOS.overview}
-                                    autoPlay
-                                    loop
-                                    muted
-                                    playsInline
-                                    className="demo-video"
-                                />
+                                <div className="demo-thumbnail">
+                                    <img
+                                        src="/pitch-materials/screenshots/01_overview_dashboard.png"
+                                        alt="Overview Mode"
+                                    />
+                                    <div className="demo-play-button">
+                                        <Play size={32} />
+                                    </div>
+                                </div>
                             </div>
                             <h4>Overview Mode</h4>
                             <p>See your complete financial picture at a glance</p>
                         </div>
 
-                        <div className="demo-card">
+                        <div
+                            className="demo-card"
+                            onClick={() => openVideoModal(DEMO_VIDEOS.collections, 'Collections Mode')}
+                        >
                             <div className="demo-video-wrapper">
-                                <video
-                                    src={DEMO_VIDEOS.collections}
-                                    autoPlay
-                                    loop
-                                    muted
-                                    playsInline
-                                    className="demo-video"
-                                />
+                                <div className="demo-thumbnail">
+                                    <img
+                                        src="/pitch-materials/screenshots/02_collections_mode.png"
+                                        alt="Collections Mode"
+                                    />
+                                    <div className="demo-play-button">
+                                        <Play size={32} />
+                                    </div>
+                                </div>
                             </div>
                             <h4>Collections Mode</h4>
                             <p>Track money coming in from customers</p>
                         </div>
 
-                        <div className="demo-card">
+                        <div
+                            className="demo-card"
+                            onClick={() => openVideoModal(DEMO_VIDEOS.payments, 'Payments Mode')}
+                        >
                             <div className="demo-video-wrapper">
-                                <video
-                                    src={DEMO_VIDEOS.payments}
-                                    autoPlay
-                                    loop
-                                    muted
-                                    playsInline
-                                    className="demo-video"
-                                />
+                                <div className="demo-thumbnail">
+                                    <img
+                                        src="/pitch-materials/screenshots/03_payments_mode.png"
+                                        alt="Payments Mode"
+                                    />
+                                    <div className="demo-play-button">
+                                        <Play size={32} />
+                                    </div>
+                                </div>
                             </div>
                             <h4>Payments Mode</h4>
                             <p>Track money going out to suppliers</p>
                         </div>
 
-                        <div className="demo-card">
+                        <div
+                            className="demo-card"
+                            onClick={() => openVideoModal(DEMO_VIDEOS.recordPayment, 'Record Transaction')}
+                        >
                             <div className="demo-video-wrapper">
-                                <video
-                                    src={DEMO_VIDEOS.recordPayment}
-                                    autoPlay
-                                    loop
-                                    muted
-                                    playsInline
-                                    className="demo-video"
-                                />
+                                <div className="demo-thumbnail">
+                                    <img
+                                        src="/pitch-materials/screenshots/06_record_payment_result.png"
+                                        alt="Record Transaction"
+                                    />
+                                    <div className="demo-play-button">
+                                        <Play size={32} />
+                                    </div>
+                                </div>
                             </div>
                             <h4>Record Transaction</h4>
                             <p>Paste M-Pesa message, confirm, done!</p>
@@ -265,19 +331,26 @@ export function LandingPage() {
                         </button>
                     </div>
 
-                    <div className="preview-showcase" onClick={handleOpenApp} role="button" tabIndex={0}>
+                    <div className="preview-showcase">
                         {activePreview === 'mobile' ? (
-                            <div className="preview-mobile">
+                            <div
+                                className="preview-mobile"
+                                onClick={() => openImageModal('/pitch-materials/screenshots/mobile_overview.png', 'Mdaftari Mobile View')}
+                            >
                                 <div className="phone-frame phone-frame--large">
                                     <img
                                         src="/pitch-materials/screenshots/mobile_overview.png"
-                                        alt="Mdaftari Mobile View - Click to open app"
+                                        alt="Mdaftari Mobile View - Click to view full size"
                                         className="phone-screen"
                                     />
                                 </div>
+                                <div className="preview-hint">Click to view full size</div>
                             </div>
                         ) : (
-                            <div className="preview-desktop">
+                            <div
+                                className="preview-desktop"
+                                onClick={() => openImageModal('/pitch-materials/screenshots/desktop_overview.png', 'Mdaftari Desktop View')}
+                            >
                                 <div className="browser-frame">
                                     <div className="browser-controls">
                                         <span className="browser-dot"></span>
@@ -286,10 +359,11 @@ export function LandingPage() {
                                     </div>
                                     <img
                                         src="/pitch-materials/screenshots/desktop_overview.png"
-                                        alt="Mdaftari Desktop View - Click to open app"
+                                        alt="Mdaftari Desktop View - Click to view full size"
                                         className="preview-image"
                                     />
                                 </div>
+                                <div className="preview-hint">Click to view full size</div>
                             </div>
                         )}
 
@@ -316,11 +390,6 @@ export function LandingPage() {
                                 </div>
                             </div>
                         </div>
-                    </div>
-
-                    <div className="preview-click-hint">
-                        <ArrowRight size={16} />
-                        <span>Click anywhere to try it</span>
                     </div>
                 </div>
             </section>
@@ -367,9 +436,9 @@ export function LandingPage() {
                             <div className="trust-icon">
                                 <Wifi size={24} />
                             </div>
-                            <div>
+                            <div className="trust-content">
                                 <h4>Works Offline</h4>
-                                <p>No internet? No problem. All data stored locally on your device.</p>
+                                <p>No internet? No problem. All data stored locally.</p>
                             </div>
                         </div>
 
@@ -377,9 +446,9 @@ export function LandingPage() {
                             <div className="trust-icon">
                                 <Shield size={24} />
                             </div>
-                            <div>
+                            <div className="trust-content">
                                 <h4>100% Private</h4>
-                                <p>Your financial data never leaves your phone. We can't see it.</p>
+                                <p>Your data never leaves your device. We can't see it.</p>
                             </div>
                         </div>
 
@@ -387,9 +456,9 @@ export function LandingPage() {
                             <div className="trust-icon">
                                 <Zap size={24} />
                             </div>
-                            <div>
+                            <div className="trust-content">
                                 <h4>Free Forever</h4>
-                                <p>No subscriptions, no hidden fees. Just start using it.</p>
+                                <p>No subscriptions, no hidden fees. Just use it.</p>
                             </div>
                         </div>
 
@@ -397,9 +466,9 @@ export function LandingPage() {
                             <div className="trust-icon">
                                 <Users size={24} />
                             </div>
-                            <div>
+                            <div className="trust-content">
                                 <h4>No Account Needed</h4>
-                                <p>Open the app and start tracking. No signup required.</p>
+                                <p>Open the app and start tracking. No signup.</p>
                             </div>
                         </div>
                     </div>
