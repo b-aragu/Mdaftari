@@ -1,10 +1,12 @@
 /**
- * Main App Component
+ * Main App Component with React Router
+ * Landing page at / and main app at /app
  */
 
 import { useState, useEffect } from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Navigation } from '../components/Layout';
-import { HomePage, RecordPaymentPage, ReportsPage, SettingsPage } from '../pages';
+import { LandingPage, HomePage, RecordPaymentPage, ReportsPage, SettingsPage } from '../pages';
 import { Onboarding } from '../components/Onboarding';
 import { ToastProvider, useToast } from '../context';
 
@@ -13,7 +15,7 @@ const ONBOARDING_KEY = 'mdaftari_onboarding_complete';
 type Tab = 'home' | 'reports' | 'settings';
 type View = 'main' | 'record';
 
-function AppContent() {
+function MainApp() {
     const [activeTab, setActiveTab] = useState<Tab>('home');
     const [view, setView] = useState<View>('main');
     const [showOnboarding, setShowOnboarding] = useState(false);
@@ -88,10 +90,21 @@ function AppContent() {
     );
 }
 
+function AppContent() {
+    return (
+        <Routes>
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/app/*" element={<MainApp />} />
+        </Routes>
+    );
+}
+
 export function App() {
     return (
-        <ToastProvider>
-            <AppContent />
-        </ToastProvider>
+        <BrowserRouter>
+            <ToastProvider>
+                <AppContent />
+            </ToastProvider>
+        </BrowserRouter>
     );
 }
