@@ -4,7 +4,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { Plus, ArrowDownLeft, ArrowUpRight, Calendar, ChevronRight, Users, ArrowLeft, FileText, Trash2, Edit3, Search, X, Wallet, CreditCard, LayoutGrid, SlidersHorizontal } from 'lucide-react';
-import { getTransactionsByUser, getLedgerEntriesByTransaction, updateTransaction, deleteTransaction } from '../storage';
+import { getTransactionsByUser, getLedgerEntriesByTransaction, updateTransaction, deleteTransaction, isSamePerson, getCanonicalName } from '../storage';
 import { useCountUp } from '../hooks';
 import { SkeletonPersonCard } from '../components/ui';
 import { getCategoryById } from '../constants/categories';
@@ -205,12 +205,20 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
     });
 
     // Group transactions by person (using filtered transactions)
+    // Uses smart matching: same phone, case-insensitive name, or merge mappings
     const personGroups: PersonGroup[] = [];
     filteredTransactions.forEach(tx => {
-        const name = tx.parsedData.counterparty.name || 'Unknown';
+        const rawName = tx.parsedData.counterparty.name || 'Unknown';
         const phone = tx.parsedData.counterparty.phone;
         const isCollection = tx.parsedData.type === 'received';
-        let group = personGroups.find(g => g.name === name);
+
+        // Use canonical name (resolves merges) for display
+        const name = getCanonicalName(rawName);
+
+        // Find existing group using smart matching
+        let group = personGroups.find(g =>
+            isSamePerson(g.name, g.phone, name, phone)
+        );
 
         if (!group) {
             group = {

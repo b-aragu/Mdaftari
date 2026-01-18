@@ -54,3 +54,15 @@ export {
     updateCustomCategory,
     deleteCustomCategory,
 } from './categories';
+
+// Person merge/deduplication
+export {
+    normalizeName,
+    normalizePhone,
+    isSamePerson,
+    getPersonMerges,
+    addPersonMerge,
+    removePersonMerge,
+    getCanonicalName,
+    findPotentialDuplicates,
+} from './personMerge';
