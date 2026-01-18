@@ -256,6 +256,66 @@ export function Dashboard() {
                 </div>
             )}
 
+            {/* Today's Summary */}
+            {(() => {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const todayTxs = transactions.filter(tx => tx.parsedData.dateTime >= today);
+                const todayReceived = todayTxs
+                    .filter(tx => tx.parsedData.type === 'received')
+                    .reduce((sum, tx) => sum + tx.parsedData.amount, 0);
+                const todaySent = todayTxs
+                    .filter(tx => tx.parsedData.type !== 'received')
+                    .reduce((sum, tx) => sum + tx.parsedData.amount, 0);
+
+                return todayTxs.length > 0 ? (
+                    <div className="dashboard-section container">
+                        <h3 className="dashboard-section__title">📅 Today's Summary</h3>
+                        <div className="today-summary">
+                            <div className="today-summary__stat">
+                                <span className="today-summary__value">{todayTxs.length}</span>
+                                <span className="today-summary__label">Transaction{todayTxs.length !== 1 ? 's' : ''}</span>
+                            </div>
+                            {todayReceived > 0 && (
+                                <div className="today-summary__stat today-summary__stat--received">
+                                    <span className="today-summary__value">+{formatMoney(todayReceived)}</span>
+                                    <span className="today-summary__label">{appMode === 'collections' ? 'Collected' : 'Received'}</span>
+                                </div>
+                            )}
+                            {todaySent > 0 && (
+                                <div className="today-summary__stat today-summary__stat--sent">
+                                    <span className="today-summary__value">-{formatMoney(todaySent)}</span>
+                                    <span className="today-summary__label">Sent</span>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                ) : null;
+            })()}
+
+            {/* Quick Actions */}
+            <div className="dashboard-section container">
+                <h3 className="dashboard-section__title">⚡ Quick Actions</h3>
+                <div className="quick-actions-grid">
+                    <a href="/" className="quick-action">
+                        <span className="quick-action__icon">👥</span>
+                        <span className="quick-action__label">People</span>
+                    </a>
+                    <a href="/reports" className="quick-action">
+                        <span className="quick-action__icon">📊</span>
+                        <span className="quick-action__label">Reports</span>
+                    </a>
+                    <a href="/settings" className="quick-action">
+                        <span className="quick-action__icon">⚙️</span>
+                        <span className="quick-action__label">Settings</span>
+                    </a>
+                    <button className="quick-action" onClick={() => setActiveTab('record')}>
+                        <span className="quick-action__icon">➕</span>
+                        <span className="quick-action__label">Record</span>
+                    </button>
+                </div>
+            </div>
+
             {/* Tab Navigation */}
             <div className="dashboard-tabs container">
                 <button
