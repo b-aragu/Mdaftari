@@ -346,6 +346,32 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
 
     // If day is selected, show full-page date detail view
     if (selectedDay) {
+        // Calculate people breakdown for this day
+        const peopleOnDay: { name: string; totalIn: number; totalOut: number; count: number }[] = [];
+        selectedDay.transactions.forEach(({ tx, entry }) => {
+            const name = tx.parsedData.counterparty.name || tx.parsedData.counterparty.phone || 'Unknown';
+            const isIn = tx.parsedData.type === 'received';
+            const amount = entry?.amountPaid || tx.parsedData.amount;
+
+            let person = peopleOnDay.find(p => p.name === name);
+            if (!person) {
+                person = { name, totalIn: 0, totalOut: 0, count: 0 };
+                peopleOnDay.push(person);
+            }
+            person.count++;
+            if (isIn) person.totalIn += amount;
+            else person.totalOut += amount;
+        });
+
+        // Calculate outstanding for this day
+        const totalOwedOnDay = selectedDay.transactions.reduce((sum, { entry }) => sum + (entry?.amountOwed || 0), 0);
+        const netPosition = selectedDay.totalIn - selectedDay.totalOut;
+
+        // Get day of week
+        const dayOfWeek = selectedDay.transactions[0]
+            ? new Intl.DateTimeFormat('en-US', { weekday: 'long' }).format(selectedDay.transactions[0].tx.parsedData.dateTime)
+            : '';
+
         return (
             <div className="person-page">
                 <header className="person-page-header">
@@ -356,65 +382,150 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                 </header>
 
                 <div className="person-page-content">
-                    {/* Date Summary */}
-                    <div className="person-summary-cards">
-                        <div className="person-stat-card person-stat-card--received">
-                            <span className="stat-label">Received</span>
-                            <span className="stat-value">Ksh {formatMoney(selectedDay.totalIn)}</span>
+                    {/* Date Hero */}
+                    <div className="person-hero">
+                        <div className="date-hero-icon">
+                            <Calendar size={40} />
                         </div>
-                        <div className="person-stat-card person-stat-card--owed">
-                            <span className="stat-label">Sent Out</span>
-                            <span className="stat-value">Ksh {formatMoney(selectedDay.totalOut)}</span>
+                        <h1 className="person-hero-name">{selectedDay.dateLabel}</h1>
+                        <p className="person-hero-phone">{dayOfWeek}</p>
+                        <div className="person-hero-meta">
+                            <span>{selectedDay.transactions.length} transaction{selectedDay.transactions.length !== 1 ? 's' : ''}</span>
+                            <span>•</span>
+                            <span>{peopleOnDay.length} {peopleOnDay.length === 1 ? 'person' : 'people'}</span>
                         </div>
                     </div>
 
+                    {/* Day Summary Banner */}
+                    <div className={`relationship-banner ${netPosition < 0 ? 'relationship-banner--payments' : ''}`}>
+                        <div className="relationship-text">
+                            {appMode === 'collections' ? (
+                                <span>Collected <strong>Ksh {formatMoney(selectedDay.totalIn)}</strong> on this day</span>
+                            ) : appMode === 'payments' ? (
+                                <span>Paid out <strong>Ksh {formatMoney(selectedDay.totalOut)}</strong> on this day</span>
+                            ) : (
+                                <span>Net {netPosition >= 0 ? 'Income' : 'Expense'}: <strong>Ksh {formatMoney(Math.abs(netPosition))}</strong></span>
+                            )}
+                        </div>
+                        {totalOwedOnDay > 0 && (
+                            <div className="day-outstanding-note">
+                                Outstanding from this day: <strong>Ksh {formatMoney(totalOwedOnDay)}</strong>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Summary Cards */}
+                    <div className="person-summary-cards">
+                        <div className="person-stat-card person-stat-card--received">
+                            <span className="stat-label">{appMode === 'payments' ? 'Received' : 'Collected'}</span>
+                            <span className="stat-value">Ksh {formatMoney(selectedDay.totalIn)}</span>
+                            <span className="stat-subtitle">Money coming in</span>
+                        </div>
+                        <div className="person-stat-card person-stat-card--owed">
+                            <span className="stat-label">{appMode === 'payments' ? 'Paid Out' : 'Sent Out'}</span>
+                            <span className="stat-value">Ksh {formatMoney(selectedDay.totalOut)}</span>
+                            <span className="stat-subtitle">Money going out</span>
+                        </div>
+                    </div>
+
+                    {/* People Breakdown */}
+                    {peopleOnDay.length > 0 && (
+                        <section className="day-people-section">
+                            <h3 className="section-label">People on This Day</h3>
+                            <div className="day-people-grid">
+                                {peopleOnDay.slice(0, 4).map(person => (
+                                    <div key={person.name} className="day-person-chip">
+                                        <div className="day-person-avatar">
+                                            {person.name.charAt(0).toUpperCase()}
+                                        </div>
+                                        <div className="day-person-info">
+                                            <span className="day-person-name">{person.name.split(' ')[0]}</span>
+                                            <span className="day-person-amount">
+                                                {person.totalIn > person.totalOut
+                                                    ? `+${formatMoney(person.totalIn - person.totalOut)}`
+                                                    : `-${formatMoney(person.totalOut - person.totalIn)}`}
+                                            </span>
+                                        </div>
+                                    </div>
+                                ))}
+                                {peopleOnDay.length > 4 && (
+                                    <div className="day-person-chip day-person-chip--more">
+                                        +{peopleOnDay.length - 4} more
+                                    </div>
+                                )}
+                            </div>
+                        </section>
+                    )}
+
                     {/* Transactions for this day */}
                     <section className="person-transactions">
-                        <h3 className="section-label">
-                            {selectedDay.transactions.length} Transaction{selectedDay.transactions.length !== 1 ? 's' : ''}
-                        </h3>
+                        <div className="section-header-row">
+                            <h3 className="section-label">
+                                {selectedDay.transactions.length} {appMode === 'collections' ? 'Collection' : 'Transaction'}{selectedDay.transactions.length !== 1 ? 's' : ''}
+                            </h3>
+                            <button
+                                className="sort-toggle-btn"
+                                onClick={() => setHistorySortOrder(prev => prev === 'oldest' ? 'newest' : 'oldest')}
+                            >
+                                {historySortOrder === 'oldest' ? '↑ Oldest' : '↓ Newest'}
+                            </button>
+                        </div>
                         <ul className="transaction-list">
-                            {selectedDay.transactions.map(({ tx, entry }) => {
-                                const isIn = tx.parsedData.type === 'received';
-                                const amount = entry?.amountPaid || tx.parsedData.amount;
-                                return (
-                                    <li
-                                        key={tx.id}
-                                        className="transaction-item transaction-item--clickable"
-                                        onClick={() => setSelectedTransaction({ tx, entry })}
-                                    >
-                                        <div className={`tx-icon ${isIn ? 'tx-icon--in' : 'tx-icon--out'}`}>
-                                            {isIn ? <ArrowDownLeft size={18} /> : <ArrowUpRight size={18} />}
-                                        </div>
-                                        <div className="tx-details">
-                                            <span className="tx-name">
-                                                {tx.parsedData.counterparty.name || tx.parsedData.counterparty.phone || 'Payment'}
-                                            </span>
-                                            <div className="tx-meta">
-                                                <code className="tx-code">{tx.parsedData.transactionCode}</code>
-                                                {tx.category && tx.category !== 'general' && (
-                                                    <span className="tx-category" title={getCategoryById(tx.category)?.label}>
-                                                        {getCategoryById(tx.category)?.icon}
-                                                    </span>
-                                                )}
-                                                <span className="tx-time">{formatTime(tx.parsedData.dateTime)}</span>
+                            {selectedDay.transactions
+                                .slice()
+                                .sort((a, b) => {
+                                    const timeA = a.tx.parsedData.dateTime.getTime();
+                                    const timeB = b.tx.parsedData.dateTime.getTime();
+                                    const amountA = a.entry?.amountPaid || a.tx.parsedData.amount;
+                                    const amountB = b.entry?.amountPaid || b.tx.parsedData.amount;
+
+                                    if (historySortOrder === 'oldest') {
+                                        return timeA !== timeB ? timeA - timeB : amountA - amountB;
+                                    } else {
+                                        return timeB !== timeA ? timeB - timeA : amountB - amountA;
+                                    }
+                                })
+                                .map(({ tx, entry }) => {
+                                    const isIn = tx.parsedData.type === 'received';
+                                    const amount = entry?.amountPaid || tx.parsedData.amount;
+                                    return (
+                                        <li
+                                            key={tx.id}
+                                            className="transaction-item transaction-item--clickable"
+                                            onClick={() => setSelectedTransaction({ tx, entry })}
+                                        >
+                                            <div className={`tx-icon ${isIn ? 'tx-icon--in' : 'tx-icon--out'}`}>
+                                                {isIn ? <ArrowDownLeft size={18} /> : <ArrowUpRight size={18} />}
                                             </div>
-                                        </div>
-                                        <div className="tx-amount-wrapper">
-                                            <span className={`tx-amount ${isIn ? 'money-in' : 'money-out'}`}>
-                                                {isIn ? '+' : '-'}Ksh {formatMoney(amount)}
-                                            </span>
-                                            {entry && entry.amountOwed > 0 && (
-                                                <span className="tx-owed">{isIn ? 'Owes' : 'You Owe'}: {formatMoney(entry.amountOwed)}</span>
-                                            )}
-                                            {tx.parsedData.transactionCost && tx.parsedData.transactionCost > 0 && (
-                                                <span className="tx-fee">Fee: Ksh {formatMoney(tx.parsedData.transactionCost)}</span>
-                                            )}
-                                        </div>
-                                        <ChevronRight size={16} className="tx-chevron" />
-                                    </li>
-                                );
-                            })}
+                                            <div className="tx-details">
+                                                <span className="tx-name">
+                                                    {tx.parsedData.counterparty.name || tx.parsedData.counterparty.phone || 'Payment'}
+                                                </span>
+                                                <div className="tx-meta">
+                                                    <code className="tx-code">{tx.parsedData.transactionCode}</code>
+                                                    {tx.category && tx.category !== 'general' && (
+                                                        <span className="tx-category" title={getCategoryById(tx.category)?.label}>
+                                                            {getCategoryById(tx.category)?.icon}
+                                                        </span>
+                                                    )}
+                                                    <span className="tx-time">{formatTime(tx.parsedData.dateTime)}</span>
+                                                </div>
+                                            </div>
+                                            <div className="tx-amount-wrapper">
+                                                <span className={`tx-amount ${isIn ? 'money-in' : 'money-out'}`}>
+                                                    {isIn ? '+' : '-'}Ksh {formatMoney(amount)}
+                                                </span>
+                                                {entry && entry.amountOwed > 0 && (
+                                                    <span className="tx-owed">{appMode === 'payments' ? 'You Owe' : 'Owes'}: {formatMoney(entry.amountOwed)}</span>
+                                                )}
+                                                {tx.parsedData.transactionCost && tx.parsedData.transactionCost > 0 && (
+                                                    <span className="tx-fee">Fee: Ksh {formatMoney(tx.parsedData.transactionCost)}</span>
+                                                )}
+                                            </div>
+                                            <ChevronRight size={16} className="tx-chevron" />
+                                        </li>
+                                    );
+                                })}
                         </ul>
                     </section>
                 </div>
