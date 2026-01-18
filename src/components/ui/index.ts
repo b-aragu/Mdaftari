@@ -18,3 +18,4 @@ export {
 } from './Badge';
 export { Skeleton, SkeletonText, SkeletonCard, SkeletonPersonCard } from './Skeleton';
 export { Toast, type ToastVariant } from './Toast';
+export { EmptyState } from './EmptyState';
