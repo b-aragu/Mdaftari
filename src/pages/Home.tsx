@@ -123,13 +123,39 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
         : transactions;
 
     // Then filter by app mode (collections = received, payments = sent/paybill/buyGoods, overview = all)
-    const filteredTransactions = periodFilteredTx.filter(tx => {
+    const modeFilteredTx = periodFilteredTx.filter(tx => {
         if (appMode === 'collections') {
             return tx.parsedData.type === 'received';
         } else if (appMode === 'payments') {
             return ['sent', 'paybill', 'buyGoods'].includes(tx.parsedData.type);
         }
         // overview mode - show all
+        return true;
+    });
+
+    // Apply advanced filters (amount range, status, type)
+    const filteredTransactions = modeFilteredTx.filter(tx => {
+        const entry = ledgerEntries.find(e => e.transactionId === tx.id);
+        const amount = entry?.amountPaid || tx.parsedData.amount;
+
+        // Amount range filter
+        if (filterAmountMin && amount < parseFloat(filterAmountMin)) return false;
+        if (filterAmountMax && amount > parseFloat(filterAmountMax)) return false;
+
+        // Status filter (complete = no amount owed, partial = some owed)
+        if (filterStatus !== 'all') {
+            const isComplete = !entry || entry.amountOwed === 0;
+            if (filterStatus === 'complete' && !isComplete) return false;
+            if (filterStatus === 'partial' && isComplete) return false;
+        }
+
+        // Type filter (received/sent)
+        if (filterType !== 'all') {
+            const isReceived = tx.parsedData.type === 'received';
+            if (filterType === 'received' && !isReceived) return false;
+            if (filterType === 'sent' && isReceived) return false;
+        }
+
         return true;
     });
 
