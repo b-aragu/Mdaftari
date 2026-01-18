@@ -129,13 +129,13 @@ export function LandingPage() {
                 <div className="hero__visual">
                     <div
                         className="phone-mockup"
-                        onClick={() => openImageModal('/pitch-materials/screenshots/mobile_overview.png', 'Mdaftari Mobile Dashboard')}
+                        onClick={() => openImageModal('/screenshots/mobile_overview.png', 'Mdaftari Mobile Dashboard')}
                         role="button"
                         tabIndex={0}
                     >
                         <div className="phone-frame">
                             <img
-                                src="/pitch-materials/screenshots/mobile_overview.png"
+                                src="/screenshots/mobile_overview.png"
                                 alt="Mdaftari Mobile Dashboard - Click to view full size"
                                 className="phone-screen"
                             />
@@ -236,7 +236,7 @@ export function LandingPage() {
                             <div className="demo-video-wrapper">
                                 <div className="demo-thumbnail">
                                     <img
-                                        src="/pitch-materials/screenshots/01_overview_dashboard.png"
+                                        src="/screenshots/01_overview_dashboard.png"
                                         alt="Overview Mode"
                                     />
                                     <div className="demo-play-button">
@@ -255,7 +255,7 @@ export function LandingPage() {
                             <div className="demo-video-wrapper">
                                 <div className="demo-thumbnail">
                                     <img
-                                        src="/pitch-materials/screenshots/02_collections_mode.png"
+                                        src="/screenshots/02_collections_mode.png"
                                         alt="Collections Mode"
                                     />
                                     <div className="demo-play-button">
@@ -274,7 +274,7 @@ export function LandingPage() {
                             <div className="demo-video-wrapper">
                                 <div className="demo-thumbnail">
                                     <img
-                                        src="/pitch-materials/screenshots/03_payments_mode.png"
+                                        src="/screenshots/03_payments_mode.png"
                                         alt="Payments Mode"
                                     />
                                     <div className="demo-play-button">
@@ -293,7 +293,7 @@ export function LandingPage() {
                             <div className="demo-video-wrapper">
                                 <div className="demo-thumbnail">
                                     <img
-                                        src="/pitch-materials/screenshots/06_record_payment_result.png"
+                                        src="/screenshots/06_record_payment_result.png"
                                         alt="Record Transaction"
                                     />
                                     <div className="demo-play-button">
@@ -335,11 +335,11 @@ export function LandingPage() {
                         {activePreview === 'mobile' ? (
                             <div
                                 className="preview-mobile"
-                                onClick={() => openImageModal('/pitch-materials/screenshots/mobile_overview.png', 'Mdaftari Mobile View')}
+                                onClick={() => openImageModal('/screenshots/mobile_overview.png', 'Mdaftari Mobile View')}
                             >
                                 <div className="phone-frame phone-frame--large">
                                     <img
-                                        src="/pitch-materials/screenshots/mobile_overview.png"
+                                        src="/screenshots/mobile_overview.png"
                                         alt="Mdaftari Mobile View - Click to view full size"
                                         className="phone-screen"
                                     />
@@ -349,7 +349,7 @@ export function LandingPage() {
                         ) : (
                             <div
                                 className="preview-desktop"
-                                onClick={() => openImageModal('/pitch-materials/screenshots/desktop_overview.png', 'Mdaftari Desktop View')}
+                                onClick={() => openImageModal('/screenshots/desktop_overview.png', 'Mdaftari Desktop View')}
                             >
                                 <div className="browser-frame">
                                     <div className="browser-controls">
@@ -358,7 +358,7 @@ export function LandingPage() {
                                         <span className="browser-dot"></span>
                                     </div>
                                     <img
-                                        src="/pitch-materials/screenshots/desktop_overview.png"
+                                        src="/screenshots/desktop_overview.png"
                                         alt="Mdaftari Desktop View - Click to view full size"
                                         className="preview-image"
                                     />
