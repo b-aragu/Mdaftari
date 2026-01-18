@@ -30,6 +30,14 @@ export function Dashboard() {
     const [error, setError] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState<'record' | 'ledger'>('record');
 
+    // Get app mode from localStorage
+    const [appMode] = useState<'collections' | 'payments' | 'overview'>(() => {
+        const saved = localStorage.getItem('mdaftari_app_mode');
+        if (saved === 'payments') return 'payments';
+        if (saved === 'overview') return 'overview';
+        return 'collections';
+    });
+
     // Calculate stats
     const stats = {
         totalReceived: ledgerEntries.reduce((sum, e) => sum + e.amountPaid, 0),
@@ -41,6 +49,23 @@ export function Dashboard() {
     const percentPaid = stats.totalReceived + stats.totalOwed > 0
         ? Math.round((stats.totalReceived / (stats.totalReceived + stats.totalOwed)) * 100)
         : 0;
+
+    // Calculate pending reminders (outstanding transactions older than 7 days)
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+    const pendingReminders = transactions
+        .filter(tx => {
+            const entry = ledgerEntries.find(e => e.transactionId === tx.id);
+            return entry && entry.amountOwed > 0 && tx.parsedData.dateTime < sevenDaysAgo;
+        })
+        .slice(0, 3);
+
+    // Recent activity (last 5 transactions)
+    const recentActivity = transactions
+        .slice()
+        .sort((a, b) => b.parsedData.dateTime.getTime() - a.parsedData.dateTime.getTime())
+        .slice(0, 5);
 
     // Load existing data
     useEffect(() => {
@@ -128,7 +153,7 @@ export function Dashboard() {
                         <div className="balance-card__header">
                             <span className="balance-card__label">Total Balance</span>
                             <span className="balance-card__badge">
-                                {transactions.length} transactions
+                                {transactions.length} {appMode === 'collections' ? 'collection' : 'transaction'}{transactions.length !== 1 ? 's' : ''}
                             </span>
                         </div>
 
@@ -137,12 +162,12 @@ export function Dashboard() {
                                 <span className="balance-card__currency">KES</span>
                                 <span className="balance-card__value">{formatMoney(stats.totalReceived)}</span>
                             </div>
-                            <span className="balance-card__label-small">received</span>
+                            <span className="balance-card__label-small">{appMode === 'collections' ? 'collected' : 'received'}</span>
                         </div>
 
                         {stats.totalOwed > 0 && (
                             <div className="balance-card__owed">
-                                <span className="balance-card__owed-label">Still owed:</span>
+                                <span className="balance-card__owed-label">{appMode === 'payments' ? 'You still owe:' : 'Still owed:'}</span>
                                 <span className="balance-card__owed-value">KES {formatMoney(stats.totalOwed)}</span>
                             </div>
                         )}
@@ -155,7 +180,7 @@ export function Dashboard() {
                                         style={{ width: `${percentPaid}%` }}
                                     />
                                 </div>
-                                <span className="balance-card__progress-label">{percentPaid}% collected</span>
+                                <span className="balance-card__progress-label">{percentPaid}% {appMode === 'collections' ? 'collected' : 'paid'}</span>
                             </div>
                         )}
                     </div>
@@ -166,19 +191,70 @@ export function Dashboard() {
                             <span className="quick-stat__icon">💰</span>
                             <div className="quick-stat__content">
                                 <span className="quick-stat__value money--received">+{formatMoney(stats.totalReceived)}</span>
-                                <span className="quick-stat__label">Received</span>
+                                <span className="quick-stat__label">{appMode === 'collections' ? 'Collected' : 'Received'}</span>
                             </div>
                         </div>
                         <div className="quick-stat">
                             <span className="quick-stat__icon">📊</span>
                             <div className="quick-stat__content">
                                 <span className="quick-stat__value money--owed">-{formatMoney(stats.totalOwed)}</span>
-                                <span className="quick-stat__label">Owed</span>
+                                <span className="quick-stat__label">{appMode === 'payments' ? 'You Owe' : 'Owed to You'}</span>
                             </div>
                         </div>
                     </div>
                 </div>
             </header>
+
+            {/* Pending Reminders */}
+            {pendingReminders.length > 0 && (
+                <div className="dashboard-section container">
+                    <h3 className="dashboard-section__title">
+                        ⏰ Pending ({pendingReminders.length})
+                    </h3>
+                    <div className="pending-list">
+                        {pendingReminders.map(tx => {
+                            const entry = ledgerEntries.find(e => e.transactionId === tx.id);
+                            const daysSince = Math.floor((Date.now() - tx.parsedData.dateTime.getTime()) / (1000 * 60 * 60 * 24));
+                            return (
+                                <div key={tx.id} className="pending-item">
+                                    <span className="pending-name">
+                                        {tx.parsedData.counterparty.name || tx.parsedData.counterparty.phone}
+                                    </span>
+                                    <span className="pending-amount">
+                                        {appMode === 'payments' ? 'You owe' : 'Owes'} KES {formatMoney(entry?.amountOwed || 0)}
+                                    </span>
+                                    <span className="pending-days">{daysSince} days</span>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
+
+            {/* Recent Activity */}
+            {recentActivity.length > 0 && (
+                <div className="dashboard-section container">
+                    <h3 className="dashboard-section__title">📋 Recent Activity</h3>
+                    <div className="recent-list">
+                        {recentActivity.map(tx => {
+                            const isIn = tx.parsedData.type === 'received';
+                            return (
+                                <div key={tx.id} className="recent-item">
+                                    <span className={`recent-icon ${isIn ? 'recent-icon--in' : 'recent-icon--out'}`}>
+                                        {isIn ? '↓' : '↑'}
+                                    </span>
+                                    <span className="recent-name">
+                                        {tx.parsedData.counterparty.name || tx.parsedData.counterparty.phone || 'Payment'}
+                                    </span>
+                                    <span className={`recent-amount ${isIn ? 'money--received' : 'money--owed'}`}>
+                                        {isIn ? '+' : '-'}KES {formatMoney(tx.parsedData.amount)}
+                                    </span>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
 
             {/* Tab Navigation */}
             <div className="dashboard-tabs container">
