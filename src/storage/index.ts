@@ -59,6 +59,7 @@ export {
 export {
     normalizeName,
     normalizePhone,
+    extractPhoneFromName,
     isSamePerson,
     getPersonMerges,
     addPersonMerge,

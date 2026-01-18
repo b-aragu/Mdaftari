@@ -16,10 +16,34 @@ export interface PersonMerge {
 }
 
 /**
- * Normalize a name for comparison (lowercase, trim, collapse spaces)
+ * Extract phone number from a name string (e.g. "BRIAN MBUGUA 254729901555")
+ * Returns the phone if found, undefined otherwise
+ */
+export function extractPhoneFromName(name: string): string | undefined {
+    // Match Kenyan phone patterns: 254XXXXXXXXX, 07XXXXXXXX, 01XXXXXXXX
+    const phonePatterns = [
+        /254\d{9}/,           // 254729901555
+        /\+254\d{9}/,         // +254729901555
+        /0[17]\d{8}/,         // 0729901555 or 0129901555
+    ];
+
+    for (const pattern of phonePatterns) {
+        const match = name.match(pattern);
+        if (match) return match[0];
+    }
+    return undefined;
+}
+
+/**
+ * Normalize a name for comparison (lowercase, trim, collapse spaces, REMOVE phone numbers)
  */
 export function normalizeName(name: string): string {
-    return name.toLowerCase().trim().replace(/\s+/g, ' ');
+    // Remove any embedded phone patterns first
+    let cleaned = name
+        .replace(/\+?254\d{9}/g, '')  // Remove 254... or +254...
+        .replace(/0[17]\d{8}/g, '');   // Remove 07... or 01...
+
+    return cleaned.toLowerCase().trim().replace(/\s+/g, ' ');
 }
 
 /**
@@ -32,6 +56,10 @@ export function normalizePhone(phone: string | undefined): string | undefined {
     // Convert +254 to 0
     if (normalized.startsWith('+254')) {
         normalized = '0' + normalized.slice(4);
+    }
+    // Remove leading 254
+    if (normalized.startsWith('254') && normalized.length === 12) {
+        normalized = '0' + normalized.slice(3);
     }
     // Remove leading zeros for comparison (keep last 9 digits)
     if (normalized.length >= 9) {
@@ -119,14 +147,19 @@ export function isSamePerson(
     name1: string, phone1: string | undefined,
     name2: string, phone2: string | undefined
 ): boolean {
-    // 1. Phone match (most reliable)
-    if (phone1 && phone2) {
-        const p1 = normalizePhone(phone1);
-        const p2 = normalizePhone(phone2);
+    // Extract phone from name if phone field is empty
+    const extractedPhone1 = phone1 || extractPhoneFromName(name1);
+    const extractedPhone2 = phone2 || extractPhoneFromName(name2);
+
+    // 1. Phone match (most reliable) - using extracted or provided phones
+    if (extractedPhone1 && extractedPhone2) {
+        const p1 = normalizePhone(extractedPhone1);
+        const p2 = normalizePhone(extractedPhone2);
         if (p1 && p2 && p1 === p2) return true;
     }
 
-    // 2. Exact name match (case-insensitive)
+    // 2. Exact name match (case-insensitive, phone stripped)
+    // This makes "BRIAN MBUGUA" === "BRIAN MBUGUA 254729901555"
     if (normalizeName(name1) === normalizeName(name2)) return true;
 
     // 3. Check merge mappings
