@@ -1,9 +1,10 @@
 /**
- * Landing Page - Mobile-First Marketing Homepage
- * Shows before users enter the main app
+ * Landing Page - Professional Mobile-First Marketing Homepage
+ * Uses Mdaftari design tokens and theme
  */
 
 import { useNavigate } from 'react-router-dom';
+import { ArrowRight, Shield, Wifi, Zap, Users, BarChart3, Smartphone } from 'lucide-react';
 import './Landing.css';
 
 export function LandingPage() {
@@ -15,167 +16,307 @@ export function LandingPage() {
 
     return (
         <div className="landing">
+            {/* Navigation */}
+            <nav className="landing-nav">
+                <div className="landing-nav__logo">
+                    <span className="logo-icon">📘</span>
+                    <span className="logo-text">Mdaftari</span>
+                </div>
+                <button className="nav-cta" onClick={handleOpenApp}>
+                    Open App
+                </button>
+            </nav>
+
             {/* Hero Section */}
-            <section className="landing-hero">
-                <div className="landing-hero__content">
-                    <h1 className="landing-logo">📘 Mdaftari</h1>
-                    <p className="landing-headline">Track Every Shilling</p>
-                    <p className="landing-subheadline">
-                        M-Pesa partial payments & balances — sorted.
+            <section className="hero">
+                <div className="hero__content">
+                    <div className="hero__badge">
+                        <span>🇰🇪</span> Built for Kenya
+                    </div>
+
+                    <h1 className="hero__title">
+                        Track Every<br />
+                        <span className="hero__title--accent">Shilling</span>
+                    </h1>
+
+                    <p className="hero__subtitle">
+                        M-Pesa partial payments and outstanding balances — finally sorted.
+                        Stop losing track of who owes you what.
                     </p>
 
-                    <button className="landing-cta landing-cta--primary" onClick={handleOpenApp}>
-                        Open App →
-                    </button>
+                    <div className="hero__cta-group">
+                        <button className="cta-primary" onClick={handleOpenApp}>
+                            Start Tracking Free
+                            <ArrowRight size={20} />
+                        </button>
+                        <a href="#features" className="cta-secondary">
+                            See how it works
+                        </a>
+                    </div>
 
-                    <a href="#problem" className="landing-cta--secondary">
-                        See How It Works ↓
-                    </a>
+                    <div className="hero__trust">
+                        <div className="trust-item">
+                            <Shield size={16} />
+                            <span>100% Private</span>
+                        </div>
+                        <div className="trust-item">
+                            <Wifi size={16} />
+                            <span>Works Offline</span>
+                        </div>
+                        <div className="trust-item">
+                            <Zap size={16} />
+                            <span>Instant Setup</span>
+                        </div>
+                    </div>
+                </div>
 
-                    <div className="landing-trust-badge">
-                        🔒 Offline-first • Your data stays on your device
+                <div className="hero__visual">
+                    <div className="phone-mockup">
+                        <div className="phone-frame">
+                            <img
+                                src="/pitch-materials/screenshots/01_overview_dashboard.png"
+                                alt="Mdaftari Dashboard"
+                                className="phone-screen"
+                            />
+                        </div>
                     </div>
                 </div>
             </section>
 
             {/* Problem Section */}
-            <section id="problem" className="landing-section landing-section--problem">
-                <h2 className="section-heading">Sound familiar?</h2>
+            <section className="problem-section">
+                <div className="section-container">
+                    <h2 className="section-label">The Problem</h2>
+                    <h3 className="section-title">Sound Familiar?</h3>
 
-                <div className="scenario-card">
-                    <p className="scenario-text">
-                        "David owes you <strong>50,000</strong>. He pays <strong>30,000</strong>.
-                        Two weeks later, <strong>15,000</strong> more."
-                    </p>
-                    <p className="scenario-question">
-                        How much does he still owe? Where did you write it down?
-                    </p>
-                </div>
+                    <div className="problem-card">
+                        <div className="problem-scenario">
+                            <p className="scenario-text">
+                                <strong>David</strong> owes you <span className="amount">Ksh 50,000</span>
+                            </p>
+                            <p className="scenario-text">
+                                He pays <span className="amount">Ksh 30,000</span>...
+                            </p>
+                            <p className="scenario-text">
+                                Two weeks later, <span className="amount">Ksh 15,000</span> more...
+                            </p>
+                            <p className="scenario-question">
+                                How much does he still owe?<br />
+                                <strong>Where did you write it down?</strong>
+                            </p>
+                        </div>
+                    </div>
 
-                <div className="pain-points">
-                    <div className="pain-point">
-                        <span className="pain-icon">📓</span>
-                        <span className="pain-text">Written in a notebook?</span>
-                    </div>
-                    <div className="pain-point">
-                        <span className="pain-icon">🧠</span>
-                        <span className="pain-text">Stored in your head?</span>
-                    </div>
-                    <div className="pain-point">
-                        <span className="pain-icon">💬</span>
-                        <span className="pain-text">Lost in WhatsApp?</span>
-                    </div>
-                </div>
-            </section>
-
-            {/* Solution Section */}
-            <section className="landing-section landing-section--solution">
-                <h2 className="section-heading">The Solution</h2>
-
-                <div className="feature-cards">
-                    <div className="feature-card">
-                        <span className="feature-icon">📲</span>
-                        <h3>Paste M-Pesa Message</h3>
-                        <p>Auto-tracks balance instantly</p>
-                    </div>
-                    <div className="feature-card">
-                        <span className="feature-icon">👥</span>
-                        <h3>See Who Owes You</h3>
-                        <p>All balances at a glance</p>
-                    </div>
-                    <div className="feature-card">
-                        <span className="feature-icon">📊</span>
-                        <h3>3 Powerful Modes</h3>
-                        <p>Collections, Payments, Overview</p>
+                    <div className="pain-points">
+                        <div className="pain-point">
+                            <span className="pain-emoji">📓</span>
+                            <span>Lost in notebooks?</span>
+                        </div>
+                        <div className="pain-point">
+                            <span className="pain-emoji">🧠</span>
+                            <span>Trusting your memory?</span>
+                        </div>
+                        <div className="pain-point">
+                            <span className="pain-emoji">💬</span>
+                            <span>Buried in WhatsApp?</span>
+                        </div>
                     </div>
                 </div>
             </section>
 
-            {/* App Preview */}
-            <section className="landing-section landing-section--preview">
-                <h2 className="section-heading">Your Complete Picture</h2>
-                <div className="app-preview">
-                    <img
-                        src="/pitch-materials/screenshots/01_overview_dashboard.png"
-                        alt="Mdaftari Dashboard showing balance overview"
-                        className="preview-image"
-                    />
-                    <p className="preview-caption">Works offline • Updates instantly</p>
+            {/* Features Section */}
+            <section id="features" className="features-section">
+                <div className="section-container">
+                    <h2 className="section-label">The Solution</h2>
+                    <h3 className="section-title">One App. Complete Control.</h3>
+
+                    <div className="features-grid">
+                        <div className="feature-card feature-card--highlight">
+                            <div className="feature-icon">
+                                <Smartphone size={32} />
+                            </div>
+                            <h4>Paste M-Pesa Message</h4>
+                            <p>Copy any M-Pesa confirmation, paste it, and we auto-extract everything.</p>
+                        </div>
+
+                        <div className="feature-card">
+                            <div className="feature-icon">
+                                <Users size={32} />
+                            </div>
+                            <h4>See Who Owes You</h4>
+                            <p>Instantly see every person's balance — who paid, who's pending, who's overdue.</p>
+                        </div>
+
+                        <div className="feature-card">
+                            <div className="feature-icon">
+                                <BarChart3 size={32} />
+                            </div>
+                            <h4>Track Both Sides</h4>
+                            <p>Collections, Payments, or Overview — switch between modes in one tap.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            {/* App Preview Section */}
+            <section className="preview-section">
+                <div className="section-container">
+                    <h2 className="section-label">See It In Action</h2>
+                    <h3 className="section-title">Your Money, At a Glance</h3>
+
+                    <div className="preview-showcase">
+                        <div className="preview-main">
+                            <img
+                                src="/pitch-materials/screenshots/01_overview_dashboard.png"
+                                alt="Mdaftari Overview Mode showing complete financial picture"
+                                className="preview-image"
+                            />
+                        </div>
+
+                        <div className="preview-details">
+                            <div className="preview-feature">
+                                <span className="preview-number">01</span>
+                                <div>
+                                    <strong>Net Position</strong>
+                                    <p>Know instantly if you're ahead or behind</p>
+                                </div>
+                            </div>
+                            <div className="preview-feature">
+                                <span className="preview-number">02</span>
+                                <div>
+                                    <strong>Balance Cards</strong>
+                                    <p>Received, Paid Out, Owed — all visible</p>
+                                </div>
+                            </div>
+                            <div className="preview-feature">
+                                <span className="preview-number">03</span>
+                                <div>
+                                    <strong>People List</strong>
+                                    <p>Every transaction grouped by person</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </section>
 
             {/* How It Works */}
-            <section className="landing-section landing-section--steps">
-                <h2 className="section-heading">How It Works</h2>
+            <section className="steps-section">
+                <div className="section-container">
+                    <h2 className="section-label">Getting Started</h2>
+                    <h3 className="section-title">3 Simple Steps</h3>
 
-                <div className="steps">
-                    <div className="step">
-                        <span className="step-number">1</span>
-                        <span className="step-icon">📋</span>
-                        <p className="step-text">Paste your M-Pesa message</p>
-                    </div>
-                    <div className="step">
-                        <span className="step-number">2</span>
-                        <span className="step-icon">✅</span>
-                        <p className="step-text">Confirm the details</p>
-                    </div>
-                    <div className="step">
-                        <span className="step-number">3</span>
-                        <span className="step-icon">📈</span>
-                        <p className="step-text">See your running balance</p>
+                    <div className="steps-grid">
+                        <div className="step">
+                            <div className="step-number">1</div>
+                            <div className="step-icon">📋</div>
+                            <h4>Paste M-Pesa Message</h4>
+                            <p>Copy the confirmation SMS you receive after any transaction</p>
+                        </div>
+
+                        <div className="step">
+                            <div className="step-number">2</div>
+                            <div className="step-icon">✅</div>
+                            <h4>Confirm Details</h4>
+                            <p>We auto-detect amount, name, and date — just verify and save</p>
+                        </div>
+
+                        <div className="step">
+                            <div className="step-number">3</div>
+                            <div className="step-icon">📈</div>
+                            <h4>Track Balances</h4>
+                            <p>See running totals per person and never lose track again</p>
+                        </div>
                     </div>
                 </div>
             </section>
 
-            {/* Trust Features */}
-            <section className="landing-section landing-section--trust">
-                <h2 className="section-heading">Why Mdaftari?</h2>
+            {/* Trust Section */}
+            <section className="trust-section">
+                <div className="section-container">
+                    <h2 className="section-label">Why Mdaftari?</h2>
+                    <h3 className="section-title">Built Different</h3>
 
-                <ul className="trust-list">
-                    <li className="trust-item">
-                        <span className="trust-check">✅</span>
-                        <span>Works offline (even in low network areas)</span>
-                    </li>
-                    <li className="trust-item">
-                        <span className="trust-check">✅</span>
-                        <span>Privacy-first (data never leaves your phone)</span>
-                    </li>
-                    <li className="trust-item">
-                        <span className="trust-check">✅</span>
-                        <span>Free to use</span>
-                    </li>
-                    <li className="trust-item">
-                        <span className="trust-check">✅</span>
-                        <span>No login required</span>
-                    </li>
-                </ul>
+                    <div className="trust-grid">
+                        <div className="trust-card">
+                            <div className="trust-icon">
+                                <Wifi size={24} />
+                            </div>
+                            <h4>Works Offline</h4>
+                            <p>No internet? No problem. All data stored locally on your device.</p>
+                        </div>
+
+                        <div className="trust-card">
+                            <div className="trust-icon">
+                                <Shield size={24} />
+                            </div>
+                            <h4>100% Private</h4>
+                            <p>Your financial data never leaves your phone. We can't see it.</p>
+                        </div>
+
+                        <div className="trust-card">
+                            <div className="trust-icon">
+                                <Zap size={24} />
+                            </div>
+                            <h4>Free Forever</h4>
+                            <p>No subscriptions, no hidden fees. Just start using it.</p>
+                        </div>
+
+                        <div className="trust-card">
+                            <div className="trust-icon">
+                                <Users size={24} />
+                            </div>
+                            <h4>No Account Needed</h4>
+                            <p>Open the app and start tracking. No signup required.</p>
+                        </div>
+                    </div>
+                </div>
             </section>
 
             {/* Final CTA */}
-            <section className="landing-section landing-section--final-cta">
-                <h2 className="final-cta-heading">Ready to stop losing track?</h2>
+            <section className="final-cta">
+                <div className="section-container">
+                    <h2 className="final-cta__title">
+                        Ready to stop losing track of money?
+                    </h2>
+                    <p className="final-cta__subtitle">
+                        Join thousands of Kenyans who finally know exactly who owes them what.
+                    </p>
 
-                <button className="landing-cta landing-cta--primary landing-cta--large" onClick={handleOpenApp}>
-                    Open Mdaftari →
-                </button>
+                    <button className="cta-primary cta-primary--large" onClick={handleOpenApp}>
+                        Start Tracking Now — It's Free
+                        <ArrowRight size={24} />
+                    </button>
 
-                <p className="final-cta-note">
-                    Instant access • No signup • Works offline
-                </p>
+                    <p className="final-cta__note">
+                        No signup • Works offline • Data stays on your device
+                    </p>
+                </div>
             </section>
 
             {/* Footer */}
             <footer className="landing-footer">
-                <p>Built for Kenya 🇰🇪</p>
-                <a
-                    href="https://github.com/b-aragu/Mdaftari"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="footer-link"
-                >
-                    GitHub
-                </a>
-                <p className="footer-copy">© 2026 Mdaftari</p>
+                <div className="footer-content">
+                    <div className="footer-brand">
+                        <span className="logo-icon">📘</span>
+                        <span className="logo-text">Mdaftari</span>
+                        <span className="footer-tagline">Track Every Shilling</span>
+                    </div>
+
+                    <div className="footer-links">
+                        <a
+                            href="https://github.com/b-aragu/Mdaftari"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                        >
+                            GitHub
+                        </a>
+                    </div>
+
+                    <p className="footer-copy">
+                        Built with ❤️ for Kenya 🇰🇪 • © 2026 Mdaftari
+                    </p>
+                </div>
             </footer>
         </div>
     );
