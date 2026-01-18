@@ -596,6 +596,14 @@
     margin-bottom: var(--space-4);
 }
 
+/* Mobile: 2x2 grid for summary stats */
+@media (max-width: 480px) {
+    .summary-stats-bar {
+        grid-template-columns: repeat(2, 1fr);
+        gap: var(--space-3);
+    }
+}
+
 .summary-stat {
     text-align: center;
     padding: var(--space-2);
@@ -606,6 +614,13 @@
     font-size: var(--text-lg);
     font-weight: var(--weight-bold);
     color: var(--color-text-primary);
+}
+
+/* Mobile: slightly smaller stat values */
+@media (max-width: 480px) {
+    .summary-stat-value {
+        font-size: var(--text-base);
+    }
 }
 
 .summary-stat-value--highlight {

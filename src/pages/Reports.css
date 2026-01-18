@@ -342,6 +342,8 @@
 
 .person-table {
     border: var(--border-medium);
+    overflow-x: auto;
+    /* Enable horizontal scroll on mobile */
 }
 
 .person-table-header {
@@ -354,6 +356,8 @@
     font-weight: var(--weight-bold);
     text-transform: uppercase;
     border-bottom: var(--border-medium);
+    min-width: 320px;
+    /* Prevent squishing too much */
 }
 
 .person-table-row {
@@ -363,6 +367,7 @@
     padding: var(--space-3);
     border-bottom: var(--border-thin);
     font-size: var(--text-sm);
+    min-width: 320px;
 }
 
 .person-table-row:last-child {
@@ -384,10 +389,28 @@
 .person-table-paid {
     color: var(--color-success);
     font-weight: var(--weight-bold);
+    text-align: right;
 }
 
 .person-table-owed {
     font-weight: var(--weight-bold);
+    text-align: right;
+}
+
+/* Mobile: Smaller columns and text */
+@media (max-width: 480px) {
+
+    .person-table-header,
+    .person-table-row {
+        grid-template-columns: 1.5fr 0.8fr 1fr 1fr;
+        gap: var(--space-1);
+        padding: var(--space-2);
+        font-size: 11px;
+    }
+
+    .person-table-header {
+        font-size: 9px;
+    }
 }
 
 /* Expand/Collapse Button */
