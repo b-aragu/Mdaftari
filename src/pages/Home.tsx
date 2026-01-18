@@ -3,7 +3,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { Plus, ArrowDownLeft, ArrowUpRight, Calendar, ChevronRight, Users, ArrowLeft, FileText, Trash2, Edit3, Search, X, Wallet, CreditCard, LayoutGrid } from 'lucide-react';
+import { Plus, ArrowDownLeft, ArrowUpRight, Calendar, ChevronRight, Users, ArrowLeft, FileText, Trash2, Edit3, Search, X, Wallet, CreditCard, LayoutGrid, SlidersHorizontal } from 'lucide-react';
 import { getTransactionsByUser, getLedgerEntriesByTransaction, updateTransaction, deleteTransaction } from '../storage';
 import { useCountUp } from '../hooks';
 import { SkeletonPersonCard } from '../components/ui';
@@ -61,6 +61,13 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [historySortOrder, setHistorySortOrder] = useState<'oldest' | 'newest'>('oldest');
+
+    // Advanced search filters
+    const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+    const [filterAmountMin, setFilterAmountMin] = useState('');
+    const [filterAmountMax, setFilterAmountMax] = useState('');
+    const [filterStatus, setFilterStatus] = useState<'all' | 'complete' | 'partial'>('all');
+    const [filterType, setFilterType] = useState<'all' | 'received' | 'sent'>('all');
 
     const loadData = useCallback(async () => {
         try {
@@ -1420,7 +1427,81 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                             <X size={16} />
                         </button>
                     )}
+                    <button
+                        className={`filter-toggle-btn ${showAdvancedFilters ? 'filter-toggle-btn--active' : ''}`}
+                        onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                        title="Advanced filters"
+                    >
+                        <SlidersHorizontal size={18} />
+                    </button>
                 </div>
+
+                {/* Advanced Filters Panel */}
+                {showAdvancedFilters && (
+                    <div className="advanced-filters-panel">
+                        <div className="filter-group">
+                            <label className="filter-label">Amount Range</label>
+                            <div className="filter-amount-row">
+                                <input
+                                    type="number"
+                                    placeholder="Min"
+                                    value={filterAmountMin}
+                                    onChange={e => setFilterAmountMin(e.target.value)}
+                                    className="filter-input filter-input--small"
+                                />
+                                <span className="filter-separator">—</span>
+                                <input
+                                    type="number"
+                                    placeholder="Max"
+                                    value={filterAmountMax}
+                                    onChange={e => setFilterAmountMax(e.target.value)}
+                                    className="filter-input filter-input--small"
+                                />
+                            </div>
+                        </div>
+                        <div className="filter-group">
+                            <label className="filter-label">Status</label>
+                            <div className="filter-chips">
+                                {(['all', 'complete', 'partial'] as const).map(status => (
+                                    <button
+                                        key={status}
+                                        className={`filter-chip ${filterStatus === status ? 'filter-chip--active' : ''}`}
+                                        onClick={() => setFilterStatus(status)}
+                                    >
+                                        {status === 'all' ? 'All' : status === 'complete' ? '✓ Complete' : '◐ Partial'}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                        <div className="filter-group">
+                            <label className="filter-label">Type</label>
+                            <div className="filter-chips">
+                                {(['all', 'received', 'sent'] as const).map(type => (
+                                    <button
+                                        key={type}
+                                        className={`filter-chip ${filterType === type ? 'filter-chip--active' : ''}`}
+                                        onClick={() => setFilterType(type)}
+                                    >
+                                        {type === 'all' ? 'All' : type === 'received' ? '↓ Received' : '↑ Sent'}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                        {(filterAmountMin || filterAmountMax || filterStatus !== 'all' || filterType !== 'all') && (
+                            <button
+                                className="filter-clear-btn"
+                                onClick={() => {
+                                    setFilterAmountMin('');
+                                    setFilterAmountMax('');
+                                    setFilterStatus('all');
+                                    setFilterType('all');
+                                }}
+                            >
+                                Clear all filters
+                            </button>
+                        )}
+                    </div>
+                )}
 
                 {/* Period Selector */}
                 <div className="period-selector">
