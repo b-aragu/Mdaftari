@@ -114,6 +114,12 @@
     font-size: 1.5rem;
 }
 
+.logo-img {
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+}
+
 .logo-text {
     font-size: 1.25rem;
     font-weight: 700;

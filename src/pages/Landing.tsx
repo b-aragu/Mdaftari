@@ -74,7 +74,7 @@ export function LandingPage() {
             {/* Navigation */}
             <nav className="landing-nav">
                 <div className="landing-nav__logo">
-                    <span className="logo-icon">📘</span>
+                    <img src="/logo.png" alt="Mdaftari" className="logo-img" />
                     <span className="logo-text">Mdaftari</span>
                 </div>
                 <button className="nav-cta" onClick={handleOpenApp}>
@@ -500,7 +500,7 @@ export function LandingPage() {
             <footer className="landing-footer">
                 <div className="footer-content">
                     <div className="footer-brand">
-                        <span className="logo-icon">📘</span>
+                        <img src="/logo.png" alt="Mdaftari" className="logo-img" />
                         <span className="logo-text">Mdaftari</span>
                         <span className="footer-tagline">Track Every Shilling</span>
                     </div>
