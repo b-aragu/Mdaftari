@@ -825,11 +825,20 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                             </p>
                             <div className="debt-timeline">
                                 {(() => {
-                                    // Sort transactions based on sort order
+                                    // Sort transactions based on sort order (with secondary sort by amount for same timestamps)
                                     const sortedTxs = [...selectedPerson.transactions]
-                                        .sort((a, b) => historySortOrder === 'oldest'
-                                            ? a.tx.parsedData.dateTime.getTime() - b.tx.parsedData.dateTime.getTime()
-                                            : b.tx.parsedData.dateTime.getTime() - a.tx.parsedData.dateTime.getTime());
+                                        .sort((a, b) => {
+                                            const timeA = a.tx.parsedData.dateTime.getTime();
+                                            const timeB = b.tx.parsedData.dateTime.getTime();
+                                            const amountA = a.entry?.amountPaid || a.tx.parsedData.amount;
+                                            const amountB = b.entry?.amountPaid || b.tx.parsedData.amount;
+
+                                            if (historySortOrder === 'oldest') {
+                                                return timeA !== timeB ? timeA - timeB : amountA - amountB;
+                                            } else {
+                                                return timeB !== timeA ? timeB - timeA : amountB - amountA;
+                                            }
+                                        });
 
 
                                     const historyItems: { tx: typeof sortedTxs[0]; amountPaid: number; amountOwed: number; expectedAmount: number; isComplete: boolean }[] = [];
@@ -898,9 +907,18 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                         <ul className="transaction-list">
                             {selectedPerson.transactions
                                 .slice() // Create copy to avoid mutating
-                                .sort((a, b) => historySortOrder === 'oldest'
-                                    ? a.tx.parsedData.dateTime.getTime() - b.tx.parsedData.dateTime.getTime()
-                                    : b.tx.parsedData.dateTime.getTime() - a.tx.parsedData.dateTime.getTime())
+                                .sort((a, b) => {
+                                    const timeA = a.tx.parsedData.dateTime.getTime();
+                                    const timeB = b.tx.parsedData.dateTime.getTime();
+                                    const amountA = a.entry?.amountPaid || a.tx.parsedData.amount;
+                                    const amountB = b.entry?.amountPaid || b.tx.parsedData.amount;
+
+                                    if (historySortOrder === 'oldest') {
+                                        return timeA !== timeB ? timeA - timeB : amountA - amountB;
+                                    } else {
+                                        return timeB !== timeA ? timeB - timeA : amountB - amountA;
+                                    }
+                                })
                                 .map(({ tx, entry }) => {
                                     const isIn = tx.parsedData.type === 'received';
                                     const amount = entry?.amountPaid || tx.parsedData.amount;
