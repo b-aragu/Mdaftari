@@ -45,3 +45,12 @@ export {
     exportAllData,
     bulkRecategorizeTransactions,
 } from './operations';
+
+// Custom categories
+export {
+    getAllCategories,
+    getCustomCategories,
+    addCustomCategory,
+    updateCustomCategory,
+    deleteCustomCategory,
+} from './categories';
