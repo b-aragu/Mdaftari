@@ -687,7 +687,8 @@
 
 .demo-grid {
     display: grid;
-    gap: 24px;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
 }
 
 .demo-card {
@@ -755,9 +756,17 @@
 }
 
 /* Browser Frame Mockup */
-.preview-desktop {
+.preview-desktop,
+.preview-mobile {
     text-align: center;
     flex: 1.5;
+}
+
+/* Large Phone Frame for Preview */
+.phone-frame--large {
+    width: 300px;
+    height: 600px;
+    margin: 0 auto;
 }
 
 .browser-frame {
@@ -765,6 +774,8 @@
     border-radius: 12px;
     padding: 8px;
     box-shadow: var(--shadow-xl);
+    max-width: 800px;
+    margin: 0 auto;
 }
 
 .browser-controls {
@@ -810,19 +821,24 @@
 }
 
 .preview-click-hint {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
-    margin-top: 16px;
-    padding: 12px 24px;
+    margin-top: 24px;
+    padding: 14px 28px;
     background: var(--color-success);
     color: white;
     border-radius: var(--radius-full);
-    font-size: 0.875rem;
+    font-size: 0.9375rem;
     font-weight: 600;
-    opacity: 0.7;
-    transition: opacity var(--transition-fast);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.preview-click-hint:hover {
+    background: #059669;
+    transform: translateY(-2px);
 }
 
 .preview-features {
@@ -882,7 +898,7 @@
     }
 
     .demo-grid {
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: repeat(4, 1fr);
     }
 
     .preview-showcase {

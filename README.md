@@ -151,6 +151,20 @@ Intelligent deduplication that recognizes:
 
 ---
 
+## 🎬 Demo Videos
+
+Watch Mdaftari in action:
+
+| Demo | Description |
+|------|-------------|
+| [📊 Overview Mode](pitch-materials/recordings/overview.webm) | See your complete financial picture at a glance |
+| [💰 Collections Mode](pitch-materials/recordings/collections.webm) | Track money coming in from customers |
+| [💸 Payments Mode](pitch-materials/recordings/payments.webm) | Track money going out to suppliers |
+| [📝 Record Transaction](pitch-materials/recordings/recordpayment.webm) | Paste M-Pesa message, confirm, done! |
+
+---
+
+
 ## 🛠️ Tech Stack
 
 ### Frontend

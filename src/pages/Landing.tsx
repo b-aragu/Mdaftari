@@ -3,12 +3,22 @@
  * Uses Mdaftari design tokens and theme
  */
 
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, Shield, Wifi, Zap, Users, BarChart3, Smartphone, Play, Monitor, Phone } from 'lucide-react';
 import './Landing.css';
 
+// GitHub raw URLs for demo videos
+const DEMO_VIDEOS = {
+    overview: 'https://github.com/b-aragu/Mdaftari/raw/main/pitch-materials/recordings/overview.webm',
+    collections: 'https://github.com/b-aragu/Mdaftari/raw/main/pitch-materials/recordings/collections.webm',
+    payments: 'https://github.com/b-aragu/Mdaftari/raw/main/pitch-materials/recordings/payments.webm',
+    recordPayment: 'https://github.com/b-aragu/Mdaftari/raw/main/pitch-materials/recordings/recordpayment.webm',
+};
+
 export function LandingPage() {
     const navigate = useNavigate();
+    const [activePreview, setActivePreview] = useState<'mobile' | 'desktop'>('mobile');
 
     const handleOpenApp = () => {
         navigate('/app');
@@ -172,7 +182,7 @@ export function LandingPage() {
                         <div className="demo-card">
                             <div className="demo-video-wrapper">
                                 <video
-                                    src="/pitch-materials/recordings/01_overview_dashboard_demo.webp"
+                                    src={DEMO_VIDEOS.overview}
                                     autoPlay
                                     loop
                                     muted
@@ -180,14 +190,14 @@ export function LandingPage() {
                                     className="demo-video"
                                 />
                             </div>
-                            <h4>Dashboard Overview</h4>
+                            <h4>Overview Mode</h4>
                             <p>See your complete financial picture at a glance</p>
                         </div>
 
                         <div className="demo-card">
                             <div className="demo-video-wrapper">
                                 <video
-                                    src="/pitch-materials/recordings/02_mode_switching_demo.webp"
+                                    src={DEMO_VIDEOS.collections}
                                     autoPlay
                                     loop
                                     muted
@@ -195,14 +205,29 @@ export function LandingPage() {
                                     className="demo-video"
                                 />
                             </div>
-                            <h4>Switch Modes</h4>
-                            <p>Collections, Payments, or Overview — one tap</p>
+                            <h4>Collections Mode</h4>
+                            <p>Track money coming in from customers</p>
                         </div>
 
                         <div className="demo-card">
                             <div className="demo-video-wrapper">
                                 <video
-                                    src="/pitch-materials/recordings/03_record_payment_flow.webp"
+                                    src={DEMO_VIDEOS.payments}
+                                    autoPlay
+                                    loop
+                                    muted
+                                    playsInline
+                                    className="demo-video"
+                                />
+                            </div>
+                            <h4>Payments Mode</h4>
+                            <p>Track money going out to suppliers</p>
+                        </div>
+
+                        <div className="demo-card">
+                            <div className="demo-video-wrapper">
+                                <video
+                                    src={DEMO_VIDEOS.recordPayment}
                                     autoPlay
                                     loop
                                     muted
@@ -217,42 +242,56 @@ export function LandingPage() {
                 </div>
             </section>
 
-            {/* App Preview Section - Desktop View */}
+            {/* App Preview Section - Mobile/Desktop Toggle */}
             <section className="preview-section">
                 <div className="section-container">
                     <h2 className="section-label">Works Everywhere</h2>
                     <h3 className="section-title">Mobile & Desktop Ready</h3>
 
                     <div className="preview-tabs">
-                        <div className="preview-tab preview-tab--active">
+                        <button
+                            className={`preview-tab ${activePreview === 'mobile' ? 'preview-tab--active' : ''}`}
+                            onClick={() => setActivePreview('mobile')}
+                        >
                             <Phone size={18} />
                             <span>Mobile</span>
-                        </div>
-                        <div className="preview-tab">
+                        </button>
+                        <button
+                            className={`preview-tab ${activePreview === 'desktop' ? 'preview-tab--active' : ''}`}
+                            onClick={() => setActivePreview('desktop')}
+                        >
                             <Monitor size={18} />
                             <span>Desktop</span>
-                        </div>
+                        </button>
                     </div>
 
                     <div className="preview-showcase" onClick={handleOpenApp} role="button" tabIndex={0}>
-                        <div className="preview-desktop">
-                            <div className="browser-frame">
-                                <div className="browser-controls">
-                                    <span className="browser-dot"></span>
-                                    <span className="browser-dot"></span>
-                                    <span className="browser-dot"></span>
+                        {activePreview === 'mobile' ? (
+                            <div className="preview-mobile">
+                                <div className="phone-frame phone-frame--large">
+                                    <img
+                                        src="/pitch-materials/screenshots/mobile_overview.png"
+                                        alt="Mdaftari Mobile View - Click to open app"
+                                        className="phone-screen"
+                                    />
                                 </div>
-                                <img
-                                    src="/pitch-materials/screenshots/desktop_overview.png"
-                                    alt="Mdaftari Desktop View - Click to open app"
-                                    className="preview-image"
-                                />
                             </div>
-                            <div className="preview-click-hint">
-                                <ArrowRight size={16} />
-                                <span>Click anywhere to try it</span>
+                        ) : (
+                            <div className="preview-desktop">
+                                <div className="browser-frame">
+                                    <div className="browser-controls">
+                                        <span className="browser-dot"></span>
+                                        <span className="browser-dot"></span>
+                                        <span className="browser-dot"></span>
+                                    </div>
+                                    <img
+                                        src="/pitch-materials/screenshots/desktop_overview.png"
+                                        alt="Mdaftari Desktop View - Click to open app"
+                                        className="preview-image"
+                                    />
+                                </div>
                             </div>
-                        </div>
+                        )}
 
                         <div className="preview-features">
                             <div className="preview-feature">
@@ -277,6 +316,11 @@ export function LandingPage() {
                                 </div>
                             </div>
                         </div>
+                    </div>
+
+                    <div className="preview-click-hint">
+                        <ArrowRight size={16} />
+                        <span>Click anywhere to try it</span>
                     </div>
                 </div>
             </section>
