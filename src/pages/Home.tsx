@@ -362,15 +362,18 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
     // If day is selected, show full-page date detail view
     if (selectedDay) {
         // Calculate people breakdown for this day
-        const peopleOnDay: { name: string; totalIn: number; totalOut: number; count: number }[] = [];
+        const peopleOnDay: { name: string; phone?: string; totalIn: number; totalOut: number; count: number }[] = [];
         selectedDay.transactions.forEach(({ tx, entry }) => {
-            const name = tx.parsedData.counterparty.name || tx.parsedData.counterparty.phone || 'Unknown';
+            const rawName = tx.parsedData.counterparty.name || tx.parsedData.counterparty.phone || 'Unknown';
+            const phone = tx.parsedData.counterparty.phone;
+            const name = getCanonicalName(rawName);
             const isIn = tx.parsedData.type === 'received';
             const amount = entry?.amountPaid || tx.parsedData.amount;
 
-            let person = peopleOnDay.find(p => p.name === name);
+            // Use smart matching for deduplication
+            let person = peopleOnDay.find(p => isSamePerson(p.name, p.phone, name, phone));
             if (!person) {
-                person = { name, totalIn: 0, totalOut: 0, count: 0 };
+                person = { name, phone, totalIn: 0, totalOut: 0, count: 0 };
                 peopleOnDay.push(person);
             }
             person.count++;
