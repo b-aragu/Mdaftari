@@ -2,16 +2,45 @@
  * Settings Page
  */
 
-import { useState } from 'react';
-import { Trash2, Download, Shield, ChevronRight, HelpCircle, Tags } from 'lucide-react';
-import { clearAllData, clearDataByMode, exportAllData, bulkRecategorizeTransactions } from '../storage';
+import { useState, useEffect } from 'react';
+import { Trash2, Download, Shield, ChevronRight, HelpCircle, Tags, Plus, X } from 'lucide-react';
+import { clearAllData, clearDataByMode, exportAllData, bulkRecategorizeTransactions, getAllCategories, addCustomCategory, deleteCustomCategory } from '../storage';
 import { suggestCategory } from '../constants/autoCategorize';
+import type { Category } from '../constants/categories';
 import './Settings.css';
 
 export function SettingsPage() {
     const [showConfirmDelete, setShowConfirmDelete] = useState(false);
     const [showConfirmCollections, setShowConfirmCollections] = useState(false);
     const [showConfirmPayments, setShowConfirmPayments] = useState(false);
+
+    // Categories management
+    const [categories, setCategories] = useState<Category[]>([]);
+    const [showAddCategory, setShowAddCategory] = useState(false);
+    const [newCategoryLabel, setNewCategoryLabel] = useState('');
+    const [newCategoryEmoji, setNewCategoryEmoji] = useState('📁');
+
+    // Load categories on mount
+    useEffect(() => {
+        setCategories(getAllCategories());
+    }, []);
+
+    const handleAddCategory = () => {
+        if (newCategoryLabel.trim()) {
+            addCustomCategory(newCategoryLabel.trim(), newCategoryEmoji, '#6366f1'); // Default indigo color
+            setCategories(getAllCategories());
+            setNewCategoryLabel('');
+            setNewCategoryEmoji('📁');
+            setShowAddCategory(false);
+        }
+    };
+
+    const handleDeleteCategory = (id: string) => {
+        if (confirm('Delete this category?')) {
+            deleteCustomCategory(id);
+            setCategories(getAllCategories());
+        }
+    };
 
     const handleExport = async () => {
         try {
@@ -97,6 +126,36 @@ export function SettingsPage() {
                                 <span className="settings-item-desc">View the getting started guide</span>
                             </div>
                             <ChevronRight size={18} className="settings-item-arrow" />
+                        </button>
+                    </div>
+                </section>
+
+                {/* Categories Section */}
+                <section className="settings-section">
+                    <h2 className="settings-section-title">Categories</h2>
+
+                    <div className="categories-grid">
+                        {categories.map(cat => (
+                            <div key={cat.id} className="category-chip">
+                                <span className="category-chip__icon">{cat.icon}</span>
+                                <span className="category-chip__label">{cat.label}</span>
+                                {cat.id.startsWith('custom_') && (
+                                    <button
+                                        className="category-chip__delete"
+                                        onClick={() => handleDeleteCategory(cat.id)}
+                                        title="Delete category"
+                                    >
+                                        <X size={14} />
+                                    </button>
+                                )}
+                            </div>
+                        ))}
+                        <button
+                            className="category-chip category-chip--add"
+                            onClick={() => setShowAddCategory(true)}
+                        >
+                            <Plus size={16} />
+                            <span>Add</span>
                         </button>
                     </div>
                 </section>
@@ -237,6 +296,54 @@ export function SettingsPage() {
                             </button>
                             <button className="settings-modal-btn settings-modal-btn--warning" onClick={handleClearPayments}>
                                 Clear Payments
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Add Category Modal */}
+            {showAddCategory && (
+                <div className="settings-modal-overlay" onClick={() => setShowAddCategory(false)}>
+                    <div className="settings-modal" onClick={e => e.stopPropagation()}>
+                        <h3>Add Category</h3>
+                        <div className="add-category-form">
+                            <div className="emoji-picker">
+                                <label>Choose an emoji:</label>
+                                <div className="emoji-options">
+                                    {['📁', '🛒', '🍔', '🚗', '🏠', '💼', '🎉', '💰', '📱', '👕', '✈️', '🎓', '💊', '🎮', '🎁', '☕'].map(emoji => (
+                                        <button
+                                            key={emoji}
+                                            type="button"
+                                            className={`emoji-option ${newCategoryEmoji === emoji ? 'emoji-option--selected' : ''}`}
+                                            onClick={() => setNewCategoryEmoji(emoji)}
+                                        >
+                                            {emoji}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                            <div className="category-name-input">
+                                <label>Category name:</label>
+                                <input
+                                    type="text"
+                                    value={newCategoryLabel}
+                                    onChange={e => setNewCategoryLabel(e.target.value)}
+                                    placeholder="e.g. Groceries"
+                                    autoFocus
+                                />
+                            </div>
+                        </div>
+                        <div className="settings-modal-actions">
+                            <button className="settings-modal-btn settings-modal-btn--cancel" onClick={() => setShowAddCategory(false)}>
+                                Cancel
+                            </button>
+                            <button
+                                className="settings-modal-btn settings-modal-btn--confirm"
+                                onClick={handleAddCategory}
+                                disabled={!newCategoryLabel.trim()}
+                            >
+                                Add Category
                             </button>
                         </div>
                     </div>
