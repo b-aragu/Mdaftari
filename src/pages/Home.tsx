@@ -1569,16 +1569,20 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                             <span className="summary-stat-value">
                                 {formatMoney(
                                     filteredTransactions
-                                        .filter(tx => appMode === 'payments'
-                                            ? tx.parsedData.type !== 'received'
-                                            : tx.parsedData.type === 'received')
+                                        .filter(tx => appMode === 'overview'
+                                            ? true  // All transactions in overview
+                                            : appMode === 'payments'
+                                                ? tx.parsedData.type !== 'received'
+                                                : tx.parsedData.type === 'received')
                                         .reduce((sum, tx) => {
                                             const entry = ledgerEntries.find(e => e.transactionId === tx.id);
                                             return sum + (entry?.amountPaid || tx.parsedData.amount);
                                         }, 0)
                                 )}
                             </span>
-                            <span className="summary-stat-label">{appMode === 'payments' ? 'Paid Out' : 'Collected'}</span>
+                            <span className="summary-stat-label">
+                                {appMode === 'overview' ? 'Total Volume' : appMode === 'payments' ? 'Paid Out' : 'Collected'}
+                            </span>
                         </div>
                         <div className="summary-stat">
                             <span className="summary-stat-value summary-stat-value--highlight">
