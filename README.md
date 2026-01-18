@@ -123,6 +123,34 @@ Intelligent deduplication that recognizes:
 
 ---
 
+## 📸 App Screenshots
+
+### Overview Dashboard
+![Overview Dashboard showing Net Position, balance cards, and people list](pitch-materials/screenshots/01_overview_dashboard.png)
+*Overview mode displays your net financial position, with total received (Ksh 6,000), paid out (Ksh 200), and what others owe you.*
+
+### Collections Mode
+![Collections Mode showing received payments and outstanding balances](pitch-materials/screenshots/02_collections_mode.png)
+*Collections mode focuses on money owed TO you - track received payments and outstanding balances.*
+
+### Payments Mode
+![Payments Mode showing paid out amounts and what you still owe](pitch-materials/screenshots/03_payments_mode.png)
+*Payments mode tracks money you OWE - see Paid Out (Ksh 200) and You Still Owe (Ksh 300).*
+
+### Settings & Categories
+![Settings page showing category management with emoji icons](pitch-materials/screenshots/04_settings_categories.png)
+*Manage custom categories with emoji icons, export data, and access app settings.*
+
+### Reports
+![Reports page showing 6-month trend chart and completion rate](pitch-materials/screenshots/05_reports_page.png)
+*View financial reports with trend charts, completion rates, and per-person breakdowns.*
+
+### Record Transaction Result
+![Dashboard after recording a new transaction](pitch-materials/screenshots/06_record_payment_result.png)
+*After recording a Ksh 5,000 transaction - dashboard updates instantly showing new Net Position of +Ksh 5,500.*
+
+---
+
 ## 🛠️ Tech Stack
 
 ### Frontend
