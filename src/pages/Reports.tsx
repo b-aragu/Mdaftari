@@ -93,7 +93,7 @@ export function ReportsPage() {
         if (appMode === 'collections') {
             return tx.parsedData.type === 'received';
         } else if (appMode === 'payments') {
-            return ['sent', 'paybill', 'buyGoods'].includes(tx.parsedData.type);
+            return ['sent', 'paybill', 'buy_goods'].includes(tx.parsedData.type);
         }
         // Overview mode - show all
         return true;
@@ -108,7 +108,7 @@ export function ReportsPage() {
 
     // Overview mode: Calculate separate totals for Collections and Payments
     const collectionsTransactions = periodFilteredTx.filter(tx => tx.parsedData.type === 'received');
-    const paymentsTransactions = periodFilteredTx.filter(tx => ['sent', 'paybill', 'buyGoods'].includes(tx.parsedData.type));
+    const paymentsTransactions = periodFilteredTx.filter(tx => ['sent', 'paybill', 'buy_goods'].includes(tx.parsedData.type));
 
     const collectionsEntries = ledgerEntries.filter(e => collectionsTransactions.some(t => t.id === e.transactionId));
     const paymentsEntries = ledgerEntries.filter(e => paymentsTransactions.some(t => t.id === e.transactionId));

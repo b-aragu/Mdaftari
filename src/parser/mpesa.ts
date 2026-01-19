@@ -48,7 +48,8 @@ const PATTERNS = {
     isSent: /sent\s+to/i,
     isPaidTo: /paid\s+to/i,
     isPaybill: /(?:pay\s+bill|paybill|paid\s+to.*?paybill)/i,
-    isBuyGoods: /(?:buy\s+goods|till|paid\s+to.*?till)/i,
+    // Only match buy_goods if it has 'Till number' or 'Buy Goods' context, not just 'till' anywhere
+    isBuyGoods: /(?:buy\s+goods|till\s+number|paid\s+to.*?till\s+number)/i,
     isWithdraw: /(?:withdraw|withdrawn)/i,
     isDeposit: /(?:deposit|deposited)/i,
     isAirtime: /(?:airtime|bought.*?worth)/i,
@@ -110,7 +111,7 @@ function detectTransactionType(message: string): TransactionType {
     if (PATTERNS.isDeposit.test(message)) return 'deposit';
     if (PATTERNS.isAirtime.test(message)) return 'airtime';
     if (PATTERNS.isSent.test(message)) return 'sent';
-    if (PATTERNS.isPaidTo.test(message)) return 'sent'; // 'paid to' is also a sent transaction
+    if (PATTERNS.isPaidTo.test(message)) return 'sent'; // 'paid to' without paybill/till context = person-to-person
 
     return 'received'; // Default fallback
 }
@@ -140,13 +141,14 @@ function extractCounterparty(message: string, type: TransactionType): Counterpar
         }
     }
 
-    // Extract name
+    // Extract name based on transaction type
     if (type === 'received') {
         const fromMatch = message.match(PATTERNS.receivedFrom);
         if (fromMatch?.[1]) {
             counterparty.name = fromMatch[1].trim();
         }
-    } else if (type === 'sent') {
+    } else if (type === 'sent' || type === 'paybill' || type === 'buy_goods') {
+        // All outgoing payment types - try to extract recipient name
         // Try 'sent to' pattern first
         let toMatch = message.match(PATTERNS.sentTo);
         if (toMatch?.[1]) {
