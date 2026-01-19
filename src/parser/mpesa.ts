@@ -19,6 +19,8 @@ const PATTERNS = {
     amountReceived: /received\s+Ksh?([\d,]+(?:\.\d{2})?)/i,
     amountSent: /sent\s+to\s+.+?\s+Ksh?([\d,]+(?:\.\d{2})?)/i,
     amountPaid: /paid\s+to\s+.+?\s+Ksh?([\d,]+(?:\.\d{2})?)/i,
+    // NEW: Handle format "Ksh120.00 paid to NAME"
+    amountPaidBefore: /Ksh?([\d,]+(?:\.\d{2})?)\s+paid\s+to/i,
     amountWithdrawn: /(?:withdraw|withdrawn)\s+Ksh?([\d,]+(?:\.\d{2})?)/i,
     amountGeneric: /Ksh?([\d,]+(?:\.\d{2})?)/i,
 
@@ -34,6 +36,8 @@ const PATTERNS = {
     // Counterparty patterns
     receivedFrom: /from\s+([A-Za-z0-9\s\-\.]+?)(?:\s+on\s+|\s+New)/i,
     sentTo: /sent\s+to\s+([A-Za-z0-9\s\-\.]+?)\s+(?:\d+\s+)?(?:for|on|Ksh)/i,
+    // NEW: Handle "paid to NAME." pattern
+    paidTo: /paid\s+to\s+([A-Za-z0-9\s\-\.]+?)\.?\s+(?:on|for|New|$)/i,
     phoneNumber: /(?:0|\+?254)(\d{9})/,
     paybillNumber: /(?:Paybill|Business)\s+(?:number\s+)?(\d{5,7})/i,
     tillNumber: /(?:Till|Buy\s+Goods)\s+(?:number\s+)?(\d{5,8})/i,
@@ -42,6 +46,7 @@ const PATTERNS = {
     // Type detection
     isReceived: /you\s+have\s+received/i,
     isSent: /sent\s+to/i,
+    isPaidTo: /paid\s+to/i,
     isPaybill: /(?:pay\s+bill|paybill|paid\s+to.*?paybill)/i,
     isBuyGoods: /(?:buy\s+goods|till|paid\s+to.*?till)/i,
     isWithdraw: /(?:withdraw|withdrawn)/i,
@@ -105,6 +110,7 @@ function detectTransactionType(message: string): TransactionType {
     if (PATTERNS.isDeposit.test(message)) return 'deposit';
     if (PATTERNS.isAirtime.test(message)) return 'airtime';
     if (PATTERNS.isSent.test(message)) return 'sent';
+    if (PATTERNS.isPaidTo.test(message)) return 'sent'; // 'paid to' is also a sent transaction
 
     return 'received'; // Default fallback
 }
@@ -141,9 +147,16 @@ function extractCounterparty(message: string, type: TransactionType): Counterpar
             counterparty.name = fromMatch[1].trim();
         }
     } else if (type === 'sent') {
-        const toMatch = message.match(PATTERNS.sentTo);
+        // Try 'sent to' pattern first
+        let toMatch = message.match(PATTERNS.sentTo);
         if (toMatch?.[1]) {
             counterparty.name = toMatch[1].trim();
+        } else {
+            // Try 'paid to' pattern
+            toMatch = message.match(PATTERNS.paidTo);
+            if (toMatch?.[1]) {
+                counterparty.name = toMatch[1].trim();
+            }
         }
     }
 
@@ -161,11 +174,21 @@ function extractAmount(message: string, type: TransactionType): number {
             match = message.match(PATTERNS.amountReceived);
             break;
         case 'sent':
-            match = message.match(PATTERNS.amountSent);
+            // Try 'Ksh X paid to' format first (more specific)
+            match = message.match(PATTERNS.amountPaidBefore);
+            if (!match) {
+                match = message.match(PATTERNS.amountSent);
+            }
+            if (!match) {
+                match = message.match(PATTERNS.amountPaid);
+            }
             break;
         case 'paybill':
         case 'buy_goods':
-            match = message.match(PATTERNS.amountPaid);
+            match = message.match(PATTERNS.amountPaidBefore);
+            if (!match) {
+                match = message.match(PATTERNS.amountPaid);
+            }
             break;
         case 'withdraw':
             match = message.match(PATTERNS.amountWithdrawn);
