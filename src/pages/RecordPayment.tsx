@@ -45,11 +45,9 @@ export function RecordPaymentPage({ onBack, onSuccess, mode }: RecordPaymentProp
     // Check for shared message from Web Share Target API
     useEffect(() => {
         const sharedData = sessionStorage.getItem('shared_mpesa_message');
-        console.log('[RecordPayment] sharedData from sessionStorage:', sharedData);
         if (sharedData) {
             try {
                 const { raw, parsed } = JSON.parse(sharedData);
-                console.log('[RecordPayment] Parsed data:', { raw, parsed });
 
                 // Pre-fill the form with parsed data
                 setMessage(raw);
@@ -57,8 +55,6 @@ export function RecordPaymentPage({ onBack, onSuccess, mode }: RecordPaymentProp
                 setExpectedAmount(parsed.amount.toString());
                 setFromTo(parsed.name || parsed.phone || '');
                 setTransactionCode(parsed.transactionCode || '');
-
-                console.log('[RecordPayment] Setting fromTo to:', parsed.name || parsed.phone || '');
 
                 // Create a mock parse result for the confirm flow
                 setParseResult({

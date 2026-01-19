@@ -38,17 +38,8 @@ export function ShareHandler() {
             setStatus('success');
             const tx = result.transaction;
 
-            // DEBUG: Log what was parsed
-            console.log('[ShareHandler] Parsed transaction:', {
-                type: tx.type,
-                amount: tx.amount,
-                counterparty: tx.counterparty,
-                transactionCode: tx.transactionCode
-            });
-
             // Determine the correct mode based on transaction type
             const inferredMode = tx.type === 'received' ? 'collections' : 'payments';
-            console.log('[ShareHandler] Inferred mode:', inferredMode);
 
             // Store parsed data in sessionStorage for the record page to pick up
             const dataToStore = {
@@ -62,7 +53,6 @@ export function ShareHandler() {
                     transactionCode: tx.transactionCode
                 }
             };
-            console.log('[ShareHandler] Storing in sessionStorage:', dataToStore);
             sessionStorage.setItem('shared_mpesa_message', JSON.stringify(dataToStore));
 
             // Redirect to record payment after short delay
