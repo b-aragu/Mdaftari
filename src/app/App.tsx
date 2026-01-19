@@ -48,7 +48,19 @@ function MainApp() {
         }
     }, [location]);
 
-    // Check if user has completed onboarding
+    // Listen for background SMS notifications
+    useEffect(() => {
+        const handleSmsReceived = () => {
+            // New SMS detected, switch to import view
+            // The view itself will scan inbox and find the latest message
+            setView('sms-import');
+        };
+
+        window.addEventListener('smsReceived', handleSmsReceived);
+        return () => window.removeEventListener('smsReceived', handleSmsReceived);
+    }, []);
+
+    // Also checking for Onboarding status
     useEffect(() => {
         const hasCompletedOnboarding = localStorage.getItem(ONBOARDING_KEY);
         if (!hasCompletedOnboarding) {
