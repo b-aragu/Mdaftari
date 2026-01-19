@@ -312,34 +312,7 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
             hour12: true,
         }).format(date);
     };
-    // Compute monthly breakdown for selected person
-    const monthlyBreakdown = selectedPerson ? (() => {
-        const months: { [key: string]: { month: string; received: number; owed: number; balance: number } } = {};
-        let runningBalance = 0;
 
-        // Sort transactions oldest first for cumulative calculation
-        const sortedTxs = [...selectedPerson.transactions].sort(
-            (a, b) => a.tx.parsedData.dateTime.getTime() - b.tx.parsedData.dateTime.getTime()
-        );
-
-        sortedTxs.forEach(({ tx, entry }) => {
-            const date = tx.parsedData.dateTime;
-            const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-            const monthLabel = new Intl.DateTimeFormat('en-KE', { month: 'short', year: 'numeric' }).format(date);
-
-            if (!months[monthKey]) {
-                months[monthKey] = { month: monthLabel, received: 0, owed: 0, balance: 0 };
-            }
-
-            const amount = entry?.amountPaid || tx.parsedData.amount;
-            months[monthKey].received += amount;
-            months[monthKey].owed += entry?.amountOwed || 0;
-            runningBalance += amount;
-            months[monthKey].balance = runningBalance;
-        });
-
-        return Object.values(months);
-    })() : [];
 
     // Handler functions for edit/delete
     const handleStartEdit = () => {
@@ -871,11 +844,14 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                         // Create smooth path
                         const createPath = (pts: typeof points) => {
                             if (pts.length === 0) return '';
-                            if (pts.length === 1) return `M ${pts[0].x} ${pts[0].y}`;
-                            let path = `M ${pts[0].x} ${pts[0].y}`;
+                            const first = pts[0];
+                            if (!first) return '';
+                            if (pts.length === 1) return `M ${first.x} ${first.y}`;
+                            let path = `M ${first.x} ${first.y}`;
                             for (let i = 1; i < pts.length; i++) {
                                 const prev = pts[i - 1];
                                 const curr = pts[i];
+                                if (!prev || !curr) continue;
                                 const midX = (prev.x + curr.x) / 2;
                                 path += ` C ${midX} ${prev.y}, ${midX} ${curr.y}, ${curr.x} ${curr.y}`;
                             }
