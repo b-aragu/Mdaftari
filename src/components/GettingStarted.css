@@ -179,6 +179,34 @@
     transition: all 0.2s ease;
 }
 
+.feedback-section {
+    margin-top: 32px;
+    text-align: center;
+    padding-top: 16px;
+    border-top: 1px dashed rgba(0, 0, 0, 0.1);
+    width: 100%;
+}
+
+.feedback-hint {
+    font-size: 13px;
+    color: var(--text-tertiary);
+    margin-bottom: 6px;
+}
+
+.feedback-link {
+    font-size: 14px;
+    color: var(--color-primary);
+    text-decoration: none;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.feedback-link:hover {
+    text-decoration: underline;
+}
+
 .getting-started__secondary {
     margin-top: 2rem;
     font-size: 0.9rem;
@@ -196,20 +224,4 @@
 .getting-started__secondary:hover {
     color: #4f46e5;
     background-color: #f3f4f6;
-}
-
-.getting-started__feedback {
-    margin-top: 1.5rem;
-    font-size: 0.8rem;
-    color: #9ca3af;
-}
-
-.getting-started__feedback a {
-    color: inherit;
-    text-decoration: underline;
-    transition: color 0.2s;
-}
-
-.getting-started__feedback a:hover {
-    color: #6b7280;
 }

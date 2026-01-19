@@ -65,18 +65,24 @@ export function GettingStarted({ onImportSMS, onImportStatement, onRecordPayment
                     </div>
                     <ChevronRight size={20} className="getting-started__btn-arrow" />
                 </button>
+            </div>
 
+            {/* Feedback Section */}
+            <div className="feedback-section">
+                <p className="feedback-hint">Tell us what you think!</p>
+                <a
+                    href="https://form.jotform.com/260185803266054"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="feedback-link"
+                >
+                    Take 1-minute Survey
+                </a>
             </div>
 
             <button className="getting-started__secondary" onClick={onRecordPayment}>
                 Or record a manual payment
             </button>
-
-            <div className="getting-started__feedback">
-                <a href="https://form.jotform.com/260185803266054" target="_blank" rel="noopener noreferrer">
-                    Have feedback? Let us know
-                </a>
-            </div>
         </div>
     );
 }

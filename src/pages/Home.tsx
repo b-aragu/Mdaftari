@@ -1940,18 +1940,6 @@ export function HomePage({ onRecordPayment, onImportSMS, onImportStatement }: Ho
                     </div>
                 )}
             </section>
-
-            {/* Feedback Footer */}
-            <div style={{ textAlign: 'center', padding: '1rem 0 2rem', opacity: 0.6 }}>
-                <a
-                    href="https://form.jotform.com/260185803266054"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ color: 'inherit', fontSize: '0.8rem', textDecoration: 'underline' }}
-                >
-                    Have feedback?
-                </a>
-            </div>
         </div>
     );
 }
