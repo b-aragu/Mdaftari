@@ -39,7 +39,9 @@ export function LedgerView({
                 <div className="ledger-empty">
                     <div className="ledger-empty__icon">📒</div>
                     <p className="ledger-empty__text">No transactions yet</p>
-                    <p className="ledger-empty__hint">Record your first payment to see it here</p>
+                    <p className="ledger-empty__hint">
+                        On mobile? Share M-Pesa messages directly from your Messages app!
+                    </p>
                 </div>
             </div>
         );

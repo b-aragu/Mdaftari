@@ -443,6 +443,10 @@ export function ReportsPage() {
                             Import your M-Pesa statement or record transactions to see reports here
                         </p>
                         <div className="reports-empty-suggestions">
+                            <div className="empty-suggestion empty-suggestion--highlight">
+                                <span className="empty-suggestion-icon">📤</span>
+                                <span className="empty-suggestion-text">Share from Messages (Mobile)</span>
+                            </div>
                             <div className="empty-suggestion">
                                 <span className="empty-suggestion-icon">📄</span>
                                 <span className="empty-suggestion-text">Import PDF Statement</span>

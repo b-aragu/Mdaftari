@@ -1716,6 +1716,13 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
 
                         {/* Feature Slides */}
                         <div className="empty-features">
+                            <div className="feature-slide feature-slide--highlight">
+                                <div className="feature-slide-icon">📤</div>
+                                <div className="feature-slide-content">
+                                    <h4>Share from Messages</h4>
+                                    <p>On mobile, share M-Pesa messages directly to Mdaftari!</p>
+                                </div>
+                            </div>
                             <div className="feature-slide">
                                 <div className="feature-slide-icon">📱</div>
                                 <div className="feature-slide-content">

@@ -2232,6 +2232,40 @@
     line-height: 1.4;
 }
 
+/* Highlighted feature (Share from Messages) */
+.feature-slide--highlight {
+    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+    border-color: #86efac;
+    position: relative;
+    overflow: hidden;
+}
+
+.feature-slide--highlight::before {
+    content: '✨ New';
+    position: absolute;
+    top: 4px;
+    right: 8px;
+    font-size: 9px;
+    font-weight: 600;
+    color: #16a34a;
+    background: rgba(255, 255, 255, 0.8);
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.feature-slide--highlight .feature-slide-icon {
+    background: #16a34a;
+    color: white;
+}
+
+/* Highlighted empty suggestion */
+.empty-suggestion--highlight {
+    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+    border: 1px solid #86efac;
+    border-radius: 8px;
+    padding: 8px 12px;
+}
+
 /* Skeleton Loading State */
 .skeleton-loading-state {
     display: flex;
