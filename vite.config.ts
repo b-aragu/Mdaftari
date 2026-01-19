@@ -30,7 +30,17 @@ export default defineConfig({
                         type: 'image/png',
                         purpose: 'any maskable'
                     }
-                ]
+                ],
+                // Web Share Target API - allows sharing M-Pesa messages to app
+                share_target: {
+                    action: '/app/share',
+                    method: 'GET',
+                    params: {
+                        title: 'title',
+                        text: 'text',
+                        url: 'url'
+                    }
+                }
             },
             workbox: {
                 globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],

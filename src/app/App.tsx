@@ -6,7 +6,7 @@
 import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Navigation } from '../components/Layout';
-import { LandingPage, HomePage, RecordPaymentPage, ReportsPage, SettingsPage } from '../pages';
+import { LandingPage, HomePage, RecordPaymentPage, ReportsPage, SettingsPage, ShareHandler } from '../pages';
 import { Onboarding } from '../components/Onboarding';
 import { ToastProvider, useToast } from '../context';
 
@@ -94,6 +94,7 @@ function AppContent() {
     return (
         <Routes>
             <Route path="/" element={<LandingPage />} />
+            <Route path="/app/share" element={<ShareHandler />} />
             <Route path="/app/*" element={<MainApp />} />
         </Routes>
     );
