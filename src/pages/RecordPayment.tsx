@@ -2,7 +2,7 @@
  * Record Payment Page
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { ArrowLeft, Clipboard, Edit3, Check, FileText } from 'lucide-react';
 import { parseMessage, type ParseResult, type ParsedTransaction } from '../parser';
 import { saveTransaction, createLedgerEntry } from '../storage';
@@ -41,6 +41,50 @@ export function RecordPaymentPage({ onBack, onSuccess, mode }: RecordPaymentProp
     const [isSaving, setIsSaving] = useState(false);
     const [category, setCategory] = useState('general');
     const [isRecurring, setIsRecurring] = useState(false);
+
+    // Check for shared message from Web Share Target API
+    useEffect(() => {
+        const sharedData = sessionStorage.getItem('shared_mpesa_message');
+        if (sharedData) {
+            try {
+                const { raw, parsed } = JSON.parse(sharedData);
+
+                // Pre-fill the form with parsed data
+                setMessage(raw);
+                setAmount(parsed.amount.toString());
+                setExpectedAmount(parsed.amount.toString());
+                setFromTo(parsed.name || parsed.phone || '');
+                setTransactionCode(parsed.transactionCode || '');
+
+                // Create a mock parse result for the confirm flow
+                setParseResult({
+                    success: true,
+                    transaction: {
+                        transactionCode: parsed.transactionCode,
+                        amount: parsed.amount,
+                        currency: 'KES',
+                        type: parsed.type || 'received',
+                        counterparty: {
+                            name: parsed.name,
+                            phone: parsed.phone
+                        },
+                        dateTime: new Date(parsed.dateTime),
+                        rawMessage: raw,
+                        source: 'mpesa',
+                        confidence: 1
+                    }
+                });
+
+                // Go directly to confirm step
+                setStep('confirm');
+
+                // Clear the shared data so it doesn't persist
+                sessionStorage.removeItem('shared_mpesa_message');
+            } catch (err) {
+                console.error('Error parsing shared data:', err);
+            }
+        }
+    }, []);
 
     const handlePaste = useCallback(async () => {
         try {

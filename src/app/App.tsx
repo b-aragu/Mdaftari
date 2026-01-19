@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { Navigation } from '../components/Layout';
 import { LandingPage, HomePage, RecordPaymentPage, ReportsPage, SettingsPage, ShareHandler } from '../pages';
 import { Onboarding } from '../components/Onboarding';
@@ -16,6 +16,7 @@ type Tab = 'home' | 'reports' | 'settings';
 type View = 'main' | 'record';
 
 function MainApp() {
+    const location = useLocation();
     const [activeTab, setActiveTab] = useState<Tab>('home');
     const [view, setView] = useState<View>('main');
     const [showOnboarding, setShowOnboarding] = useState(false);
@@ -26,6 +27,16 @@ function MainApp() {
         return 'collections';
     });
     const { showToast } = useToast();
+
+    // Check if navigated from share handler - auto-open Record Payment
+    useEffect(() => {
+        const state = location.state as { openRecord?: boolean; fromShare?: boolean } | null;
+        if (state?.openRecord && state?.fromShare) {
+            setView('record');
+            // Clear the state so refreshing doesn't re-trigger
+            window.history.replaceState({}, document.title);
+        }
+    }, [location]);
 
     // Check if user has completed onboarding
     useEffect(() => {
