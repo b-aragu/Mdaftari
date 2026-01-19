@@ -38,6 +38,9 @@ export function ShareHandler() {
             setStatus('success');
             const tx = result.transaction;
 
+            // Determine the correct mode based on transaction type
+            const inferredMode = tx.type === 'received' ? 'collections' : 'payments';
+
             // Store parsed data in sessionStorage for the record page to pick up
             sessionStorage.setItem('shared_mpesa_message', JSON.stringify({
                 raw: sharedText,
@@ -52,10 +55,11 @@ export function ShareHandler() {
             }));
 
             // Redirect to record payment after short delay
+            // Pass the inferred mode so the UI shows correct labels
             setTimeout(() => {
                 navigate('/app', {
                     replace: true,
-                    state: { openRecord: true, fromShare: true }
+                    state: { openRecord: true, fromShare: true, shareMode: inferredMode }
                 });
             }, 1500);
         } else {

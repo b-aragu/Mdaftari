@@ -30,8 +30,18 @@ function MainApp() {
 
     // Check if navigated from share handler - auto-open Record Payment
     useEffect(() => {
-        const state = location.state as { openRecord?: boolean; fromShare?: boolean } | null;
+        const state = location.state as {
+            openRecord?: boolean;
+            fromShare?: boolean;
+            shareMode?: 'collections' | 'payments'
+        } | null;
+
         if (state?.openRecord && state?.fromShare) {
+            // Switch to the correct mode based on transaction type
+            if (state.shareMode) {
+                setAppMode(state.shareMode);
+                localStorage.setItem('mdaftari_app_mode', state.shareMode);
+            }
             setView('record');
             // Clear the state so refreshing doesn't re-trigger
             window.history.replaceState({}, document.title);

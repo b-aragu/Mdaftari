@@ -36,8 +36,8 @@ const PATTERNS = {
     // Counterparty patterns
     receivedFrom: /from\s+([A-Za-z0-9\s\-\.]+?)(?:\s+on\s+|\s+New)/i,
     sentTo: /sent\s+to\s+([A-Za-z0-9\s\-\.]+?)\s+(?:\d+\s+)?(?:for|on|Ksh)/i,
-    // NEW: Handle "paid to NAME." pattern
-    paidTo: /paid\s+to\s+([A-Za-z0-9\s\-\.]+?)\.?\s+(?:on|for|New|$)/i,
+    // NEW: Handle "paid to NAME." pattern - capture name before period or 'on'
+    paidTo: /paid\s+to\s+([A-Za-z0-9\s\-\.]+?)(?:\.|,)?\s+(?:on|for|New|at)/i,
     phoneNumber: /(?:0|\+?254)(\d{9})/,
     paybillNumber: /(?:Paybill|Business)\s+(?:number\s+)?(\d{5,7})/i,
     tillNumber: /(?:Till|Buy\s+Goods)\s+(?:number\s+)?(\d{5,8})/i,
