@@ -150,6 +150,24 @@
     transform: translateY(-1px);
 }
 
+.landing-nav__right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.nav-link {
+    color: var(--color-text-secondary);
+    text-decoration: none;
+    font-size: 0.9375rem;
+    font-weight: 500;
+    transition: color var(--transition-fast);
+}
+
+.nav-link:hover {
+    color: var(--color-primary);
+}
+
 /* Hero Section */
 .hero {
     min-height: 100vh;
@@ -762,6 +780,9 @@
 }
 
 .footer-links {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
     margin: 20px 0;
 }
 
@@ -769,9 +790,11 @@
     color: var(--color-accent);
     text-decoration: none;
     font-weight: 600;
+    transition: color var(--transition-fast);
 }
 
 .footer-links a:hover {
+    color: var(--color-accent-light);
     text-decoration: underline;
 }
 

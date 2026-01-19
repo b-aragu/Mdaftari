@@ -89,9 +89,19 @@ export function LandingPage() {
                     <img src="/logo.png" alt="Mdaftari" className="logo-img" />
                     <span className="logo-text">Mdaftari</span>
                 </div>
-                <button className="nav-cta" onClick={handleOpenApp}>
-                    Open App
-                </button>
+                <div className="landing-nav__right">
+                    <a
+                        href="https://form.jotform.com/260185803266054"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="nav-link"
+                    >
+                        Feedback
+                    </a>
+                    <button className="nav-cta" onClick={handleOpenApp}>
+                        Open App
+                    </button>
+                </div>
             </nav>
 
             {/* Hero Section */}
@@ -518,6 +528,13 @@ export function LandingPage() {
                     </div>
 
                     <div className="footer-links">
+                        <a
+                            href="https://form.jotform.com/260185803266054"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                        >
+                            Feedback
+                        </a>
                         <a
                             href="https://github.com/b-aragu/Mdaftari"
                             target="_blank"
