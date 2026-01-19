@@ -3,12 +3,13 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { Plus, ArrowDownLeft, ArrowUpRight, Calendar, ChevronRight, Users, ArrowLeft, Trash2, Edit3, Search, X, Wallet, CreditCard, LayoutGrid, SlidersHorizontal } from 'lucide-react';
+import { Plus, ArrowDownLeft, ArrowUpRight, Calendar, ChevronRight, Users, ArrowLeft, Trash2, Edit3, Search, X, Wallet, CreditCard, LayoutGrid, SlidersHorizontal, MessageSquarePlus } from 'lucide-react';
 import { getTransactionsByUser, getLedgerEntriesByTransaction, updateTransaction, deleteTransaction, isSamePerson, getCanonicalName } from '../storage';
 import { useCountUp } from '../hooks';
 import { SkeletonPersonCard } from '../components/ui';
 import { GettingStarted } from '../components/GettingStarted';
 import { getCategoryById } from '../constants/categories';
+import { Capacitor } from '@capacitor/core';
 import type { Transaction, LedgerEntry } from '../ledger/types';
 import './Home.css';
 
@@ -80,7 +81,6 @@ export function HomePage({ onRecordPayment, onImportSMS, onImportStatement }: Ho
         try {
             setIsLoading(true);
             const txs = await getTransactionsByUser(TEMP_USER_ID);
-            console.log('Home: Loaded transactions:', txs.length, txs);
             setTransactions(txs);
 
             // Get ledger entries for each transaction
@@ -89,7 +89,6 @@ export function HomePage({ onRecordPayment, onImportSMS, onImportStatement }: Ho
                 const entries = await getLedgerEntriesByTransaction(tx.id);
                 allEntries.push(...entries);
             }
-            console.log('Home: Loaded ledger entries:', allEntries.length, allEntries);
             setLedgerEntries(allEntries);
         } catch (err) {
             console.error('Failed to load data:', err);
@@ -1395,6 +1394,20 @@ export function HomePage({ onRecordPayment, onImportSMS, onImportStatement }: Ho
                     <h1 className="home-logo">Mdaftari</h1>
                     <p className="home-tagline">Track <span className="highlight">Every Shilling</span></p>
                 </div>
+                {/* Web-only Feedback Button */}
+                {Capacitor.getPlatform() === 'web' && (
+                    <a
+                        href="https://form.jotform.com/260185803266054"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="header-import-btn"
+                        style={{ marginRight: '8px', color: '#6b7280', borderColor: '#e5e7eb' }}
+                        title="Give Feedback"
+                    >
+                        <MessageSquarePlus size={18} />
+                        <span>Feedback</span>
+                    </a>
+                )}
                 {/* Persistent Import Button */}
                 <button
                     className="header-import-btn"
