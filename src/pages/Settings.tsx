@@ -3,13 +3,17 @@
  */
 
 import { useState, useEffect } from 'react';
-import { Trash2, Download, Shield, ChevronRight, HelpCircle, Tags, Plus, X } from 'lucide-react';
+import { Trash2, Download, Shield, ChevronRight, HelpCircle, Tags, Plus, X, MessageSquare } from 'lucide-react';
 import { clearAllData, clearDataByMode, exportAllData, bulkRecategorizeTransactions, getAllCategories, addCustomCategory, deleteCustomCategory } from '../storage';
 import { suggestCategory } from '../constants/autoCategorize';
 import type { Category } from '../constants/categories';
 import './Settings.css';
 
-export function SettingsPage() {
+interface SettingsPageProps {
+    onImportSMS?: () => void;
+}
+
+export function SettingsPage({ onImportSMS }: SettingsPageProps) {
     const [showConfirmDelete, setShowConfirmDelete] = useState(false);
     const [showConfirmCollections, setShowConfirmCollections] = useState(false);
     const [showConfirmPayments, setShowConfirmPayments] = useState(false);
@@ -111,6 +115,26 @@ export function SettingsPage() {
             </header>
 
             <div className="settings-content">
+
+                {/* Import Section */}
+                <section className="settings-section">
+                    <h2 className="settings-section-title">Import</h2>
+
+                    <div className="settings-list">
+                        {onImportSMS && (
+                            <button className="settings-item settings-item--primary" onClick={onImportSMS}>
+                                <div className="settings-item-icon settings-item-icon--primary">
+                                    <MessageSquare size={20} />
+                                </div>
+                                <div className="settings-item-content">
+                                    <span className="settings-item-label">Import from SMS</span>
+                                    <span className="settings-item-desc">Scan inbox for M-Pesa messages (Android)</span>
+                                </div>
+                                <ChevronRight size={18} className="settings-item-arrow" />
+                            </button>
+                        )}
+                    </div>
+                </section>
 
                 {/* Help Section */}
                 <section className="settings-section">

@@ -6,14 +6,14 @@
 import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { Navigation } from '../components/Layout';
-import { LandingPage, HomePage, RecordPaymentPage, ReportsPage, SettingsPage, ShareHandler } from '../pages';
+import { LandingPage, HomePage, RecordPaymentPage, ReportsPage, SettingsPage, ShareHandler, ImportSMS } from '../pages';
 import { Onboarding } from '../components/Onboarding';
 import { ToastProvider, useToast } from '../context';
 
 const ONBOARDING_KEY = 'mdaftari_onboarding_complete';
 
 type Tab = 'home' | 'reports' | 'settings';
-type View = 'main' | 'record';
+type View = 'main' | 'record' | 'sms-import';
 
 function MainApp() {
     const location = useLocation();
@@ -98,13 +98,21 @@ function MainApp() {
         return <RecordPaymentPage onBack={handleBack} onSuccess={handleSuccess} mode={appMode} />;
     }
 
+    if (view === 'sms-import') {
+        return <ImportSMS onBack={handleBack} onSuccess={handleSuccess} />;
+    }
+
+    const handleImportSMS = () => {
+        setView('sms-import');
+    };
+
     return (
         <div className="app">
             {showOnboarding && <Onboarding onComplete={handleOnboardingComplete} />}
 
             {activeTab === 'home' && <HomePage onRecordPayment={handleRecordPayment} />}
             {activeTab === 'reports' && <ReportsPage />}
-            {activeTab === 'settings' && <SettingsPage />}
+            {activeTab === 'settings' && <SettingsPage onImportSMS={handleImportSMS} />}
 
             <Navigation activeTab={activeTab} onTabChange={setActiveTab} />
         </div>

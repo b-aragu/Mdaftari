@@ -86,6 +86,19 @@
     border-color: #d97706;
 }
 
+.settings-item--primary {
+    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+}
+
+.settings-item--primary:hover {
+    background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+}
+
+.settings-item-icon--primary {
+    background: var(--color-primary);
+    color: white;
+}
+
 .settings-item-icon {
     width: 36px;
     height: 36px;

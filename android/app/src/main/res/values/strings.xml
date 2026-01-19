@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Mdaftari</string>
+    <string name="title_activity_main">Mdaftari</string>
+    <string name="package_name">ke.mdaftari.app</string>
+    <string name="custom_url_scheme">ke.mdaftari.app</string>
+</resources>
