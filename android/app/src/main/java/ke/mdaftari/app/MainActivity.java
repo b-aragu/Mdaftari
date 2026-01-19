@@ -19,21 +19,36 @@ public class MainActivity extends BridgeActivity {
     }
 
     private void checkIntent(Intent intent) {
-        if (intent != null && intent.hasExtra("sms_body")) {
-            String smsBody = intent.getStringExtra("sms_body");
+        if (intent == null)
+            return;
 
-            // Clean the intent to avoid re-triggering on rotate/resume
-            intent.removeExtra("sms_body");
+        String action = intent.getAction();
+        String type = intent.getType();
+        String messageBody = null;
 
+        // Handle native notification click
+        if (intent.hasExtra("sms_body")) {
+            messageBody = intent.getStringExtra("sms_body");
+            intent.removeExtra("sms_body"); // Clean up
+        }
+        // Handle "Share" from other apps
+        else if (Intent.ACTION_SEND.equals(action) && type != null && "text/plain".equals(type)) {
+            messageBody = intent.getStringExtra(Intent.EXTRA_TEXT);
+        }
+
+        if (messageBody != null) {
             final JSObject ret = new JSObject();
-            ret.put("body", smsBody);
+            ret.put("body", messageBody);
 
-            // We need to wait for bridge to be ready if called from onCreate
+            // Persist for React to pick up on resume/start
+            getSharedPreferences("CapacitorStorage", MODE_PRIVATE)
+                    .edit()
+                    .putString("pending_sms_body", messageBody)
+                    .apply();
+
+            // Trigger event if app is already running
             if (bridge != null) {
                 bridge.triggerJSEvent("smsReceived", "window", ret.toString());
-            } else {
-                // Should not happen often if super.onCreate sets it up, but strictly speaking
-                // we might need to queue it. For now, we rely on standard lifecycle.
             }
         }
     }

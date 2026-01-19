@@ -17,7 +17,8 @@ const PATTERNS = {
 
     // Amount patterns
     amountReceived: /received\s+Ksh?([\d,]+(?:\.\d{2})?)/i,
-    amountSent: /sent\s+to\s+.+?\s+Ksh?([\d,]+(?:\.\d{2})?)/i,
+    // FIX: M-Pesa format is "Ksh733.88 sent to NAME" not "sent to NAME Ksh733.88"
+    amountSent: /Ksh?([\d,]+(?:\.\d{2})?)\s+sent\s+to/i,
     amountPaid: /paid\s+to\s+.+?\s+Ksh?([\d,]+(?:\.\d{2})?)/i,
     // NEW: Handle format "Ksh120.00 paid to NAME"
     amountPaidBefore: /Ksh?([\d,]+(?:\.\d{2})?)\s+paid\s+to/i,

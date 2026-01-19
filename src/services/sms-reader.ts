@@ -67,6 +67,37 @@ export async function requestSMSPermission(): Promise<boolean> {
 }
 
 /**
+ * Open app settings so user can enable SMS permission manually
+ * Uses Android's native intent to open app details page
+ */
+import { NativeSettings, AndroidSettings, IOSSettings } from 'capacitor-native-settings';
+
+/**
+ * Open app settings so user can enable SMS permission manually
+ * Uses capacitor-native-settings to open the specific app details page
+ */
+export async function openAppSettings(): Promise<void> {
+    if (!isSMSAvailable()) {
+        return;
+    }
+
+    try {
+        await NativeSettings.open({
+            optionAndroid: AndroidSettings.ApplicationDetails,
+            optionIOS: IOSSettings.App
+        });
+    } catch (error) {
+        console.error('Error opening settings:', error);
+        // Fallback to permission request
+        try {
+            await MessageReader.requestPermissions();
+        } catch (e) {
+            // Ignored
+        }
+    }
+}
+
+/**
  * Get SMS messages from inbox
  * @param limit Maximum number of messages to fetch
  */

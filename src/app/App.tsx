@@ -6,14 +6,18 @@
 import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { Navigation } from '../components/Layout';
-import { LandingPage, HomePage, RecordPaymentPage, ReportsPage, SettingsPage, ShareHandler, ImportSMS } from '../pages';
+import { HomePage, RecordPaymentPage, ReportsPage, SettingsPage, ShareHandler, ImportSMS } from '../pages';
 import { Onboarding } from '../components/Onboarding';
 import { ToastProvider, useToast } from '../context';
+import { useSMSListener } from '../hooks/useSMSListener';
+import { MessageSquare } from 'lucide-react';
 
 const ONBOARDING_KEY = 'mdaftari_onboarding_complete';
 
+import { StatementImport } from '../components/StatementImport/StatementImport';
+
 type Tab = 'home' | 'reports' | 'settings';
-type View = 'main' | 'record' | 'sms-import';
+type View = 'main' | 'record' | 'sms-import' | 'statement-import';
 
 function MainApp() {
     const location = useLocation();
@@ -27,6 +31,7 @@ function MainApp() {
         return 'collections';
     });
     const { showToast } = useToast();
+    const { latestTransaction, latestRawMessage, clearTransaction } = useSMSListener();
 
     // Check if navigated from share handler - auto-open Record Payment
     useEffect(() => {
@@ -48,25 +53,22 @@ function MainApp() {
         }
     }, [location]);
 
-    // Listen for background SMS notifications
-    useEffect(() => {
-        const handleSmsReceived = () => {
-            // New SMS detected, switch to import view
-            // The view itself will scan inbox and find the latest message
-            setView('sms-import');
-        };
 
-        window.addEventListener('smsReceived', handleSmsReceived);
-        return () => window.removeEventListener('smsReceived', handleSmsReceived);
-    }, []);
 
-    // Also checking for Onboarding status
+    // Check for Onboarding status
     useEffect(() => {
         const hasCompletedOnboarding = localStorage.getItem(ONBOARDING_KEY);
         if (!hasCompletedOnboarding) {
             setShowOnboarding(true);
         }
     }, []);
+
+    // Auto-navigate to record page when SMS/Transaction arrives
+    useEffect(() => {
+        if (latestTransaction || latestRawMessage) {
+            setView('record');
+        }
+    }, [latestTransaction, latestRawMessage]);
 
     // Sync appMode from localStorage (in case it changes in Home/Reports)
     useEffect(() => {
@@ -95,6 +97,7 @@ function MainApp() {
     };
 
     const handleBack = () => {
+        clearTransaction();
         setView('main');
     };
 
@@ -106,35 +109,102 @@ function MainApp() {
         showToast(msg, 'success');
     };
 
+    const handleImportSMS = () => {
+        setView('sms-import');
+    };
+
+    const handleImportStatement = () => {
+        setView('statement-import');
+    }
+
     if (view === 'record') {
-        return <RecordPaymentPage onBack={handleBack} onSuccess={handleSuccess} mode={appMode} />;
+        return (
+            <RecordPaymentPage
+                onBack={handleBack}
+                onSuccess={() => {
+                    handleSuccess();
+                    clearTransaction(); // Clear the banner transaction if it was used
+                }}
+                mode={appMode}
+                initialTransaction={latestTransaction}
+                initialRawMessage={latestRawMessage ?? undefined}
+            />
+        );
     }
 
     if (view === 'sms-import') {
         return <ImportSMS onBack={handleBack} onSuccess={handleSuccess} />;
     }
 
-    const handleImportSMS = () => {
-        setView('sms-import');
-    };
+    if (view === 'statement-import') {
+        return (
+            <StatementImport
+                onBack={handleBack}
+                onComplete={handleSuccess}
+                mode={appMode}
+            />
+        );
+    }
+
 
     return (
         <div className="app">
             {showOnboarding && <Onboarding onComplete={handleOnboardingComplete} />}
 
-            {activeTab === 'home' && <HomePage onRecordPayment={handleRecordPayment} />}
+            {activeTab === 'home' && (
+                <HomePage
+                    onRecordPayment={handleRecordPayment}
+                    onImportSMS={handleImportSMS}
+                    onImportStatement={handleImportStatement}
+                />
+            )}
             {activeTab === 'reports' && <ReportsPage />}
             {activeTab === 'settings' && <SettingsPage onImportSMS={handleImportSMS} />}
 
             <Navigation activeTab={activeTab} onTabChange={setActiveTab} />
+            {/* SMS Notification Banner */}
+            {latestTransaction && (
+                <div className="sms-notification-banner">
+                    <div className="sms-banner__content">
+                        <div className="sms-banner__icon">
+                            <MessageSquare size={20} />
+                        </div>
+                        <div className="sms-banner__text">
+                            <h3>New M-Pesa Transaction</h3>
+                            <p>
+                                {latestTransaction.type === 'received' ? 'Received' : 'Sent'} KES {latestTransaction.amount.toLocaleString()}
+                                {latestTransaction.type === 'received' ? ' from ' : ' to '}
+                                {latestTransaction.counterparty.name || latestTransaction.counterparty.phone}
+                            </p>
+                        </div>
+                    </div>
+                    <div className="sms-banner__actions">
+                        <button
+                            className="sms-banner__btn sms-banner__btn--dismiss"
+                            onClick={clearTransaction}
+                        >
+                            Dismiss
+                        </button>
+                        <button
+                            className="sms-banner__btn sms-banner__btn--record"
+                            onClick={handleRecordPayment}
+                        >
+                            Record Now
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
 
+import { Navigate } from 'react-router-dom';
+
 function AppContent() {
     return (
         <Routes>
-            <Route path="/" element={<LandingPage />} />
+            {/* Redirect landing page to app - skip marketing page for both PWA and Android */}
+            <Route path="/" element={<Navigate to="/app" replace />} />
             <Route path="/app/share" element={<ShareHandler />} />
             <Route path="/app/*" element={<MainApp />} />
         </Routes>

@@ -1,0 +1,199 @@
+/* Getting Started - Premium Polish */
+.getting-started {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem 1.5rem;
+    text-align: center;
+    min-height: 60vh;
+    animation: fadeIn 0.6s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.getting-started__icon-wrapper {
+    width: 80px;
+    height: 80px;
+    background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
+    border-radius: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #4f46e5;
+    margin-bottom: 2rem;
+    box-shadow: 0 10px 25px -5px rgba(79, 70, 229, 0.15), 0 8px 10px -6px rgba(79, 70, 229, 0.1);
+    transform: rotate(-3deg);
+    transition: transform 0.3s ease;
+}
+
+.getting-started:hover .getting-started__icon-wrapper {
+    transform: rotate(0deg) scale(1.05);
+}
+
+.getting-started__title {
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: #111827;
+    margin-bottom: 0.75rem;
+    letter-spacing: -0.025em;
+    background: linear-gradient(to right, #111827, #4b5563);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.getting-started__desc {
+    font-size: 1.05rem;
+    color: #6b7280;
+    margin-bottom: 2.5rem;
+    max-width: 320px;
+    line-height: 1.6;
+}
+
+.getting-started__steps {
+    width: 100%;
+    max-width: 340px;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.getting-started__btn {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.25rem;
+    border-radius: 16px;
+    background-color: white;
+    border: 1px solid rgba(229, 231, 235, 0.5);
+    text-align: left;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
+    position: relative;
+    overflow: hidden;
+}
+
+.getting-started__btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025);
+    border-color: #d1d5db;
+}
+
+.getting-started__btn:active {
+    transform: scale(0.98);
+    background-color: #f9fafb;
+}
+
+/* Primary "Magical" Button Style */
+.getting-started__btn--primary {
+    background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
+    border: none;
+    color: white;
+    box-shadow: 0 10px 20px -5px rgba(79, 70, 229, 0.4);
+}
+
+.getting-started__btn--primary:hover {
+    box-shadow: 0 15px 25px -5px rgba(79, 70, 229, 0.5);
+    border-color: transparent;
+}
+
+.getting-started__btn--primary .getting-started__btn-icon {
+    background-color: rgba(255, 255, 255, 0.2);
+    color: white;
+    backdrop-filter: blur(4px);
+}
+
+.getting-started__btn--primary .getting-started__btn-arrow {
+    color: white;
+    opacity: 0.8;
+}
+
+.getting-started__btn--primary:hover .getting-started__btn-arrow {
+    transform: translateX(3px);
+    opacity: 1;
+}
+
+.getting-started__btn--primary .getting-started__btn-label {
+    color: white;
+}
+
+.getting-started__btn--primary .getting-started__btn-sub {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.getting-started__btn-content {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.getting-started__btn-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background-color: #f3f4f6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #4b5563;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+}
+
+.getting-started__btn:hover .getting-started__btn-icon {
+    transform: scale(1.05);
+}
+
+.getting-started__btn-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.getting-started__btn-label {
+    font-weight: 700;
+    font-size: 1rem;
+    color: #1f2937;
+}
+
+.getting-started__btn-sub {
+    font-size: 0.85rem;
+    color: #6b7280;
+    font-weight: 500;
+}
+
+.getting-started__btn-arrow {
+    color: #9ca3af;
+    transition: all 0.2s ease;
+}
+
+.getting-started__secondary {
+    margin-top: 2rem;
+    font-size: 0.9rem;
+    color: #6b7280;
+    text-decoration: none;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.getting-started__secondary:hover {
+    color: #4f46e5;
+    background-color: #f3f4f6;
+}

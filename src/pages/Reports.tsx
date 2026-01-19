@@ -403,29 +403,59 @@ export function ReportsPage() {
                 <div className="summary-grid">
                     <div className={`summary-card ${appMode === 'payments' ? 'summary-card--payments' : ''}`}>
                         <div className={`summary-icon ${appMode === 'payments' ? 'summary-icon--red' : ''}`}>
-                            {appMode === 'collections' ? <ArrowDownLeft size={20} /> : <ArrowUpRight size={20} />}
+                            {appMode === 'collections' ? <ArrowDownLeft size={20} /> :
+                                appMode === 'payments' ? <ArrowUpRight size={20} /> :
+                                    <Wallet size={20} />}
                         </div>
                         <div className="summary-data">
-                            <span className={`summary-value ${appMode === 'collections' ? 'amount-positive' : 'amount-negative'}`}>
-                                {isLoading ? '...' : `KES ${formatMoney(totalReceived)}`}
-                            </span>
-                            <span className="summary-label">
-                                {appMode === 'collections' ? 'Total Received' : 'Total Paid Out'}
-                            </span>
+                            {appMode === 'overview' ? (
+                                <>
+                                    <span className={`summary-value ${(collectionsTotal - paymentsTotal) >= 0 ? 'amount-positive' : 'amount-negative'}`}>
+                                        {isLoading ? '...' : `KES ${formatMoney(Math.abs(collectionsTotal - paymentsTotal))}`}
+                                    </span>
+                                    <span className="summary-label">
+                                        {(collectionsTotal - paymentsTotal) >= 0 ? 'Net Cash Surplus' : 'Net Cash Deficit'}
+                                    </span>
+                                </>
+                            ) : (
+                                <>
+                                    <span className={`summary-value ${appMode === 'collections' ? 'amount-positive' : 'amount-negative'}`}>
+                                        {isLoading ? '...' : `KES ${formatMoney(totalReceived)}`}
+                                    </span>
+                                    <span className="summary-label">
+                                        {appMode === 'collections' ? 'Total Received' : 'Total Paid Out'}
+                                    </span>
+                                </>
+                            )}
                         </div>
                     </div>
 
                     <div className="summary-card">
                         <div className="summary-icon summary-icon--red">
-                            {appMode === 'collections' ? <ArrowDownLeft size={20} /> : <ArrowUpRight size={20} />}
+                            {appMode === 'collections' ? <ArrowDownLeft size={20} /> :
+                                appMode === 'payments' ? <ArrowUpRight size={20} /> :
+                                    <CreditCard size={20} />}
                         </div>
                         <div className="summary-data">
-                            <span className="summary-value amount-negative">
-                                {isLoading ? '...' : `KES ${formatMoney(totalOwed)}`}
-                            </span>
-                            <span className="summary-label">
-                                {appMode === 'collections' ? 'Still Owed to You' : 'You Still Owe'}
-                            </span>
+                            {appMode === 'overview' ? (
+                                <>
+                                    <span className={`summary-value ${(collectionsOwed - paymentsOwed) >= 0 ? 'amount-positive' : 'amount-negative'}`}>
+                                        {isLoading ? '...' : `KES ${formatMoney(Math.abs(collectionsOwed - paymentsOwed))}`}
+                                    </span>
+                                    <span className="summary-label">
+                                        Net Outstanding
+                                    </span>
+                                </>
+                            ) : (
+                                <>
+                                    <span className="summary-value amount-negative">
+                                        {isLoading ? '...' : `KES ${formatMoney(totalOwed)}`}
+                                    </span>
+                                    <span className="summary-label">
+                                        {appMode === 'collections' ? 'Still Owed to You' : 'You Still Owe'}
+                                    </span>
+                                </>
+                            )}
                         </div>
                     </div>
                 </div>

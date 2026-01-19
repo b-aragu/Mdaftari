@@ -6,16 +6,16 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { ArrowLeft, RefreshCw, Check, AlertCircle, Smartphone, Lock, MessageSquare, Download } from 'lucide-react';
+import { ArrowLeft, RefreshCw, Check, AlertCircle, Smartphone, Lock, MessageSquare, Download, Search, Calendar, Filter, X } from 'lucide-react';
 import {
     isSMSAvailable,
     checkSMSPermission,
     requestSMSPermission,
     getMpesaMessages,
+    openAppSettings,
     type ParsedSMSMessage
 } from '../services/sms-reader';
 import { getExistingReceiptNumbers, saveTransaction, createLedgerEntry } from '../storage/operations';
-import { detectPartialPayment } from '../ledger';
 import './ImportSMS.css';
 
 interface ImportSMSProps {
@@ -23,7 +23,7 @@ interface ImportSMSProps {
     onSuccess: () => void;
 }
 
-const TEMP_USER_ID = 'local-user-001';
+const TEMP_USER_ID = 'local-user';
 
 export function ImportSMS({ onBack, onSuccess }: ImportSMSProps) {
     const [isAvailable, setIsAvailable] = useState(false);
@@ -35,6 +35,15 @@ export function ImportSMS({ onBack, onSuccess }: ImportSMSProps) {
     const [isImporting, setIsImporting] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [importedCount, setImportedCount] = useState(0);
+    // Track amount owed per message ID
+    const [amountOwedMap, setAmountOwedMap] = useState<Record<string, string>>({});
+
+    // Filters
+    const [searchText, setSearchText] = useState('');
+    const [filterDateStart, setFilterDateStart] = useState('');
+    const [filterDateEnd, setFilterDateEnd] = useState('');
+    const [filterType, setFilterType] = useState<'all' | 'received' | 'sent'>('all');
+
 
     // Check platform availability
     useEffect(() => {
@@ -63,8 +72,8 @@ export function ImportSMS({ onBack, onSuccess }: ImportSMSProps) {
         setError(null);
 
         try {
-            // Get parsed M-Pesa messages
-            const mpesaMessages = await getMpesaMessages(200);
+            // Get parsed M-Pesa messages (increased limit to get more history)
+            const mpesaMessages = await getMpesaMessages(1000);
 
             // Get existing transaction codes to filter duplicates
             const codes = mpesaMessages
@@ -90,7 +99,58 @@ export function ImportSMS({ onBack, onSuccess }: ImportSMSProps) {
         setPermissionStatus(granted ? 'granted' : 'denied');
     };
 
+
+    const filteredMessages = messages.filter(msg => {
+        // Text Search
+        if (searchText) {
+            const query = searchText.toLowerCase();
+            const tx = msg.parseResult.transaction;
+            const matchesBody = msg.body.toLowerCase().includes(query);
+            const matchesName = tx?.counterparty?.name?.toLowerCase().includes(query);
+            const matchesCode = tx?.transactionCode?.toLowerCase().includes(query);
+            if (!matchesBody && !matchesName && !matchesCode) return false;
+        }
+
+        // Date Range
+        if (filterDateStart) {
+            const start = new Date(filterDateStart).getTime();
+            if (msg.date < start) return false;
+        }
+        if (filterDateEnd) {
+            const end = new Date(filterDateEnd);
+            end.setHours(23, 59, 59, 999);
+            if (msg.date > end.getTime()) return false;
+        }
+
+        // Type Filter
+        if (filterType !== 'all') {
+            const type = msg.parseResult.transaction?.type;
+            if (filterType === 'received' && type !== 'received') return false;
+            // 'sent' covers sent, paybill, buy_goods - basically anything not received
+            if (filterType === 'sent' && type === 'received') return false;
+        }
+
+        return true;
+    });
+
+    // Calculate summary stats
+    const selectedSummary = Array.from(selectedIds).reduce((acc, id) => {
+        const msg = messages.find(m => m.id === id);
+        if (!msg?.parseResult.transaction) return acc;
+
+        const amount = msg.parseResult.transaction.amount;
+        const isIncoming = msg.parseResult.transaction.type === 'received';
+
+        return {
+            count: acc.count + 1,
+            total: acc.total + amount,
+            incoming: acc.incoming + (isIncoming ? amount : 0),
+            outgoing: acc.outgoing + (isIncoming ? 0 : amount)
+        };
+    }, { count: 0, total: 0, incoming: 0, outgoing: 0 });
+
     const toggleSelect = (id: string) => {
+
         setSelectedIds(prev => {
             const next = new Set(prev);
             if (next.has(id)) {
@@ -102,13 +162,25 @@ export function ImportSMS({ onBack, onSuccess }: ImportSMSProps) {
         });
     };
 
-    const selectAll = () => {
-        const newMessages = messages.filter(m =>
-            m.parseResult.success &&
-            m.parseResult.transaction &&
-            !existingCodes.has(m.parseResult.transaction.transactionCode)
-        );
-        setSelectedIds(new Set(newMessages.map(m => m.id)));
+    const toggleSelectAll = () => {
+        // Toggle based on filtered messages
+        const allSelected = filteredMessages.length > 0 && filteredMessages.every(m => selectedIds.has(m.id));
+
+        if (allSelected) {
+            // Deselect filtered
+            setSelectedIds(prev => {
+                const next = new Set(prev);
+                filteredMessages.forEach(m => next.delete(m.id));
+                return next;
+            });
+        } else {
+            // Select filtered
+            setSelectedIds(prev => {
+                const next = new Set(prev);
+                filteredMessages.forEach(m => next.add(m.id));
+                return next;
+            });
+        }
     };
 
     const clearSelection = () => {
@@ -130,23 +202,31 @@ export function ImportSMS({ onBack, onSuccess }: ImportSMSProps) {
                 const tx = msg.parseResult.transaction;
 
                 try {
+                    // Get amount owed from user input (default 0)
+                    const userAmountOwed = parseFloat(amountOwedMap[id] || '0') || 0;
+
+
+
                     const savedTx = await saveTransaction(tx, TEMP_USER_ID, tx.amount);
-                    const partial = detectPartialPayment(tx.amount, tx.amount);
+
 
                     await createLedgerEntry(
                         savedTx.id,
                         null,
                         tx.amount,
-                        partial.remainingDebt,
+                        userAmountOwed,
                         tx.amount,
-                        partial.remainingDebt
+                        userAmountOwed
                     );
+
 
                     imported++;
                 } catch (err) {
                     // Skip duplicates silently
                     if (!(err instanceof Error && err.message.includes('already exists'))) {
-                        console.error('Error importing:', err);
+                        // Silent fail
+                    } else {
+                        // duplicate
                     }
                 }
             }
@@ -169,6 +249,19 @@ export function ImportSMS({ onBack, onSuccess }: ImportSMSProps) {
             setIsImporting(false);
         }
     };
+
+    // Derived lists from FILTERED messages
+    const newMessages = filteredMessages.filter(m =>
+        m.parseResult.success &&
+        m.parseResult.transaction &&
+        !existingCodes.has(m.parseResult.transaction.transactionCode)
+    );
+
+    const existingMessages = filteredMessages.filter(m =>
+        m.parseResult.success &&
+        m.parseResult.transaction &&
+        existingCodes.has(m.parseResult.transaction.transactionCode)
+    );
 
     const formatDate = (timestamp: number) => {
         return new Intl.DateTimeFormat('en-KE', {
@@ -246,8 +339,16 @@ export function ImportSMS({ onBack, onSuccess }: ImportSMSProps) {
                         <div className="loading-spinner" />
                     ) : permissionStatus === 'denied' ? (
                         <div className="permission-denied">
-                            <AlertCircle size={20} />
-                            <p>Permission denied. Please enable in Settings.</p>
+                            <div className="permission-denied__message">
+                                <AlertCircle size={20} />
+                                <p>Permission denied. Please enable in Settings.</p>
+                            </div>
+                            <button className="permission-btn permission-btn--settings" onClick={openAppSettings}>
+                                Open Settings
+                            </button>
+                            <button className="permission-btn permission-btn--retry" onClick={handleRequestPermission}>
+                                Try Again
+                            </button>
                         </div>
                     ) : (
                         <button className="permission-btn" onClick={handleRequestPermission}>
@@ -260,17 +361,6 @@ export function ImportSMS({ onBack, onSuccess }: ImportSMSProps) {
     }
 
     // Main content - permission granted
-    const newMessages = messages.filter(m =>
-        m.parseResult.success &&
-        m.parseResult.transaction &&
-        !existingCodes.has(m.parseResult.transaction.transactionCode)
-    );
-
-    const existingMessages = messages.filter(m =>
-        m.parseResult.success &&
-        m.parseResult.transaction &&
-        existingCodes.has(m.parseResult.transaction.transactionCode)
-    );
 
     return (
         <div className="import-sms">
@@ -283,6 +373,54 @@ export function ImportSMS({ onBack, onSuccess }: ImportSMSProps) {
                     <RefreshCw size={20} className={isLoading ? 'spinning' : ''} />
                 </button>
             </header>
+
+            {/* Filters Section */}
+            {permissionStatus === 'granted' && (
+                <div className="sms-filters">
+                    <div className="search-box">
+                        <Search size={18} className="search-icon" />
+                        <input
+                            type="text"
+                            placeholder="Search name, code, or message..."
+                            value={searchText}
+                            onChange={(e) => setSearchText(e.target.value)}
+                        />
+                        {searchText && (
+                            <button className="clear-search" onClick={() => setSearchText('')}>
+                                <X size={16} />
+                            </button>
+                        )}
+                    </div>
+
+                    <div className="filter-row">
+                        <div className="filter-group">
+                            <label><Filter size={14} /> Type</label>
+                            <select value={filterType} onChange={(e) => setFilterType(e.target.value as any)}>
+                                <option value="all">All Transactions</option>
+                                <option value="received">Received (Money In)</option>
+                                <option value="sent">Sent (Money Out)</option>
+                            </select>
+                        </div>
+
+                        <div className="filter-group">
+                            <label><Calendar size={14} /> Date</label>
+                            <div className="date-inputs">
+                                <input
+                                    type="date"
+                                    value={filterDateStart}
+                                    onChange={(e) => setFilterDateStart(e.target.value)}
+                                />
+                                <span>-</span>
+                                <input
+                                    type="date"
+                                    value={filterDateEnd}
+                                    onChange={(e) => setFilterDateEnd(e.target.value)}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {error && (
                 <div className="import-sms__error">
@@ -300,8 +438,8 @@ export function ImportSMS({ onBack, onSuccess }: ImportSMSProps) {
 
             <div className="import-sms__stats">
                 <div className="stat">
-                    <span className="stat-value">{messages.length}</span>
-                    <span className="stat-label">M-Pesa Messages</span>
+                    <span className="stat-value">{filteredMessages.length}</span>
+                    <span className="stat-label">Results</span>
                 </div>
                 <div className="stat stat--new">
                     <span className="stat-value">{newMessages.length}</span>
@@ -315,8 +453,8 @@ export function ImportSMS({ onBack, onSuccess }: ImportSMSProps) {
 
             {newMessages.length > 0 && (
                 <div className="import-sms__actions">
-                    <button className="select-all-btn" onClick={selectAll}>
-                        Select All New ({newMessages.length})
+                    <button className="select-all-btn" onClick={toggleSelectAll}>
+                        {filteredMessages.length > 0 && filteredMessages.every(m => selectedIds.has(m.id)) ? 'Deselect All' : 'Select All'} ({newMessages.length})
                     </button>
                     {selectedIds.size > 0 && (
                         <button className="clear-btn" onClick={clearSelection}>
@@ -332,10 +470,10 @@ export function ImportSMS({ onBack, onSuccess }: ImportSMSProps) {
                         <div className="loading-spinner" />
                         <p>Scanning SMS inbox...</p>
                     </div>
-                ) : messages.length === 0 ? (
+                ) : filteredMessages.length === 0 ? (
                     <div className="empty-state">
                         <MessageSquare size={32} />
-                        <p>No M-Pesa messages found</p>
+                        <p>No messages found matching filters</p>
                     </div>
                 ) : (
                     <>
@@ -350,28 +488,50 @@ export function ImportSMS({ onBack, onSuccess }: ImportSMSProps) {
                                         <div
                                             key={msg.id}
                                             className={`sms-item ${isSelected ? 'sms-item--selected' : ''}`}
-                                            onClick={() => toggleSelect(msg.id)}
                                         >
-                                            <div className="sms-item__check">
-                                                {isSelected && <Check size={16} />}
+                                            <div
+                                                className="sms-item__main"
+                                                onClick={() => toggleSelect(msg.id)}
+                                            >
+                                                <div className="sms-item__check">
+                                                    {isSelected && <Check size={16} />}
+                                                </div>
+                                                <div className="sms-item__content">
+                                                    <div className="sms-item__top">
+                                                        <span className={`sms-item__type sms-item__type--${tx.type}`}>
+                                                            {tx.type === 'received' ? 'Received' : 'Sent'}
+                                                        </span>
+                                                        <span className="sms-item__date">{formatDate(msg.date)}</span>
+                                                    </div>
+                                                    <div className="sms-item__name">
+                                                        {tx.counterparty.name || tx.counterparty.phone || 'Unknown'}
+                                                    </div>
+                                                    <div className="sms-item__bottom">
+                                                        <span className="sms-item__code">{tx.transactionCode}</span>
+                                                        <span className={`sms-item__amount sms-item__amount--${tx.type}`}>
+                                                            KES {formatAmount(tx.amount)}
+                                                        </span>
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <div className="sms-item__content">
-                                                <div className="sms-item__top">
-                                                    <span className={`sms-item__type sms-item__type--${tx.type}`}>
-                                                        {tx.type === 'received' ? 'Received' : 'Sent'}
-                                                    </span>
-                                                    <span className="sms-item__date">{formatDate(msg.date)}</span>
+
+                                            {/* Amount owed input - shows when selected */}
+                                            {isSelected && (
+                                                <div className="sms-item__owed-input" onClick={e => e.stopPropagation()}>
+                                                    <label>
+                                                        {tx.type === 'received' ? 'They owe you:' : 'You owe them:'}
+                                                    </label>
+                                                    <input
+                                                        type="number"
+                                                        placeholder={tx.type === 'received' ? 'Amount owed to you' : 'Amount you owe'}
+                                                        value={amountOwedMap[msg.id] || ''}
+                                                        onChange={e => setAmountOwedMap(prev => ({
+                                                            ...prev,
+                                                            [msg.id]: e.target.value
+                                                        }))}
+                                                    />
                                                 </div>
-                                                <div className="sms-item__name">
-                                                    {tx.counterparty.name || tx.counterparty.phone || 'Unknown'}
-                                                </div>
-                                                <div className="sms-item__bottom">
-                                                    <span className="sms-item__code">{tx.transactionCode}</span>
-                                                    <span className={`sms-item__amount sms-item__amount--${tx.type}`}>
-                                                        KES {formatAmount(tx.amount)}
-                                                    </span>
-                                                </div>
-                                            </div>
+                                            )}
                                         </div>
                                     );
                                 })}
@@ -421,23 +581,28 @@ export function ImportSMS({ onBack, onSuccess }: ImportSMSProps) {
             </div>
 
             {selectedIds.size > 0 && (
-                <div className="import-sms__footer">
+                <div className="import-summary-footer">
+                    <div className="summary-stats">
+                        <div className="stat-item">
+                            <span className="stat-label">Selected</span>
+                            <span className="stat-value">{selectedSummary.count}</span>
+                        </div>
+                        <div className="stat-item">
+                            <span className="stat-label">Total Value</span>
+                            <span className="stat-value">KES {selectedSummary.total.toLocaleString()}</span>
+                        </div>
+                    </div>
                     <button
-                        className="import-btn"
+                        className="import-fab"
                         onClick={handleImport}
                         disabled={isImporting}
                     >
                         {isImporting ? (
-                            <>
-                                <div className="loading-spinner loading-spinner--small" />
-                                Importing...
-                            </>
+                            <RefreshCw className="spin" size={20} />
                         ) : (
-                            <>
-                                <Download size={18} />
-                                Import {selectedIds.size} Transaction{selectedIds.size !== 1 ? 's' : ''}
-                            </>
+                            <Download size={20} />
                         )}
+                        <span>Import {selectedSummary.count} Items</span>
                     </button>
                 </div>
             )}

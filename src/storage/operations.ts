@@ -547,7 +547,7 @@ export async function clearAllData(): Promise<void> {
         };
 
         deleteRequest.onsuccess = () => {
-            console.log('Database deleted successfully');
+            // Database deleted successfully
 
             // Clear all localStorage items related to Mdaftari
             const keysToRemove: string[] = [];
@@ -559,7 +559,7 @@ export async function clearAllData(): Promise<void> {
             }
             keysToRemove.forEach(key => localStorage.removeItem(key));
 
-            console.log('All data cleared successfully');
+            // All data cleared successfully
             resolve();
         };
 

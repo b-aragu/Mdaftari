@@ -37,13 +37,44 @@
 
 /* Header */
 .home-header {
-    padding: var(--space-6) var(--space-4);
+    padding: var(--space-4) var(--space-4);
     border-bottom: var(--border-medium);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+}
+
+.header-import-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(8px);
+    border: 1px solid var(--color-border);
+    border-radius: 20px;
+    font-size: var(--text-xs);
+    font-weight: var(--weight-bold);
+    color: var(--color-primary);
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.03);
+    transition: all 0.2s ease;
+}
+
+.header-import-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(99, 102, 241, 0.15);
+    border-color: var(--color-primary);
+    background: white;
+}
+
+.header-import-btn:active {
+    transform: scale(0.97);
 }
 
 .home-header-content {
-    max-width: 600px;
-    margin: 0 auto;
+    /* Remove max-width/margin centering since it's now flex */
 }
 
 .home-logo {
@@ -1276,6 +1307,31 @@
     box-shadow:
         0 0 0 4px rgba(16, 185, 129, 0.3),
         0 6px 12px rgba(16, 185, 129, 0.4);
+}
+
+/* Overview mode: outgoing transaction marker (red) */
+.debt-marker--out {
+    background: linear-gradient(135deg, #ef4444 0%, #f87171 100%);
+    box-shadow:
+        0 0 0 3px rgba(239, 68, 68, 0.2),
+        0 4px 8px rgba(239, 68, 68, 0.3);
+}
+
+.debt-timeline-item:hover .debt-marker--out {
+    box-shadow:
+        0 0 0 4px rgba(239, 68, 68, 0.3),
+        0 6px 12px rgba(239, 68, 68, 0.4);
+}
+
+/* Overview mode: timeline item styling */
+.debt-timeline-item--out .debt-timeline-content {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.05) 0%, rgba(239, 68, 68, 0.02) 100%);
+    border-color: rgba(239, 68, 68, 0.2);
+}
+
+.debt-timeline-item--in .debt-timeline-content {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(16, 185, 129, 0.02) 100%);
+    border-color: rgba(16, 185, 129, 0.2);
 }
 
 .debt-timeline-line {
@@ -2676,4 +2732,25 @@
         max-height: 80vh;
         border-radius: 8px 8px 0 0;
     }
+}
+
+/* Show More Button */
+.show-more-btn {
+    display: block;
+    width: 100%;
+    padding: var(--space-4);
+    margin-top: var(--space-3);
+    background: linear-gradient(180deg, rgba(99, 102, 241, 0.08) 0%, rgba(99, 102, 241, 0.04) 100%);
+    border: 1px dashed rgba(99, 102, 241, 0.3);
+    border-radius: var(--radius-lg);
+    color: var(--color-primary);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.show-more-btn:hover {
+    background: rgba(99, 102, 241, 0.12);
+    border-color: var(--color-primary);
 }

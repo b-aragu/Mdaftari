@@ -17,12 +17,14 @@ interface RecordPaymentProps {
     onBack: () => void;
     onSuccess: () => void;
     mode: 'collections' | 'payments' | 'overview';
+    initialTransaction?: ParsedTransaction | null;
+    initialRawMessage?: string;
 }
 
 type InputMethod = 'paste' | 'manual' | 'import';
 type Step = 'input' | 'confirm';
 
-export function RecordPaymentPage({ onBack, onSuccess, mode }: RecordPaymentProps) {
+export function RecordPaymentPage({ onBack, onSuccess, mode, initialTransaction, initialRawMessage }: RecordPaymentProps) {
     const [inputMethod, setInputMethod] = useState<InputMethod>('paste');
     const [step, setStep] = useState<Step>('input');
 
@@ -41,6 +43,43 @@ export function RecordPaymentPage({ onBack, onSuccess, mode }: RecordPaymentProp
     const [isSaving, setIsSaving] = useState(false);
     const [category, setCategory] = useState('general');
     const [isRecurring, setIsRecurring] = useState(false);
+
+    // Determine effective mode based on initialTransaction type if available
+    // This handles the case where mode is 'overview' or user lands here from notification
+    const [effectiveMode, setEffectiveMode] = useState<'collections' | 'payments'>(mode === 'payments' ? 'payments' : 'collections');
+
+    // Handle initialTransaction prop (from real-time SMS)
+    useEffect(() => {
+        if (initialTransaction) {
+            const tx = initialTransaction;
+            setMessage(tx.rawMessage);
+            setAmount(tx.amount.toString());
+            setExpectedAmount(tx.amount.toString());
+            setFromTo(tx.counterparty.name || tx.counterparty.phone || '');
+            setTransactionCode(tx.transactionCode || '');
+
+            // Set effective mode based on transaction type
+            if (tx.type === 'received') {
+                setEffectiveMode('collections');
+            } else if (tx.type === 'sent' || tx.type === 'paybill' || tx.type === 'buy_goods') {
+                setEffectiveMode('payments');
+            }
+
+            setParseResult({
+                success: true,
+                transaction: tx,
+                needsVerification: []
+            });
+
+            setStep('confirm');
+        } else if (initialRawMessage) {
+            // Fallback: We have raw message but no parsed transaction
+            // Pre-fill the paste area so user can try manual parse/edit
+            setMessage(initialRawMessage);
+            setInputMethod('paste');
+            setStep('input');
+        }
+    }, [initialTransaction, initialRawMessage]);
 
     // Check for shared message from Web Share Target API
     useEffect(() => {
@@ -193,7 +232,7 @@ export function RecordPaymentPage({ onBack, onSuccess, mode }: RecordPaymentProp
                     <ArrowLeft size={20} />
                 </button>
                 <h1 className="record-title">
-                    {mode === 'collections' ? 'Record Collection' : 'Record Payment'}
+                    {effectiveMode === 'collections' ? 'Record Collection' : 'Record Payment'}
                 </h1>
                 <div className="header-spacer" />
             </header>
@@ -258,7 +297,7 @@ export function RecordPaymentPage({ onBack, onSuccess, mode }: RecordPaymentProp
                         <div className="input-section">
                             <div className="field-group">
                                 <label className="field-label">
-                                    {mode === 'collections' ? 'Amount Received (KES)' : 'Amount Paying (KES)'}
+                                    {effectiveMode === 'collections' ? 'Amount Received (KES)' : 'Amount Paying (KES)'}
                                 </label>
                                 <input
                                     type="number"
@@ -271,7 +310,7 @@ export function RecordPaymentPage({ onBack, onSuccess, mode }: RecordPaymentProp
 
                             <div className="field-group">
                                 <label className="field-label">
-                                    {mode === 'collections' ? 'Expected Amount (KES)' : 'Total Owed (KES)'}
+                                    {effectiveMode === 'collections' ? 'Expected Amount (KES)' : 'Total Owed (KES)'}
                                 </label>
                                 <input
                                     type="number"
@@ -284,12 +323,12 @@ export function RecordPaymentPage({ onBack, onSuccess, mode }: RecordPaymentProp
 
                             <div className="field-group">
                                 <label className="field-label">
-                                    {mode === 'collections' ? 'From (who paid you)' : 'To (who you paid)'}
+                                    {effectiveMode === 'collections' ? 'From (who paid you)' : 'To (who you paid)'}
                                 </label>
                                 <input
                                     type="text"
                                     className="field-input"
-                                    placeholder={mode === 'collections' ? 'Name or phone of payer' : 'Name or phone of recipient'}
+                                    placeholder={effectiveMode === 'collections' ? 'Name or phone of payer' : 'Name or phone of recipient'}
                                     value={fromTo}
                                     onChange={(e) => setFromTo(e.target.value)}
                                 />
@@ -333,7 +372,7 @@ export function RecordPaymentPage({ onBack, onSuccess, mode }: RecordPaymentProp
                     <div className="confirm-card">
                         <div className="confirm-row">
                             <span className="confirm-label">
-                                {mode === 'collections' ? 'Amount Received' : 'Amount Paying'}
+                                {effectiveMode === 'collections' ? 'Amount Received' : 'Amount Paying'}
                             </span>
                             <input
                                 type="number"
@@ -345,7 +384,7 @@ export function RecordPaymentPage({ onBack, onSuccess, mode }: RecordPaymentProp
 
                         <div className="confirm-row">
                             <span className="confirm-label">
-                                {mode === 'collections' ? 'Expected Amount' : 'Total Owed'}
+                                {effectiveMode === 'collections' ? 'Expected Amount' : 'Total Owed'}
                             </span>
                             <input
                                 type="number"
@@ -357,14 +396,14 @@ export function RecordPaymentPage({ onBack, onSuccess, mode }: RecordPaymentProp
 
                         <div className="confirm-row">
                             <span className="confirm-label">
-                                {mode === 'collections' ? 'From' : 'To'}
+                                {effectiveMode === 'collections' ? 'From' : 'To'}
                             </span>
                             <input
                                 type="text"
                                 className="confirm-input"
                                 value={fromTo}
                                 onChange={(e) => setFromTo(e.target.value)}
-                                placeholder={mode === 'collections' ? 'Who paid you' : 'Who you paid'}
+                                placeholder={effectiveMode === 'collections' ? 'Who paid you' : 'Who you paid'}
                             />
                         </div>
 
@@ -427,7 +466,7 @@ export function RecordPaymentPage({ onBack, onSuccess, mode }: RecordPaymentProp
                                     checked={isRecurring}
                                     onChange={(e) => setIsRecurring(e.target.checked)}
                                 />
-                                <span>This is a recurring {mode === 'collections' ? 'collection' : 'payment'}</span>
+                                <span>This is a recurring {effectiveMode === 'collections' ? 'collection' : 'payment'}</span>
                             </label>
                         </div>
                     </div>

@@ -68,7 +68,7 @@ export async function getDatabase(): Promise<IDBPDatabase<MdaftariDB>> {
     }
 
     dbInstance = await openDB<MdaftariDB>(DB_NAME, DB_VERSION, {
-        upgrade(db, oldVersion, newVersion) {
+        upgrade(db, _oldVersion, _newVersion) {
             // Transactions store
             if (!db.objectStoreNames.contains('transactions')) {
                 const transactionStore = db.createObjectStore('transactions', { keyPath: 'id' });
@@ -106,7 +106,7 @@ export async function getDatabase(): Promise<IDBPDatabase<MdaftariDB>> {
                 userStore.createIndex('by-phone', 'phone');
             }
 
-            console.log(`Database upgraded from v${oldVersion} to v${newVersion}`);
+
         },
         blocked() {
             console.warn('Database upgrade blocked - please close other tabs');

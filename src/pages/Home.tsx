@@ -3,10 +3,11 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { Plus, ArrowDownLeft, ArrowUpRight, Calendar, ChevronRight, Users, ArrowLeft, FileText, Trash2, Edit3, Search, X, Wallet, CreditCard, LayoutGrid, SlidersHorizontal } from 'lucide-react';
+import { Plus, ArrowDownLeft, ArrowUpRight, Calendar, ChevronRight, Users, ArrowLeft, Trash2, Edit3, Search, X, Wallet, CreditCard, LayoutGrid, SlidersHorizontal } from 'lucide-react';
 import { getTransactionsByUser, getLedgerEntriesByTransaction, updateTransaction, deleteTransaction, isSamePerson, getCanonicalName } from '../storage';
 import { useCountUp } from '../hooks';
 import { SkeletonPersonCard } from '../components/ui';
+import { GettingStarted } from '../components/GettingStarted';
 import { getCategoryById } from '../constants/categories';
 import type { Transaction, LedgerEntry } from '../ledger/types';
 import './Home.css';
@@ -15,6 +16,8 @@ const TEMP_USER_ID = 'local-user';
 
 interface HomePageProps {
     onRecordPayment: () => void;
+    onImportSMS: () => void;
+    onImportStatement: () => void;
 }
 
 interface DayGroup {
@@ -37,7 +40,7 @@ interface PersonGroup {
     lastTransactionDate?: Date; // Most recent transaction
 }
 
-export function HomePage({ onRecordPayment }: HomePageProps) {
+export function HomePage({ onRecordPayment, onImportSMS, onImportStatement }: HomePageProps) {
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [ledgerEntries, setLedgerEntries] = useState<LedgerEntry[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -69,10 +72,15 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
     const [filterStatus, setFilterStatus] = useState<'all' | 'complete' | 'partial'>('all');
     const [filterType, setFilterType] = useState<'all' | 'received' | 'sent'>('all');
 
+    // Pagination for transaction lists
+    const [txListLimit, setTxListLimit] = useState(20);
+    const [historyLimit, setHistoryLimit] = useState(5);
+
     const loadData = useCallback(async () => {
         try {
             setIsLoading(true);
             const txs = await getTransactionsByUser(TEMP_USER_ID);
+            console.log('Home: Loaded transactions:', txs.length, txs);
             setTransactions(txs);
 
             // Get ledger entries for each transaction
@@ -81,6 +89,7 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                 const entries = await getLedgerEntriesByTransaction(tx.id);
                 allEntries.push(...entries);
             }
+            console.log('Home: Loaded ledger entries:', allEntries.length, allEntries);
             setLedgerEntries(allEntries);
         } catch (err) {
             console.error('Failed to load data:', err);
@@ -804,11 +813,17 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                         const sortedTxs = [...selectedPerson.transactions]
                             .sort((a, b) => a.tx.parsedData.dateTime.getTime() - b.tx.parsedData.dateTime.getTime());
 
-                        // Build accumulation data
+                        // Build accumulation data with net balance for overview mode
                         let runningTotal = 0;
-                        const accumulationData = sortedTxs.map((item, idx) => {
+                        const rawAccumulationData = sortedTxs.map((item, idx) => {
                             const amount = item.entry?.amountPaid || item.tx.parsedData.amount;
-                            runningTotal += amount;
+                            const isIn = item.tx.parsedData.type === 'received';
+                            // Overview mode: track net balance; otherwise track cumulative
+                            if (appMode === 'overview') {
+                                runningTotal += isIn ? amount : -amount;
+                            } else {
+                                runningTotal += amount;
+                            }
                             const dateStr = new Intl.DateTimeFormat('en-KE', {
                                 day: 'numeric', month: 'short'
                             }).format(item.tx.parsedData.dateTime);
@@ -816,11 +831,27 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                                 label: dateStr,
                                 amount,
                                 cumulative: runningTotal,
+                                isIn,
                                 idx
                             };
                         });
 
-                        const maxCumulative = runningTotal || 1;
+                        // Sample data to max 20 points to prevent clustering
+                        const MAX_POINTS = 20;
+                        const accumulationData = rawAccumulationData.length > MAX_POINTS
+                            ? rawAccumulationData.filter((_, i) =>
+                                i === 0 ||
+                                i === rawAccumulationData.length - 1 ||
+                                i % Math.ceil(rawAccumulationData.length / MAX_POINTS) === 0
+                            ).slice(0, MAX_POINTS)
+                            : rawAccumulationData;
+
+
+                        // For net balance (overview), we need min/max range; for others just max
+                        const allValues = accumulationData.map(d => d.cumulative);
+                        const minVal = Math.min(0, ...allValues);
+                        const maxVal = Math.max(0, ...allValues);
+                        const valueRange = Math.max(maxVal - minVal, 1);
                         const numPoints = accumulationData.length;
 
                         // SVG dimensions
@@ -833,11 +864,13 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                         const graphWidth = chartWidth - paddingLeft - paddingRight;
                         const graphHeight = chartHeight - paddingTop - paddingBottom;
 
-                        // Calculate points for the line
+                        // Calculate points for the line (handle negative values)
                         const spacing = numPoints > 1 ? graphWidth / (numPoints - 1) : 0;
                         const points = accumulationData.map((item, idx) => {
                             const x = paddingLeft + (numPoints > 1 ? idx * spacing : graphWidth / 2);
-                            const y = paddingTop + graphHeight - (item.cumulative / maxCumulative) * graphHeight;
+                            // Normalize value to 0-1 range based on min/max
+                            const normalizedValue = (item.cumulative - minVal) / valueRange;
+                            const y = paddingTop + graphHeight - normalizedValue * graphHeight;
                             return { x, y, data: item };
                         });
 
@@ -865,12 +898,15 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                             ? `${linePath} L ${lastPoint.x} ${paddingTop + graphHeight} L ${firstPoint.x} ${paddingTop + graphHeight} Z`
                             : '';
 
-                        // Y-axis labels
-                        const yAxisLabels = [0, Math.round(maxCumulative / 2), maxCumulative];
+                        // Y-axis labels (handle negative values)
+                        const midVal = Math.round((minVal + maxVal) / 2);
+                        const yAxisLabels = [minVal, midVal, maxVal];
 
                         return (
                             <section className="monthly-breakdown">
-                                <h3 className="section-label">{appMode === 'collections' ? 'Collection Accumulation' : 'Payment Accumulation'}</h3>
+                                <h3 className="section-label">
+                                    {appMode === 'overview' ? 'Net Balance History' : appMode === 'collections' ? 'Collection Accumulation' : 'Payment Accumulation'}
+                                </h3>
                                 <div className="person-line-chart-container">
                                     <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="person-line-chart" preserveAspectRatio="xMidYMid meet">
                                         {/* Background */}
@@ -995,12 +1031,14 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                                         isComplete: boolean;
                                         cumulativePaid: number;
                                         cumulativeOwed: number;
+                                        isIn: boolean; // Transaction type: received (true) or sent (false)
                                     }[] = [];
 
                                     chronoSortedTxs.forEach(item => {
                                         const amountPaid = item.entry?.amountPaid || item.tx.parsedData.amount;
                                         const amountOwed = item.entry?.amountOwed || 0;
                                         const expectedAmount = amountPaid + amountOwed;
+                                        const isIn = item.tx.parsedData.type === 'received';
 
                                         runningTotalPaid += amountPaid;
                                         runningTotalOwed += amountOwed;
@@ -1012,14 +1050,16 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                                             expectedAmount,
                                             isComplete: amountOwed === 0,
                                             cumulativePaid: runningTotalPaid,
-                                            cumulativeOwed: runningTotalOwed
+                                            cumulativeOwed: runningTotalOwed,
+                                            isIn
                                         });
                                     });
 
-                                    // Apply display sort order
-                                    const displayItems = historySortOrder === 'oldest'
-                                        ? historyItems.slice(0, 5)
-                                        : [...historyItems].reverse().slice(0, 5);
+                                    // Apply display sort order (using historyLimit instead of hardcoded 5)
+                                    const sortedItems = historySortOrder === 'oldest'
+                                        ? historyItems
+                                        : [...historyItems].reverse();
+                                    const displayItems = sortedItems.slice(0, historyLimit);
 
                                     // Get grand totals for summary
                                     const grandTotalPaid = runningTotalPaid;
@@ -1048,32 +1088,36 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                                             </div>
 
                                             {/* Timeline Items */}
-                                            {displayItems.map(({ tx: item, amountPaid, amountOwed, expectedAmount, isComplete }, idx) => {
+                                            {displayItems.map(({ tx: item, amountPaid, amountOwed, expectedAmount, isComplete, isIn }, idx) => {
                                                 const dateStr = new Intl.DateTimeFormat('en-KE', {
                                                     day: 'numeric', month: 'short', year: 'numeric'
                                                 }).format(item.tx.parsedData.dateTime);
 
+                                                // Determine if this is an incoming (received) or outgoing (paid) transaction
+                                                // In Overview mode, use the actual transaction type; otherwise use appMode
+                                                const showAsIncoming = appMode === 'overview' ? isIn : appMode === 'collections';
+
                                                 return (
-                                                    <div key={item.tx.id} className="debt-timeline-item">
+                                                    <div key={item.tx.id} className={`debt-timeline-item ${appMode === 'overview' ? (isIn ? 'debt-timeline-item--in' : 'debt-timeline-item--out') : ''}`}>
                                                         <div className="debt-timeline-marker">
-                                                            <div className={`debt-marker ${isComplete ? 'debt-marker--complete' : ''}`} />
+                                                            <div className={`debt-marker ${isComplete ? 'debt-marker--complete' : ''} ${appMode === 'overview' && !isIn ? 'debt-marker--out' : ''}`} />
                                                             {idx < displayItems.length - 1 && <div className="debt-timeline-line" />}
                                                         </div>
                                                         <div className="debt-timeline-content">
                                                             <span className="debt-date">{dateStr}</span>
                                                             <div className="debt-expected">
-                                                                {appMode === 'collections' ? 'Expected' : 'Owed'}: Ksh {formatMoney(expectedAmount)}
+                                                                {showAsIncoming ? 'Expected' : 'Owed'}: Ksh {formatMoney(expectedAmount)}
                                                             </div>
                                                             <div className="debt-details">
-                                                                <span className={`debt-amount ${appMode === 'payments' ? 'debt-amount--payment' : ''}`}>
-                                                                    {appMode === 'collections' ? '+' : '-'}Ksh {formatMoney(amountPaid)} {appMode === 'collections' ? 'received' : 'paid'}
+                                                                <span className={`debt-amount ${!showAsIncoming ? 'debt-amount--payment' : ''}`}>
+                                                                    {showAsIncoming ? '+' : '-'}Ksh {formatMoney(amountPaid)} {showAsIncoming ? 'received' : 'paid'}
                                                                 </span>
                                                                 <span className="debt-arrow">→</span>
                                                                 <span className="debt-balance">
                                                                     {isComplete ? (
                                                                         <span className="debt-cleared">✓ Complete</span>
                                                                     ) : (
-                                                                        <span className="debt-remaining">Ksh {formatMoney(amountOwed)} {appMode === 'collections' ? 'still owed' : 'still to pay'}</span>
+                                                                        <span className="debt-remaining">Ksh {formatMoney(amountOwed)} {showAsIncoming ? 'still owed' : 'still to pay'}</span>
                                                                     )}
                                                                 </span>
                                                             </div>
@@ -1081,6 +1125,16 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                                                     </div>
                                                 );
                                             })}
+
+                                            {/* Show More Button for Payment History */}
+                                            {historyItems.length > historyLimit && (
+                                                <button
+                                                    className="show-more-btn"
+                                                    onClick={() => setHistoryLimit(prev => prev + 10)}
+                                                >
+                                                    Show More ({historyItems.length - historyLimit} remaining)
+                                                </button>
+                                            )}
                                         </>
                                     );
                                 })()}
@@ -1160,8 +1214,17 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                                             <ChevronRight size={16} className="tx-chevron" />
                                         </li>
                                     );
-                                })}
+                                })
+                                .slice(0, txListLimit)}
                         </ul>
+                        {selectedPerson.transactions.length > txListLimit && (
+                            <button
+                                className="show-more-btn"
+                                onClick={() => setTxListLimit(prev => prev + 20)}
+                            >
+                                Show More ({selectedPerson.transactions.length - txListLimit} remaining)
+                            </button>
+                        )}
                     </section>
                 </div>
 
@@ -1326,11 +1389,21 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
     return (
         <div className="home">
             {/* Header */}
+            {/* Header */}
             <header className="home-header">
                 <div className="home-header-content">
                     <h1 className="home-logo">Mdaftari</h1>
                     <p className="home-tagline">Track <span className="highlight">Every Shilling</span></p>
                 </div>
+                {/* Persistent Import Button */}
+                <button
+                    className="header-import-btn"
+                    onClick={onImportSMS}
+                    title="Import Transactions"
+                >
+                    <ArrowDownLeft size={18} />
+                    <span>Import</span>
+                </button>
             </header>
 
             {/* Mode Selector */}
@@ -1674,78 +1747,11 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                         <SkeletonPersonCard />
                     </div>
                 ) : transactions.length === 0 ? (
-                    <div className="empty-state">
-                        <div className="empty-illustration">
-                            <div className="empty-icon-circle">
-                                <FileText size={40} strokeWidth={1.5} />
-                            </div>
-                        </div>
-
-                        <h3 className="empty-title">
-                            {appMode === 'collections' ? 'No collections yet' :
-                                appMode === 'payments' ? 'No payments yet' :
-                                    'No transactions yet'}
-                        </h3>
-                        <p className="empty-description">
-                            {appMode === 'collections'
-                                ? 'Import your M-Pesa statement to see who owes you money'
-                                : appMode === 'payments'
-                                    ? 'Import your M-Pesa statement to track your expenses'
-                                    : 'Import your M-Pesa statement to see your complete financial picture'
-                            }
-                        </p>
-
-                        <div className="empty-actions">
-                            <button className="empty-cta empty-cta--primary" onClick={onRecordPayment}>
-                                <Plus size={18} strokeWidth={2.5} />
-                                Add Transaction
-                            </button>
-                        </div>
-
-                        <div className="empty-divider">
-                            <span>or</span>
-                        </div>
-
-                        <div className="empty-import-hint">
-                            <div className="import-hint-icon">📄</div>
-                            <div className="import-hint-text">
-                                <strong>Import M-Pesa Statement</strong>
-                                <span>Upload your PDF statement to import all transactions at once</span>
-                            </div>
-                        </div>
-
-                        {/* Feature Slides */}
-                        <div className="empty-features">
-                            <div className="feature-slide feature-slide--highlight">
-                                <div className="feature-slide-icon">📤</div>
-                                <div className="feature-slide-content">
-                                    <h4>Share from Messages</h4>
-                                    <p>On mobile, share M-Pesa messages directly to Mdaftari!</p>
-                                </div>
-                            </div>
-                            <div className="feature-slide">
-                                <div className="feature-slide-icon">📱</div>
-                                <div className="feature-slide-content">
-                                    <h4>Paste Message</h4>
-                                    <p>Copy any M-Pesa confirmation and paste it here</p>
-                                </div>
-                            </div>
-                            <div className="feature-slide">
-                                <div className="feature-slide-icon">📊</div>
-                                <div className="feature-slide-content">
-                                    <h4>Auto-Categorize</h4>
-                                    <p>Transactions are automatically sorted by type</p>
-                                </div>
-                            </div>
-                            <div className="feature-slide">
-                                <div className="feature-slide-icon">👥</div>
-                                <div className="feature-slide-content">
-                                    <h4>Track People</h4>
-                                    <p>See who owes you and who you've paid</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    <GettingStarted
+                        onImportSMS={onImportSMS}
+                        onImportStatement={onImportStatement}
+                        onRecordPayment={onRecordPayment}
+                    />
                 ) : filteredTransactions.length === 0 ? (
                     /* Period-specific empty state - when transactions exist but none match current period/mode */
                     <div className="empty-state empty-state--period">

@@ -169,3 +169,93 @@ h6 {
 }
 
 /* Outdoor Mode Enhancements */
+
+/* SMS Notification Banner */
+.sms-notification-banner {
+    position: fixed;
+    top: 16px;
+    left: 16px;
+    right: 16px;
+    background: white;
+    border: 2px solid var(--color-primary);
+    border-radius: 12px;
+    padding: 16px;
+    z-index: 1000;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateY(-100%);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.sms-banner__content {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.sms-banner__icon {
+    width: 40px;
+    height: 40px;
+    background: #f0fdf4;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #16a34a;
+    flex-shrink: 0;
+}
+
+.sms-banner__text {
+    flex: 1;
+}
+
+.sms-banner__text h3 {
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 4px;
+    color: var(--color-text-primary);
+}
+
+.sms-banner__text p {
+    font-size: 13px;
+    color: var(--color-text-secondary);
+    line-height: 1.4;
+}
+
+.sms-banner__actions {
+    display: flex;
+    gap: 12px;
+}
+
+.sms-banner__btn {
+    flex: 1;
+    padding: 10px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+}
+
+.sms-banner__btn--record {
+    background: var(--color-primary);
+    color: white;
+}
+
+.sms-banner__btn--dismiss {
+    background: transparent;
+    color: var(--text-muted);
+}
