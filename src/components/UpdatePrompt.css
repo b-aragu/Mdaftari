@@ -1,0 +1,112 @@
+/**
+ * PWA Update Prompt Styles
+ */
+
+.update-prompt {
+    position: fixed;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 9999;
+    width: calc(100% - 32px);
+    max-width: 400px;
+    animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+}
+
+.update-prompt__content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+    border-radius: 12px;
+    box-shadow:
+        0 10px 25px rgba(99, 102, 241, 0.3),
+        0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.update-prompt__icon {
+    color: white;
+    flex-shrink: 0;
+    animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.update-prompt__text {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    color: white;
+}
+
+.update-prompt__text strong {
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.update-prompt__text span {
+    font-size: 12px;
+    opacity: 0.9;
+}
+
+.update-prompt__actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.update-prompt__btn {
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.update-prompt__btn--update {
+    background: white;
+    color: #4f46e5;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.update-prompt__btn--update:hover {
+    background: #f5f5ff;
+    transform: scale(1.02);
+}
+
+.update-prompt__btn--dismiss {
+    background: rgba(255, 255, 255, 0.15);
+    color: white;
+    padding: 6px;
+    border-radius: 6px;
+}
+
+.update-prompt__btn--dismiss:hover {
+    background: rgba(255, 255, 255, 0.25);
+}

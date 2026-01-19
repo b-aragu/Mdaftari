@@ -99,11 +99,14 @@ function AppContent() {
     );
 }
 
+import { UpdatePrompt } from '../components/UpdatePrompt';
+
 export function App() {
     return (
         <BrowserRouter>
             <ToastProvider>
                 <AppContent />
+                <UpdatePrompt />
             </ToastProvider>
         </BrowserRouter>
     );
