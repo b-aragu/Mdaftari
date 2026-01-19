@@ -197,3 +197,19 @@
     color: #4f46e5;
     background-color: #f3f4f6;
 }
+
+.getting-started__feedback {
+    margin-top: 1.5rem;
+    font-size: 0.8rem;
+    color: #9ca3af;
+}
+
+.getting-started__feedback a {
+    color: inherit;
+    text-decoration: underline;
+    transition: color 0.2s;
+}
+
+.getting-started__feedback a:hover {
+    color: #6b7280;
+}

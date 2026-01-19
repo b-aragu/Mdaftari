@@ -71,6 +71,12 @@ export function GettingStarted({ onImportSMS, onImportStatement, onRecordPayment
             <button className="getting-started__secondary" onClick={onRecordPayment}>
                 Or record a manual payment
             </button>
+
+            <div className="getting-started__feedback">
+                <a href="https://form.jotform.com/260185803266054" target="_blank" rel="noopener noreferrer">
+                    Have feedback? Let us know
+                </a>
+            </div>
         </div>
     );
 }

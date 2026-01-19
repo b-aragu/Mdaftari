@@ -151,6 +151,17 @@ export function SettingsPage({ onImportSMS }: SettingsPageProps) {
                             </div>
                             <ChevronRight size={18} className="settings-item-arrow" />
                         </button>
+
+                        <button className="settings-item" onClick={() => window.open('https://form.jotform.com/260185803266054', '_blank')}>
+                            <div className="settings-item-icon settings-item-icon--info">
+                                <MessageSquare size={20} />
+                            </div>
+                            <div className="settings-item-content">
+                                <span className="settings-item-label">Send Feedback</span>
+                                <span className="settings-item-desc">Tell us what you think</span>
+                            </div>
+                            <ChevronRight size={18} className="settings-item-arrow" />
+                        </button>
                     </div>
                 </section>
 
