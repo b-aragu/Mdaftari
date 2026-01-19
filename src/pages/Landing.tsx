@@ -3,7 +3,7 @@
  * Uses Mdaftari design tokens and theme
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, Shield, Wifi, Zap, Users, BarChart3, Smartphone, Play, Monitor, Phone, X } from 'lucide-react';
 import './Landing.css';
@@ -26,6 +26,18 @@ export function LandingPage() {
     const navigate = useNavigate();
     const [activePreview, setActivePreview] = useState<'mobile' | 'desktop'>('mobile');
     const [modalContent, setModalContent] = useState<ModalContent>(null);
+
+    // Detect if app is running as installed PWA (standalone mode)
+    // If so, skip landing page and redirect directly to the app
+    useEffect(() => {
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+            || (window.navigator as unknown as { standalone?: boolean }).standalone === true
+            || document.referrer.includes('android-app://');
+
+        if (isStandalone) {
+            navigate('/app', { replace: true });
+        }
+    }, [navigate]);
 
     const handleOpenApp = () => {
         navigate('/app');
