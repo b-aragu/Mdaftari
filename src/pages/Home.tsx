@@ -825,7 +825,7 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                         )}
                     </div>
 
-                    {/* Payment Timeline - Transaction Accumulation Chart */}
+                    {/* Payment Timeline - Cumulative Line Chart */}
                     {selectedPerson.transactions.length > 0 && (() => {
                         // Sort transactions chronologically
                         const sortedTxs = [...selectedPerson.transactions]
@@ -848,58 +848,130 @@ export function HomePage({ onRecordPayment }: HomePageProps) {
                         });
 
                         const maxCumulative = runningTotal || 1;
-                        const chartWidth = 280;
-                        const chartHeight = 100;
-                        const padding = 30;
-                        const barWidth = Math.min(40, (chartWidth - padding) / accumulationData.length - 8);
+                        const numPoints = accumulationData.length;
+
+                        // SVG dimensions
+                        const chartWidth = 300;
+                        const chartHeight = 120;
+                        const paddingLeft = 50;
+                        const paddingRight = 20;
+                        const paddingTop = 25;
+                        const paddingBottom = 25;
+                        const graphWidth = chartWidth - paddingLeft - paddingRight;
+                        const graphHeight = chartHeight - paddingTop - paddingBottom;
+
+                        // Calculate points for the line
+                        const spacing = numPoints > 1 ? graphWidth / (numPoints - 1) : 0;
+                        const points = accumulationData.map((item, idx) => {
+                            const x = paddingLeft + (numPoints > 1 ? idx * spacing : graphWidth / 2);
+                            const y = paddingTop + graphHeight - (item.cumulative / maxCumulative) * graphHeight;
+                            return { x, y, data: item };
+                        });
+
+                        // Create smooth path
+                        const createPath = (pts: typeof points) => {
+                            if (pts.length === 0) return '';
+                            if (pts.length === 1) return `M ${pts[0].x} ${pts[0].y}`;
+                            let path = `M ${pts[0].x} ${pts[0].y}`;
+                            for (let i = 1; i < pts.length; i++) {
+                                const prev = pts[i - 1];
+                                const curr = pts[i];
+                                const midX = (prev.x + curr.x) / 2;
+                                path += ` C ${midX} ${prev.y}, ${midX} ${curr.y}, ${curr.x} ${curr.y}`;
+                            }
+                            return path;
+                        };
+
+                        const linePath = createPath(points);
+                        const lastPoint = points[points.length - 1];
+                        const firstPoint = points[0];
+                        const areaPath = points.length > 0 && lastPoint && firstPoint
+                            ? `${linePath} L ${lastPoint.x} ${paddingTop + graphHeight} L ${firstPoint.x} ${paddingTop + graphHeight} Z`
+                            : '';
+
+                        // Y-axis labels
+                        const yAxisLabels = [0, Math.round(maxCumulative / 2), maxCumulative];
 
                         return (
                             <section className="monthly-breakdown">
                                 <h3 className="section-label">{appMode === 'collections' ? 'Collection Accumulation' : 'Payment Accumulation'}</h3>
                                 <div className="person-line-chart-container">
-                                    {/* Bar chart showing accumulation */}
-                                    <div className="accumulation-chart">
-                                        {accumulationData.map((item, idx) => {
-                                            const heightPct = (item.cumulative / maxCumulative) * 100;
-                                            const barHeightPct = (item.amount / maxCumulative) * 100;
+                                    <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="person-line-chart" preserveAspectRatio="xMidYMid meet">
+                                        {/* Background */}
+                                        <rect x={paddingLeft - 5} y={paddingTop - 5} width={graphWidth + 10} height={graphHeight + 10} fill="#fafafa" rx="4" />
+
+                                        {/* Horizontal grid lines with Y-axis labels */}
+                                        {[0, 0.5, 1].map((pct, i) => {
+                                            const y = paddingTop + graphHeight - pct * graphHeight;
+                                            const value = yAxisLabels[i] ?? 0;
                                             return (
-                                                <div key={idx} className="accumulation-bar-wrapper">
-                                                    <div className="accumulation-bar-container">
-                                                        {/* Cumulative fill (background) */}
-                                                        <div
-                                                            className="accumulation-fill"
-                                                            style={{ height: `${heightPct}%` }}
-                                                        />
-                                                        {/* Individual transaction bar (foreground) */}
-                                                        <div
-                                                            className={`accumulation-bar ${appMode === 'payments' ? 'accumulation-bar--payment' : ''}`}
-                                                            style={{ height: `${barHeightPct}%` }}
-                                                        />
-                                                        {/* Amount label */}
-                                                        <span className="accumulation-amount">
-                                                            {item.amount >= 1000 ? `${(item.amount / 1000).toFixed(1)}k` : formatMoney(item.amount)}
-                                                        </span>
-                                                    </div>
-                                                    {/* Cumulative total label */}
-                                                    <div className="accumulation-cumulative">
-                                                        Σ {item.cumulative >= 1000 ? `${(item.cumulative / 1000).toFixed(1)}k` : formatMoney(item.cumulative)}
-                                                    </div>
-                                                    {/* Date label */}
-                                                    <span className="accumulation-date">{item.label}</span>
-                                                </div>
+                                                <g key={i}>
+                                                    <line
+                                                        x1={paddingLeft} y1={y} x2={paddingLeft + graphWidth} y2={y}
+                                                        stroke={pct === 0 ? "#e0e0e0" : "#f0f0f0"}
+                                                        strokeWidth="1"
+                                                        strokeDasharray={pct === 0 ? "0" : "4,4"}
+                                                    />
+                                                    <text x={paddingLeft - 8} y={y + 3} textAnchor="end" fontSize="8" fill="#999">
+                                                        {value >= 1000 ? `${(value / 1000).toFixed(1)}k` : value}
+                                                    </text>
+                                                </g>
                                             );
                                         })}
-                                    </div>
-                                    {/* Legend */}
-                                    <div className="accumulation-legend">
-                                        <span className="legend-item">
-                                            <span className={`legend-dot ${appMode === 'payments' ? 'legend-dot--payment' : ''}`}></span>
-                                            Individual {appMode === 'collections' ? 'Collection' : 'Payment'}
-                                        </span>
-                                        <span className="legend-item">
-                                            <span className="legend-dot legend-dot--cumulative"></span>
-                                            Cumulative Total
-                                        </span>
+
+                                        {/* Gradient definitions */}
+                                        <defs>
+                                            <linearGradient id="cumulativeGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                                                <stop offset="0%" stopColor={appMode === 'payments' ? '#ef4444' : '#10b981'} stopOpacity="0.4" />
+                                                <stop offset="100%" stopColor={appMode === 'payments' ? '#ef4444' : '#10b981'} stopOpacity="0.05" />
+                                            </linearGradient>
+                                            <linearGradient id="lineGradientNew" x1="0%" y1="0%" x2="100%" y2="0%">
+                                                <stop offset="0%" stopColor={appMode === 'payments' ? '#ef4444' : '#10b981'} />
+                                                <stop offset="100%" stopColor={appMode === 'payments' ? '#dc2626' : '#059669'} />
+                                            </linearGradient>
+                                        </defs>
+
+                                        {/* Area fill */}
+                                        <path d={areaPath} fill="url(#cumulativeGradient)" />
+
+                                        {/* Line */}
+                                        <path
+                                            d={linePath}
+                                            fill="none"
+                                            stroke="url(#lineGradientNew)"
+                                            strokeWidth="2.5"
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                        />
+
+                                        {/* Data points */}
+                                        {points.map((p, idx) => (
+                                            <g key={idx}>
+                                                {/* Outer glow */}
+                                                <circle cx={p.x} cy={p.y} r="8" fill={appMode === 'payments' ? '#ef4444' : '#10b981'} opacity="0.15" />
+                                                {/* Point */}
+                                                <circle cx={p.x} cy={p.y} r="5" fill="white" stroke={appMode === 'payments' ? '#ef4444' : '#10b981'} strokeWidth="2" />
+                                                <circle cx={p.x} cy={p.y} r="2" fill={appMode === 'payments' ? '#ef4444' : '#10b981'} />
+                                                {/* Amount label above point */}
+                                                <text
+                                                    x={p.x}
+                                                    y={p.y - 12}
+                                                    textAnchor="middle"
+                                                    fontSize="7"
+                                                    fontWeight="600"
+                                                    fill={appMode === 'payments' ? '#ef4444' : '#10b981'}
+                                                >
+                                                    +{p.data.amount >= 1000 ? `${(p.data.amount / 1000).toFixed(1)}k` : formatMoney(p.data.amount)}
+                                                </text>
+                                            </g>
+                                        ))}
+                                    </svg>
+
+                                    {/* X-axis labels */}
+                                    <div className="person-line-chart-labels">
+                                        {accumulationData.map((item, idx) => (
+                                            <span key={idx} className="person-line-chart-label">{item.label}</span>
+                                        ))}
                                     </div>
                                 </div>
                             </section>
