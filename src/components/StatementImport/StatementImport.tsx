@@ -794,12 +794,12 @@ export function StatementImport({ onComplete, onBack, mode }: StatementImportPro
                                             return (
                                                 <div className="tx-expected">
                                                     <label className="expected-label">
-                                                        {isIncoming ? 'They owe you:' : 'You owe them:'}
+                                                        {isIncoming ? 'Total Expected Amount:' : 'Total Bill Amount:'}
                                                     </label>
                                                     <input
                                                         type="number"
                                                         className="expected-input"
-                                                        placeholder={isIncoming ? 'Amount owed to you' : 'Amount you owe'}
+                                                        placeholder={isIncoming ? 'Total expected (e.g. 6000)' : 'Total bill (e.g. 500)'}
                                                         value={tx.expectedAmount || ''}
                                                         onChange={(e) => updateExpectedAmount(tx.receiptNo, parseFloat(e.target.value) || 0)}
                                                     />

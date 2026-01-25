@@ -35,8 +35,8 @@ export function ImportSMS({ onBack, onSuccess }: ImportSMSProps) {
     const [isImporting, setIsImporting] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [importedCount, setImportedCount] = useState(0);
-    // Track amount owed per message ID
-    const [amountOwedMap, setAmountOwedMap] = useState<Record<string, string>>({});
+    // Track expected amount per message ID
+    const [expectedAmountMap, setExpectedAmountMap] = useState<Record<string, string>>({});
 
     // Filters
     const [searchText, setSearchText] = useState('');
@@ -202,21 +202,23 @@ export function ImportSMS({ onBack, onSuccess }: ImportSMSProps) {
                 const tx = msg.parseResult.transaction;
 
                 try {
-                    // Get amount owed from user input (default 0)
-                    const userAmountOwed = parseFloat(amountOwedMap[id] || '0') || 0;
+                    // Get expected amount from user input (default to transaction amount if not set)
+                    const userExpectedAmount = parseFloat(expectedAmountMap[id] || '0');
+                    const expectedAmount = userExpectedAmount > 0 ? userExpectedAmount : tx.amount;
 
+                    // Calculate remaining debt/balance
+                    const amountOwed = Math.max(0, expectedAmount - tx.amount);
 
-
-                    const savedTx = await saveTransaction(tx, TEMP_USER_ID, tx.amount);
+                    const savedTx = await saveTransaction(tx, TEMP_USER_ID, expectedAmount);
 
 
                     await createLedgerEntry(
                         savedTx.id,
                         null,
                         tx.amount,
-                        userAmountOwed,
+                        amountOwed,
                         tx.amount,
-                        userAmountOwed
+                        amountOwed
                     );
 
 
@@ -515,17 +517,17 @@ export function ImportSMS({ onBack, onSuccess }: ImportSMSProps) {
                                                 </div>
                                             </div>
 
-                                            {/* Amount owed input - shows when selected */}
+                                            {/* Expected amount input - shows when selected */}
                                             {isSelected && (
                                                 <div className="sms-item__owed-input" onClick={e => e.stopPropagation()}>
                                                     <label>
-                                                        {tx.type === 'received' ? 'They owe you:' : 'You owe them:'}
+                                                        {tx.type === 'received' ? 'Total Bill / Expected:' : 'Total Bill / Owed:'}
                                                     </label>
                                                     <input
                                                         type="number"
-                                                        placeholder={tx.type === 'received' ? 'Amount owed to you' : 'Amount you owe'}
-                                                        value={amountOwedMap[msg.id] || ''}
-                                                        onChange={e => setAmountOwedMap(prev => ({
+                                                        placeholder={tx.type === 'received' ? 'Total amount expected' : 'Total amount owed'}
+                                                        value={expectedAmountMap[msg.id] || ''}
+                                                        onChange={e => setExpectedAmountMap(prev => ({
                                                             ...prev,
                                                             [msg.id]: e.target.value
                                                         }))}
